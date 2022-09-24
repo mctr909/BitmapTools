@@ -51,7 +51,6 @@ fn_ext_outline(Bitmap& const pbmp) {
             if (flg == true) {
                 new_color = table.color_on;
             }
-
             auto index = table.pCells[i].index_bmp;
             overwrite_bmp->pPix[index] = new_color;
         }
@@ -60,6 +59,38 @@ fn_ext_outline(Bitmap& const pbmp) {
     free(table.pCells);
     overwrite_bmp->error = 0;
     return overwrite_bmp;
+}
+
+void
+fn_thickness(Bitmap* pbmp, int32 weight) {
+    const auto radius = weight / 2;
+    const auto index_count = pbmp->info_h.width * pbmp->info_h.height;
+    auto pTemp = new byte[index_count];
+    memset(pTemp, DEFINE_COLOR_OFF, index_count);
+
+    Bitmap::position pos;
+    for (uint32 i = 0; i < index_count; i++) {
+        if (DEFINE_COLOR_OFF == pbmp->pPix[i]) {
+            continue;
+        }
+        pTemp[i] = DEFINE_COLOR_ON;
+        bitmap_pix_pos(*pbmp, &pos, i);
+        for (int32 dy = -radius; dy <= radius; dy++) {
+            for (int32 dx = -radius; dx <= radius; dx++) {
+                auto r = sqrt(dx * dx + dy * dy);
+                if (r <= weight / 2.0) {
+                    auto arownd = bitmap_pix_ofs_index(*pbmp, pos, dx, dy);
+                    if (ULONG_MAX != arownd) {
+                        pTemp[arownd] = DEFINE_COLOR_ON;
+                    }
+                }
+            }
+        }
+    }
+
+    memcpy_s(pbmp->pPix, index_count, pTemp, index_count);
+
+    delete pTemp;
 }
 
 void

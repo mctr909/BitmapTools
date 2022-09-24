@@ -103,6 +103,24 @@ bitmap_pix_index(Bitmap const& bmp, const Bitmap::position p) {
     if ((p.x >= bmp.info_h.width) || (p.y >= bmp.info_h.height)) {
         return ULONG_MAX;
     }
-    auto line = bitmap_stride(bmp);
-    return (p.x + (p.y * line));
+    auto stride = bitmap_stride(bmp);
+    return ((p.x + (stride * p.y)) * bmp.info_h.pixel >> 3);
+}
+
+inline uint32
+bitmap_pix_ofs_index(Bitmap const& bmp, const Bitmap::position p, int32 dx, int32 dy) {
+    auto x = static_cast<int32>(p.x) + dx;
+    auto y = static_cast<int32>(p.y) + dy;
+    if ((x < 0) || (x >= bmp.info_h.width) || (y < 0) || (y >= bmp.info_h.height)) {
+        return ULONG_MAX;
+    }
+    auto stride = bitmap_stride(bmp);
+    return ((x + (stride * y)) * bmp.info_h.pixel >> 3);
+}
+
+inline void
+bitmap_pix_pos(Bitmap const& bmp, Bitmap::position* pos, uint32 index) {
+    auto stride = bitmap_stride(bmp);
+    pos->x = (index % stride) / (bmp.info_h.pixel >> 3);
+    pos->y = index / stride;
 }

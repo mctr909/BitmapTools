@@ -56,7 +56,8 @@ private:
     filehead file_h;
 };
 
-extern inline uint32 bitmap_stride(Bitmap const& bmp);
-extern inline uint32 bitmap_pix_index(Bitmap const& bmp, const Bitmap::position);
-
+extern inline uint32 bitmap_stride(Bitmap const&);
+extern inline uint32 bitmap_pix_index(Bitmap const&, const Bitmap::position);
+extern inline uint32 bitmap_pix_ofs_index(Bitmap const&, const Bitmap::position, int32, int32);
+extern inline void bitmap_pix_pos(Bitmap const&, Bitmap::position*, uint32);
 #endif //__BITMAP_H__

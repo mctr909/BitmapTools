@@ -10,15 +10,17 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     // check parameter
-    if (argc < 2) {
+    if (argc < 3) {
         cout << "parameter format error..." << endl;
-        cout << "[example] BmpOutline.exe <BMP FILE1> <BMP FILE2> ..." << endl;
+        cout << "[example] BmpOutline.exe <thickness> <BMP FILE1> <BMP FILE2> ..." << endl;
         return (EXIT_SUCCESS);
     }
 
+    const auto thickness = atoi(argv[1]);
+
     string bmp_file;
-    for (int32 fcount = 0; fcount < argc - 1; fcount++) {
-        bmp_file = argv[fcount + 1];
+    for (int32 fcount = 0; fcount < argc - 2; fcount++) {
+        bmp_file = argv[fcount + 2];
         cout << "BMP FILE : " << bmp_file << endl;
 
         // get bitmap data
@@ -45,6 +47,8 @@ int main(int argc, char* argv[]) {
             delete bmp;
             continue;
         }
+
+        fn_thickness(conv_bmp, thickness);
 
         // save
         stringstream ss;

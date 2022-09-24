@@ -2,6 +2,7 @@
 #define __EXT_OUTLINE_H__
 
 #include "types.h"
+#include "Bitmap.h"
 
 #define DEFINE_COLOR_ON  (0x00)
 #define DEFINE_COLOR_OFF (0xFF)
@@ -36,6 +37,7 @@ struct type_worktable {
 };
 
 Bitmap* fn_ext_outline(Bitmap& const);
+void fn_thickness(Bitmap*, int32);
 void fn_worktable_create(type_worktable*, Bitmap& const);
 inline type_workcell fn_worktable_get_data(uint32, E_DIRECTION, const type_worktable*, uint32);
 
