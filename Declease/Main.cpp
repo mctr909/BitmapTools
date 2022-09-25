@@ -6,21 +6,21 @@
 using namespace std;
 
 #include "Bitmap.h"
-#include "ExtOutline.h"
+#include "Declease.h"
 
 int main(int argc, char* argv[]) {
     // check parameter
-    if (argc < 3) {
+    if (argc < 2) {
         cout << "parameter format error..." << endl;
-        cout << "[example] Outline.exe <thickness> <BMP FILE1> <BMP FILE2> ..." << endl;
+        cout << "[example] Declease.exe <BMP FILE1> <BMP FILE2> ..." << endl;
         return (EXIT_SUCCESS);
     }
 
     const auto thickness = atoi(argv[1]);
 
     string bmp_file;
-    for (int32 fcount = 0; fcount < argc - 2; fcount++) {
-        bmp_file = argv[fcount + 2];
+    for (int32 fcount = 0; fcount < argc - 1; fcount++) {
+        bmp_file = argv[fcount + 1];
         cout << "BMP FILE : " << bmp_file << endl;
 
         // get bitmap data
@@ -35,24 +35,22 @@ int main(int argc, char* argv[]) {
         }
 
         // palette chck
-        if (bmp->info_h.pixel != DEFINE_SUPPORT_COLOR_256) {
-            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_256 << " colors)" << endl;
+        if (bmp->info_h.pixel != DEFINE_SUPPORT_COLOR_24BIT) {
+            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_24BIT << " colors)" << endl;
             delete bmp;
             continue;
         }
 
-        auto conv_bmp = fn_ext_outline(*bmp);
+        auto conv_bmp = fn_exec_declease(*bmp);
         if (conv_bmp->error != 0) {
             cout << "bmp convert error... (" << conv_bmp->error << ")" << endl;
             delete bmp;
             continue;
         }
 
-        fn_thickness(conv_bmp, thickness);
-
         // save
         stringstream ss;
-        ss << bmp_file << ".outline.bmp";
+        ss << bmp_file << ".declease.bmp";
 
         if (conv_bmp->copy_data_overwrite(bmp_file, ss.str())) {
             cout << "bmp writing error..." << endl;

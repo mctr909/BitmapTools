@@ -104,7 +104,7 @@ bitmap_pix_index(Bitmap const& bmp, const Bitmap::position p) {
         return ULONG_MAX;
     }
     auto stride = bitmap_stride(bmp);
-    return (p.x + (stride * p.y));
+    return ((p.x + (stride * p.y)));
 }
 
 inline uint32
