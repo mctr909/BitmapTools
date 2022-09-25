@@ -22,8 +22,7 @@ enum struct E_DIRECTION {
 #pragma pack(push, 1)
 	struct type_workcell {
 		byte data;
-		uint32 x;
-		uint32 y;
+		Bitmap::position pos;
 		uint32 index_bmp;
 		uint32 index_dir[9];
 	};

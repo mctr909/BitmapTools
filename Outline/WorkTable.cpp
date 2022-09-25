@@ -40,8 +40,7 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
 
             type_workcell cell = {
                 off,
-                pos.x,
-                pos.y,
+                pos,
                 index,
                 {
                     ULONG_MAX, ULONG_MAX, ULONG_MAX,
@@ -102,8 +101,7 @@ fn_worktable_get_data(
 ) {
     type_workcell ret = {
         (*ptable).color_off,
-        ULONG_MAX,
-        ULONG_MAX,
+        { ULONG_MAX, ULONG_MAX },
         ULONG_MAX,
         {
             ULONG_MAX, ULONG_MAX, ULONG_MAX,
