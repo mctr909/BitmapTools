@@ -1,6 +1,38 @@
 #ifndef __MQO_H__
 #define __MQO_H__
 
+#define DEFINE_MQO_TAG_HEADER_DOCUMENT     ("Metasequoia Document")
+#define DEFINE_MQO_TAG_HEADER_FORMAT       ("Format")
+#define DEFINE_MQO_TAG_HEADER_VERSION      ("Ver")
+#define DEFINE_MQO_TAG_HEADER_CODEPAGE     ("CodePage")
+
+#define DEFINE_MQO_TAG_SCENE_POS             ("pos")
+#define DEFINE_MQO_TAG_SCENE_LOOKAT          ("lookat")
+#define DEFINE_MQO_TAG_SCENE_HEAD            ("head")
+#define DEFINE_MQO_TAG_SCENE_PICH            ("pich")
+#define DEFINE_MQO_TAG_SCENE_BANK            ("bank")
+#define DEFINE_MQO_TAG_SCENE_ORTHO           ("ortho")
+#define DEFINE_MQO_TAG_SCENE_ZOOM2           ("zoom2")
+#define DEFINE_MQO_TAG_SCENE_AMB             ("amb")
+#define DEFINE_MQO_TAG_SCENE_FRONTCLIP       ("frontclip")
+#define DEFINE_MQO_TAG_SCENE_BACKCLIP        ("backclip")
+#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS       ("dirlights")
+#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS_DIR   ("dir")
+#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS_COLOR ("color")
+
+#define DEFINE_MQO_TAG_OBJECT_DEPTH         ("depth")
+#define DEFINE_MQO_TAG_OBJECT_FOLDING       ("folding")
+#define DEFINE_MQO_TAG_OBJECT_SCALE         ("scale")
+#define DEFINE_MQO_TAG_OBJECT_ROTATION      ("rotation")
+#define DEFINE_MQO_TAG_OBJECT_TRANSLATION   ("translation")
+#define DEFINE_MQO_TAG_OBJECT_VISIBLE       ("visible")
+#define DEFINE_MQO_TAG_OBJECT_LOCKING       ("locking")
+#define DEFINE_MQO_TAG_OBJECT_SHADING       ("shading")
+#define DEFINE_MQO_TAG_OBJECT_FACET         ("facet")
+#define DEFINE_MQO_TAG_OBJECT_NORMALWEIGHT  ("normal_weight")
+#define DEFINE_MQO_TAG_OBJECT_COLOR         ("color")
+#define DEFINE_MQO_TAG_OBJECT_COLORTYPE     ("color_type")
+
 #define DEFINE_MQO_DEF_HEADER_FORMAT       ("Text")
 #define DEFINE_MQO_DEF_HEADER_VERSION      (1.1f)
 #define DEFINE_MQO_DEF_HEADER_CODEPAGE     ("932")
@@ -50,35 +82,124 @@
 #define DEFINE_MQO_DEF_OBJECT_COLORTYPE     (0)
 #define DEFINE_MQO_DEF_OBJECT_NAME          ("no name")
 
+// ヘッダ構造体
+struct type_mqo_header {
+	string format = DEFINE_MQO_DEF_HEADER_FORMAT;
+	float  version = DEFINE_MQO_DEF_HEADER_VERSION;
+	string codepage = DEFINE_MQO_DEF_HEADER_CODEPAGE;
+};
+
+// 方向構造体
+struct type_mqo_direction {
+	float x;
+	float y;
+	float z;
+};
+
+// 色構造体
+struct type_mqo_color {
+	float r;
+	float g;
+	float b;
+};
+
+// 照明構造体
+struct type_mqo_light {
+	string             name;
+	type_mqo_direction direction;
+	type_mqo_color     color;
+};
+
+// シーン構造体
+struct type_mqo_scene {
+	float pos[3] = {
+		DEFINE_MQO_DEF_SCENE_POS_X,
+		DEFINE_MQO_DEF_SCENE_POS_Y,
+		DEFINE_MQO_DEF_SCENE_POS_Z
+	};
+	int32 lookat[3] = {
+		DEFINE_MQO_DEF_SCENE_LOOKAT_X,
+		DEFINE_MQO_DEF_SCENE_LOOKAT_Y,
+		DEFINE_MQO_DEF_SCENE_LOOKAT_Z
+	};
+	float  head = DEFINE_MQO_DEF_SCENE_HEAD;
+	float  pich = DEFINE_MQO_DEF_SCENE_PICH;
+	float  bank = DEFINE_MQO_DEF_SCENE_BANK;
+	int32  ortho = DEFINE_MQO_DEF_SCENE_ORTHO;
+	float  zoom2 = DEFINE_MQO_DEF_SCENE_ZOOM2;
+	float  amb[3] = {
+		DEFINE_MQO_DEF_SCENE_AMB_X,
+		DEFINE_MQO_DEF_SCENE_AMB_Y,
+		DEFINE_MQO_DEF_SCENE_AMB_Z
+	};
+	double frontclip = DEFINE_MQO_DEF_SCENE_FRONTCLIP;
+	double backclip = DEFINE_MQO_DEF_SCENE_BACKCLIP;
+	vector<type_mqo_light> dirlights;
+};
+
+// 頂点構造体
+struct type_mqo_vertex {
+	double x;
+	double y;
+	double z;
+	uint32 id;
+};
+
+// 平面構造体
+struct type_mqo_face {
+	vector<uint32> vertex;
+	int32          material;
+	uint32         id;
+};
+
 // MQOオブジェクト構造体
 struct type_mqo_object {
-	//int    depth = DEFINE_MQO_DEF_OBJECT_DEPTH;
-	//int    folding = DEFINE_MQO_DEF_OBJECT_FOLDING;
-	//int    scale[3] = { DEFINE_MQO_DEF_OBJECT_SCALE_X,
-	//						  DEFINE_MQO_DEF_OBJECT_SCALE_Y,
-	//						  DEFINE_MQO_DEF_OBJECT_SCALE_Z };
-	//int    rotation[3] = { DEFINE_MQO_DEF_OBJECT_ROTATION_X,
-	//						  DEFINE_MQO_DEF_OBJECT_ROTATION_Y,
-	//						  DEFINE_MQO_DEF_OBJECT_ROTATION_Z };
-	//int    translation[3] = { DEFINE_MQO_DEF_OBJECT_TRANSLATION_X,
-	//						  DEFINE_MQO_DEF_OBJECT_TRANSLATION_Y,
-	//						  DEFINE_MQO_DEF_OBJECT_TRANSLATION_Z };
-	//int    visible = DEFINE_MQO_DEF_OBJECT_VISIBLE;
-	//int    locking = DEFINE_MQO_DEF_OBJECT_LOCKING;
-	//int    shading = DEFINE_MQO_DEF_OBJECT_SHADING;
-	//double facet = DEFINE_MQO_DEF_OBJECT_FACET;
-	//int    normal_weight = DEFINE_MQO_DEF_OBJECT_NORMALWEIGHT;
-	//double color[3] = { DEFINE_MQO_DEF_OBJECT_COLOR_R,
-	//						  DEFINE_MQO_DEF_OBJECT_COLOR_G,
-	//						  DEFINE_MQO_DEF_OBJECT_COLOR_B };
-	//int    color_type = DEFINE_MQO_DEF_OBJECT_COLORTYPE;
-
-	//string                  name = DEFINE_MQO_DEF_OBJECT_NAME;
-	//vector<type_mqo_vertex> vertex;
-	//vector<type_mqo_face>   face;
-
+	int    depth = DEFINE_MQO_DEF_OBJECT_DEPTH;
+	int    folding = DEFINE_MQO_DEF_OBJECT_FOLDING;
+	int    scale[3] = {
+		DEFINE_MQO_DEF_OBJECT_SCALE_X,
+		DEFINE_MQO_DEF_OBJECT_SCALE_Y,
+		DEFINE_MQO_DEF_OBJECT_SCALE_Z
+	};
+	int    rotation[3] = {
+		DEFINE_MQO_DEF_OBJECT_ROTATION_X,
+		DEFINE_MQO_DEF_OBJECT_ROTATION_Y,
+		DEFINE_MQO_DEF_OBJECT_ROTATION_Z
+	};
+	int    translation[3] = {
+		DEFINE_MQO_DEF_OBJECT_TRANSLATION_X,
+		DEFINE_MQO_DEF_OBJECT_TRANSLATION_Y,
+		DEFINE_MQO_DEF_OBJECT_TRANSLATION_Z
+	};
+	int    visible = DEFINE_MQO_DEF_OBJECT_VISIBLE;
+	int    locking = DEFINE_MQO_DEF_OBJECT_LOCKING;
+	int    shading = DEFINE_MQO_DEF_OBJECT_SHADING;
+	double facet = DEFINE_MQO_DEF_OBJECT_FACET;
+	int    normal_weight = DEFINE_MQO_DEF_OBJECT_NORMALWEIGHT;
+	double color[3] = {
+		DEFINE_MQO_DEF_OBJECT_COLOR_R,
+		DEFINE_MQO_DEF_OBJECT_COLOR_G,
+		DEFINE_MQO_DEF_OBJECT_COLOR_B
+	};
+	int    color_type = DEFINE_MQO_DEF_OBJECT_COLORTYPE;
+	string                  name = DEFINE_MQO_DEF_OBJECT_NAME;
+	vector<type_mqo_vertex> vertex;
+	vector<type_mqo_face>   face;
 	int                     error;
 };
 
+// MQO構造体
+struct type_mqo {
+	type_mqo_header header;
+	type_mqo_scene  scene;
+	type_mqo_object object;
+};
+
+string fn_mqo_support_header_text(const type_mqo_header*);
+string fn_mqo_support_scene_text(const type_mqo_scene*);
+string fn_mqo_support_object_text(const type_mqo_object*);
+
+int32 fn_mqo_write(const type_mqo*, const string);
+type_mqo fn_mqo_create_default_parameter(void);
 
 #endif //__MQO_H__

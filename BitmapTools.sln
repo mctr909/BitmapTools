@@ -14,6 +14,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Declease", "Declease\Declea
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OutputMQO", "OutputMQO\OutputMQO.vcxproj", "{5BF362AA-BBAE-4A0E-9952-60ED4A40E893}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A6059240-B208-42E1-97F5-381DE8075BF9} = {A6059240-B208-42E1-97F5-381DE8075BF9}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonLib", "CommonLib\CommonLib.vcxproj", "{A6059240-B208-42E1-97F5-381DE8075BF9}"
 EndProject

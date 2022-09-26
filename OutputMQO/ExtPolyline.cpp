@@ -3,20 +3,27 @@
 
 using namespace std;
 
-#include "../Outline/WorkTable.h"
+#include "../CommonLib/WorkTable.h"
 #include "ExtPolyline.h"
 
-type_mqo_object fn_convert_table_to_mqo(Bitmap& const pbmp) {
+type_mqo_object fn_convert_table_to_mqo(Bitmap* pbmp) {
     type_mqo_object obj;
     obj.error = -1;
 
     // Table
+    const auto size_table = static_cast<uint32>(pbmp->info_h.width * pbmp->info_h.height);
     type_worktable table;
-    fn_worktable_create(&table, pbmp);
+    table.pCells = static_cast<type_workcell*>(calloc(size_table, sizeof(type_workcell)));
+    if (NULL == table.pCells) {
+        pbmp->error = -1;
+        return (obj);
+    }
+
+    fn_worktable_create(&table, *pbmp);
     if (table.error != 0) {
         return (obj);
     }
-    const auto size_table = static_cast<uint32>(pbmp.info_h.width * pbmp.info_h.height);
+
     const auto on = table.color_on;
     const auto off = table.color_off;
     vector<type_mngmqo> mngs = { size_table,
@@ -78,4 +85,35 @@ type_mqo_object fn_convert_table_to_mqo(Bitmap& const pbmp) {
 
     obj.error = 0;
     return (obj);
+}
+
+uint32 fn_support_mqo_create_vertex(
+    const Bitmap::position position,
+    type_mqo_object* pobj) {
+    uint32 id = (*pobj).vertex.size();
+    type_mqo_vertex vertex = {
+        static_cast<double>(position.x),
+        0,
+        static_cast<double>(position.y),
+        id
+    };
+    (*pobj).vertex.push_back(vertex);
+
+    return (id);
+}
+
+uint32 fn_support_mqo_create_face(
+    const uint32 vertex_a,
+    const uint32 vertex_b,
+    type_mqo_object* pobj) {
+    uint32 id = (*pobj).face.size();
+
+    type_mqo_face face;
+    face.vertex.push_back(vertex_a);
+    face.vertex.push_back(vertex_b);
+    face.material = INT16_MAX;
+    face.id = id;
+    (*pobj).face.push_back(face);
+
+    return (id);
 }
