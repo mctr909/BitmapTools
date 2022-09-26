@@ -4,7 +4,7 @@
 
 using namespace std;
 
-#include "Bitmap.h"
+#include "../CommonLib/Bitmap.h"
 #include "Declease.h"
 
 #define DEFINE_HUE_RANGE        (12)

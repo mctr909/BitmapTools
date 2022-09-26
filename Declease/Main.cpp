@@ -5,8 +5,10 @@
 
 using namespace std;
 
-#include "Bitmap.h"
+#include "../CommonLib/Bitmap.h"
 #include "Declease.h"
+
+#pragma comment (lib, "CommonLib.lib")
 
 int main(int argc, char* argv[]) {
     // check parameter

@@ -5,8 +5,10 @@
 
 using namespace std;
 
-#include "Bitmap.h"
+#include "../CommonLib/Bitmap.h"
 #include "ExtOutline.h"
+
+#pragma comment (lib, "CommonLib.lib")
 
 int main(int argc, char* argv[]) {
     // check parameter
@@ -24,41 +26,43 @@ int main(int argc, char* argv[]) {
         cout << "BMP FILE : " << bmp_file << endl;
 
         // get bitmap data
-        auto bmp = new Bitmap(bmp_file);
-        if (bmp->error != 0) {
-            cout << "bmp reading error... (" << bmp->error << ")" << endl;
-            delete bmp;
+        auto pBmp = new Bitmap(bmp_file);
+        if (pBmp->error != 0) {
+            cout << "bmp reading error... (" << pBmp->error << ")" << endl;
+            delete pBmp;
             continue;
         } else {
-            bmp->print_fileheader();
-            bmp->print_infoheader();
+            pBmp->PrintFileHeader();
+            pBmp->PrintInfoHeader();
         }
 
         // palette chck
-        if (bmp->info_h.pixel != DEFINE_SUPPORT_COLOR_256) {
+        if (pBmp->info_h.pixel != DEFINE_SUPPORT_COLOR_256) {
             cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_256 << " colors)" << endl;
-            delete bmp;
+            delete pBmp;
             continue;
         }
 
-        auto conv_bmp = fn_ext_outline(*bmp);
-        if (conv_bmp->error != 0) {
-            cout << "bmp convert error... (" << conv_bmp->error << ")" << endl;
-            delete bmp;
+        fn_ext_outline(pBmp);
+        if (pBmp->error != 0) {
+            cout << "bmp convert error... (" << pBmp->error << ")" << endl;
+            delete pBmp;
             continue;
         }
 
-        fn_thickness(conv_bmp, thickness);
+        fn_thickness(pBmp, thickness);
 
         // save
         stringstream ss;
         ss << bmp_file << ".outline.bmp";
-
-        if (conv_bmp->copy_data_overwrite(bmp_file, ss.str())) {
+        pBmp->Save(ss.str());
+        if (pBmp->error != 0) {
             cout << "bmp writing error..." << endl;
-            delete bmp;
+            delete pBmp;
             continue;
         }
+
+        delete pBmp;
     }
 
     return (EXIT_SUCCESS);

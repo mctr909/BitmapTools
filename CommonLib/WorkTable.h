@@ -1,7 +1,6 @@
 #ifndef __WORK_TABLE_H__
 #define __WORK_TABLE_H__
 
-#include "types.h"
 #include "Bitmap.h"
 
 #define DEFINE_COLOR_ON  (0x00)
@@ -37,6 +36,34 @@ struct type_worktable {
 
 void fn_worktable_create(type_worktable*, Bitmap& const);
 
-extern inline type_workcell fn_worktable_get_data(uint32, E_DIRECTION, const type_worktable*, uint32);
+inline type_workcell
+fn_worktable_get_data(
+    uint32      center_index,
+    E_DIRECTION direction,
+    const type_worktable* ptable,
+    uint32 size_max
+) {
+    type_workcell ret = {
+        (*ptable).color_off,
+        { INT32_MAX, INT32_MAX },
+        UINT32_MAX,
+        {
+            UINT32_MAX, UINT32_MAX, UINT32_MAX,
+            UINT32_MAX, UINT32_MAX, UINT32_MAX,
+            UINT32_MAX, UINT32_MAX, UINT32_MAX
+        }
+    };
+
+    if (center_index >= size_max) {
+        return (ret);
+    }
+
+    auto index = (*ptable).pCells[center_index].index_dir[static_cast<uint32>(direction)];
+    if (index < size_max) {
+        ret = (*ptable).pCells[index];
+    }
+
+    return (ret);
+}
 
 #endif //__WORK_TABLE_H__

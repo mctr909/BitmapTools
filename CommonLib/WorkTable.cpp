@@ -31,9 +31,9 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
     Bitmap::position pos;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
-            auto index = bitmap_pix_index(pbmp, pos);
+            auto index = bitmap_get_index(pbmp, pos);
 
-            if (index == ULONG_MAX) {
+            if (index == UINT32_MAX) {
                 output->error = -1;
                 return;
             }
@@ -43,9 +43,9 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
                 pos,
                 index,
                 {
-                    ULONG_MAX, ULONG_MAX, ULONG_MAX,
-                    ULONG_MAX, ULONG_MAX, ULONG_MAX,
-                    ULONG_MAX, ULONG_MAX, ULONG_MAX
+                    UINT32_MAX, UINT32_MAX, UINT32_MAX,
+                    UINT32_MAX, UINT32_MAX, UINT32_MAX,
+                    UINT32_MAX, UINT32_MAX, UINT32_MAX
                 }
             };
 
@@ -83,41 +83,11 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
             for (int i = 0; i < 9; i++) {
                 if (delta_pos[i][0] != 0) {
                     Bitmap::position pos_dir = { (pos.x + delta_pos[i][1]), (pos.y + delta_pos[i][2]) };
-                    cell.index_dir[i] = bitmap_pix_index(pbmp, pos_dir);
+                    cell.index_dir[i] = bitmap_get_index(pbmp, pos_dir);
                 }
             }
 
             output->pCells[cell_index++] = cell;
         }
     }
-}
-
-inline type_workcell
-fn_worktable_get_data(
-    uint32      center_index,
-    E_DIRECTION direction,
-    const type_worktable* ptable,
-    uint32 size_max
-) {
-    type_workcell ret = {
-        (*ptable).color_off,
-        { ULONG_MAX, ULONG_MAX },
-        ULONG_MAX,
-        {
-            ULONG_MAX, ULONG_MAX, ULONG_MAX,
-            ULONG_MAX, ULONG_MAX, ULONG_MAX,
-            ULONG_MAX, ULONG_MAX, ULONG_MAX
-        }
-    };
-
-    if (center_index >= size_max) {
-        return (ret);
-    }
-
-    auto index = (*ptable).pCells[center_index].index_dir[static_cast<unsigned long>(direction)];
-    if (index < size_max) {
-        ret = (*ptable).pCells[index];
-    }
-
-    return (ret);
 }

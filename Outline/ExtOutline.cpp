@@ -4,27 +4,25 @@
 
 using namespace std;
 
-#include "Bitmap.h"
-#include "WorkTable.h"
+#include "../CommonLib/Bitmap.h"
+#include "../CommonLib/WorkTable.h"
 #include "ExtOutline.h"
 
-Bitmap*
-fn_ext_outline(Bitmap& const pbmp) {
-    auto overwrite_bmp = &pbmp;
-
-    const auto size_max = static_cast<uint32>(pbmp.info_h.width * pbmp.info_h.height);
+void
+fn_ext_outline(Bitmap* pbmp) {
+    const auto size_max = static_cast<uint32>(pbmp->info_h.width * pbmp->info_h.height);
     type_worktable table;
     table.pCells = static_cast<type_workcell*>(calloc(size_max, sizeof(type_workcell)));
     if (NULL == table.pCells) {
-        overwrite_bmp->error = -1;
-        return overwrite_bmp;
+        pbmp->error = -1;
+        return;
     }
 
-    fn_worktable_create(&table, pbmp);
+    fn_worktable_create(&table, *pbmp);
 
     if (table.error != 0) {
-        overwrite_bmp->error = -1;
-        return overwrite_bmp;
+        pbmp->error = -1;
+        return;
     }
 
     for (uint32 i = 0; i < size_max; i++) {
@@ -53,13 +51,12 @@ fn_ext_outline(Bitmap& const pbmp) {
                 new_color = table.color_on;
             }
             auto index = table.pCells[i].index_bmp;
-            overwrite_bmp->pPix[index] = new_color;
+            pbmp->pPix[index] = new_color;
         }
     }
 
     free(table.pCells);
-    overwrite_bmp->error = 0;
-    return overwrite_bmp;
+    pbmp->error = 0;
 }
 
 void
@@ -75,12 +72,12 @@ fn_thickness(Bitmap* pbmp, int32 weight) {
             continue;
         }
         pTemp[i] = DEFINE_COLOR_ON;
-        bitmap_pix_pos(*pbmp, &pos, i);
+        bitmap_get_pos(*pbmp, &pos, i);
         for (int32 dy = -radius; dy <= radius; dy++) {
             for (int32 dx = -radius; dx <= radius; dx++) {
                 auto r = sqrt(dx * dx + dy * dy);
                 if (r <= weight / 2.0) {
-                    auto arownd = bitmap_pix_ofs_index(*pbmp, pos, dx, dy);
+                    auto arownd = bitmap_get_index_ofs(*pbmp, pos, dx, dy);
                     if (ULONG_MAX != arownd) {
                         pTemp[arownd] = DEFINE_COLOR_ON;
                     }
