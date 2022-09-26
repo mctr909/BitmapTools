@@ -69,15 +69,17 @@ public:
     infohead info_h;
     byte     *pPix;
     pix32    *pPalette;
+    uint32   stride;
     int32    error;
 
 private:
     string   name;
     filehead file_h;
     uint32   palette_size;
+
+    uint32 get_stride();
 };
 
-extern inline uint32 bitmap_get_stride(Bitmap const&);
 extern inline uint32 bitmap_get_index(Bitmap const&, const Bitmap::position);
 extern inline uint32 bitmap_get_index_ofs(Bitmap const&, const Bitmap::position, const int32, const int32);
 extern inline void bitmap_get_pos(Bitmap const&, Bitmap::position*, uint32);

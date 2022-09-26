@@ -26,6 +26,7 @@ Bitmap::Bitmap(const string path) {
     fin.seekg(current_pos);
     fin.close();
 
+    stride = get_stride();
     name = path;
     error = 0;
 }
@@ -67,6 +68,7 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     file_h.reserve2 = 0;
     file_h.offset = (sizeof(file_h) + sizeof(info_h)) + palette_size;
 
+    stride = get_stride();
     error = 0;
 }
 
@@ -154,9 +156,9 @@ Bitmap::PrintInfoHeader() {
     cout << endl;
 }
 
-inline uint32
-bitmap_get_stride(Bitmap const& bmp) {
-    return (((bmp.info_h.width + 3) >> 2) << 2);
+uint32
+Bitmap::get_stride() {
+    return (((info_h.width + 3) >> 2) << 2);
 }
 
 inline uint32
@@ -164,8 +166,7 @@ bitmap_get_index(Bitmap const& bmp, const Bitmap::position pos) {
     if ((pos.x >= bmp.info_h.width) || (pos.y >= bmp.info_h.height)) {
         return UINT32_MAX;
     }
-    auto stride = bitmap_get_stride(bmp);
-    return ((pos.x + (stride * pos.y)));
+    return ((pos.x + (bmp.stride * pos.y)));
 }
 
 inline uint32
@@ -175,13 +176,11 @@ bitmap_get_index_ofs(Bitmap const& bmp, const Bitmap::position pos, const int32 
     if ((x < 0) || (x >= bmp.info_h.width) || (y < 0) || (y >= bmp.info_h.height)) {
         return UINT32_MAX;
     }
-    auto stride = bitmap_get_stride(bmp);
-    return (x + (stride * y));
+    return (x + (bmp.stride * y));
 }
 
 inline void
 bitmap_get_pos(Bitmap const& bmp, Bitmap::position* pos, uint32 index) {
-    auto stride = bitmap_get_stride(bmp);
-    pos->x = index % stride;
-    pos->y = index / stride;
+    pos->x = index % bmp.stride;
+    pos->y = index / bmp.stride;
 }
