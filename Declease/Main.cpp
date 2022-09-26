@@ -30,8 +30,8 @@ int main(int argc, char* argv[]) {
             delete bmp;
             continue;
         } else {
-            bmp->print_fileheader();
-            bmp->print_infoheader();
+            bmp->PrintFileHeader();
+            bmp->PrintInfoHeader();
         }
 
         // palette chck

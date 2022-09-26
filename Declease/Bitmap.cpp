@@ -66,6 +66,8 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     file_h.reserve1 = 0;
     file_h.reserve2 = 0;
     file_h.offset = (sizeof(file_h) + sizeof(info_h)) + palette_size;
+
+    error = 0;
 }
 
 Bitmap::~Bitmap() {
@@ -97,36 +99,11 @@ Bitmap::Save(const string path) {
 }
 
 void
-Bitmap::print_fileheader() {
-    cout << "<File Header> " << endl;
-    cout << "File Type        : " << file_h.type[0] << file_h.type[1] << endl;
-    cout << "File Size        : " << file_h.size << " bytes" << endl;
-    cout << "Image Data Offset: " << file_h.offset << " bytes" << endl;
-    cout << endl;
-}
-
-void
-Bitmap::print_infoheader() {
-    cout << "<Information Header> " << endl;
-    cout << "Header Size      : " << info_h.headsize << " bytes" << endl;
-    cout << "Image Width      : " << info_h.width << " pixels" << endl;
-    cout << "Image Height     : " << info_h.height << " pixels" << endl;
-    cout << "Number of Planes : " << info_h.plane << endl;
-    cout << "Bits per Pixel   : " << info_h.pixel << " bits/pixel" << endl;
-    cout << "Compression Type : " << info_h.compression << endl;
-    cout << "Image Size       : " << info_h.imagesize << " bytes" << endl;
-    cout << "H Resolution     : " << info_h.h_resolution << " ppm" << endl;
-    cout << "V Resolution     : " << info_h.v_resolution << " ppm" << endl;
-    cout << "Color Index      : " << info_h.color_id << endl;
-    cout << "Important Index  : " << info_h.important_id << endl;
-    cout << endl;
-}
-
-int32
-Bitmap::copy_data_overwrite(string inName, string outName) {
+Bitmap::CopyDataSave(string inName, string outName) {
     ifstream fin(inName, ios::in | ios::binary);
     if (!fin) {
-        return (-1);
+        error = -1;
+        return;
     }
 
     fin.seekg(0, std::ios::end);
@@ -143,13 +120,38 @@ Bitmap::copy_data_overwrite(string inName, string outName) {
 
     ofstream fout(outName, ios::out | ios::binary);
     if (!fout) {
-        return (-2);
+        error = -2;
+        return;
     }
 
     fout.write(reinterpret_cast<char*>(pdata), size);
     fout.close();
+}
 
-    return (0);
+void
+Bitmap::PrintFileHeader() {
+    cout << "<File Header> " << endl;
+    cout << "File Type        : " << file_h.type[0] << file_h.type[1] << endl;
+    cout << "File Size        : " << file_h.size << " bytes" << endl;
+    cout << "Image Data Offset: " << file_h.offset << " bytes" << endl;
+    cout << endl;
+}
+
+void
+Bitmap::PrintInfoHeader() {
+    cout << "<Information Header> " << endl;
+    cout << "Header Size      : " << info_h.headsize << " bytes" << endl;
+    cout << "Image Width      : " << info_h.width << " pixels" << endl;
+    cout << "Image Height     : " << info_h.height << " pixels" << endl;
+    cout << "Number of Planes : " << info_h.plane << endl;
+    cout << "Bits per Pixel   : " << info_h.pixel << " bits/pixel" << endl;
+    cout << "Compression Type : " << info_h.compression << endl;
+    cout << "Image Size       : " << info_h.imagesize << " bytes" << endl;
+    cout << "H Resolution     : " << info_h.h_resolution << " ppm" << endl;
+    cout << "V Resolution     : " << info_h.v_resolution << " ppm" << endl;
+    cout << "Color Index      : " << info_h.color_id << endl;
+    cout << "Important Index  : " << info_h.important_id << endl;
+    cout << endl;
 }
 
 inline uint32

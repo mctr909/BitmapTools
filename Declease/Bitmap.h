@@ -61,9 +61,9 @@ public:
     Bitmap(int32, int32, int32);
     ~Bitmap();
     void Save(const string);
-    void print_fileheader();
-    void print_infoheader();
-    int32 copy_data_overwrite(string, string);
+    void CopyDataSave(string, string);
+    void PrintFileHeader();
+    void PrintInfoHeader();
 
 public:
     infohead info_h;
