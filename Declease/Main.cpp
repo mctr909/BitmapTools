@@ -41,9 +41,9 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        auto conv_bmp = fn_exec_declease(*bmp);
-        if (conv_bmp->error != 0) {
-            cout << "bmp convert error... (" << conv_bmp->error << ")" << endl;
+        fn_exec_declease(bmp);
+        if (bmp->error != 0) {
+            cout << "bmp convert error... (" << bmp->error << ")" << endl;
             delete bmp;
             continue;
         }
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
         stringstream ss;
         ss << bmp_file << ".declease.bmp";
 
-        if (conv_bmp->copy_data_overwrite(bmp_file, ss.str())) {
+        if (bmp->copy_data_overwrite(bmp_file, ss.str())) {
             cout << "bmp writing error..." << endl;
             delete bmp;
             continue;
