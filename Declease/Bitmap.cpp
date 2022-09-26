@@ -7,10 +7,10 @@ using namespace std;
 
 #include "Bitmap.h"
 
-Bitmap::Bitmap(const string bmp_file) {
+Bitmap::Bitmap(const string path) {
     streampos current_pos;
 
-    ifstream fin(bmp_file, ios::in | ios::binary);
+    ifstream fin(path, ios::in | ios::binary);
     if (!fin) {
         error = -1;
         return;
@@ -20,20 +20,80 @@ Bitmap::Bitmap(const string bmp_file) {
     fin.read(reinterpret_cast<char*>(&info_h), sizeof(info_h));
 
     fin.seekg(file_h.offset, ios::beg);
-    pPix = (byte*)calloc(info_h.imagesize, 1);
+    pPix = reinterpret_cast<byte*>(calloc(info_h.imagesize, 1));
     fin.read(reinterpret_cast<char*>(pPix), info_h.imagesize);
 
     fin.seekg(current_pos);
     fin.close();
 
-    name = bmp_file;
+    name = path;
     error = 0;
+}
+
+Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
+    switch (bits) {
+    case 8:
+        pPix = reinterpret_cast<byte*>(calloc(width * height, 1));
+        pPalette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
+        palette_size = sizeof(pix32) * 256;
+        break;
+    case 24:
+        pPix = reinterpret_cast<byte*>(calloc(width * height, sizeof(pix24)));
+        pPalette = NULL;
+        palette_size = 0;
+        break;
+    default:
+        pPix = NULL;
+        pPalette = NULL;
+        palette_size = 0;
+    }
+
+    info_h.headsize = sizeof(info_h);
+    info_h.width = width;
+    info_h.height = height;
+    info_h.plane = 1;
+    info_h.pixel = bits;
+    info_h.compression = 0;
+    info_h.imagesize = width * height * bits >> 3;
+    info_h.h_resolution = 0;
+    info_h.v_resolution = 0;
+    info_h.color_id = 0;
+    info_h.important_id = 0;
+
+    file_h.type[0] = 'B';
+    file_h.type[1] = 'M';
+    file_h.size = (file_h.offset - 6) + palette_size + info_h.imagesize;
+    file_h.reserve1 = 0;
+    file_h.reserve2 = 0;
+    file_h.offset = (sizeof(file_h) + sizeof(info_h)) + palette_size;
 }
 
 Bitmap::~Bitmap() {
     if (NULL != pPix) {
         free(pPix);
     }
+    if (NULL != pPalette) {
+        free(pPalette);
+    }
+}
+
+void
+Bitmap::Save(const string path) {
+    ofstream fout(path, ios::out | ios::binary);
+    if (!fout) {
+        error = -1;
+        return;
+    }
+
+    fout.write(reinterpret_cast<char*>(&file_h), sizeof(file_h));
+    fout.write(reinterpret_cast<char*>(&info_h), sizeof(info_h));
+    if (NULL != pPalette) {
+        fout.write(reinterpret_cast<char*>(pPalette), palette_size);
+    }
+    if (NULL != pPix) {
+        fout.write(reinterpret_cast<char*>(pPix), info_h.imagesize);
+    }
+    fout.close();
 }
 
 void
@@ -70,7 +130,7 @@ Bitmap::copy_data_overwrite(string inName, string outName) {
     }
 
     fin.seekg(0, std::ios::end);
-    auto size = static_cast<unsigned long>(fin.tellg());
+    auto size = static_cast<uint32>(fin.tellg());
     fin.seekg(0, std::ios::beg);
 
     auto pdata = new byte[size];
@@ -82,8 +142,7 @@ Bitmap::copy_data_overwrite(string inName, string outName) {
     }
 
     ofstream fout(outName, ios::out | ios::binary);
-    if (!fout)
-    {
+    if (!fout) {
         return (-2);
     }
 

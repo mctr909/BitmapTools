@@ -9,7 +9,7 @@ using namespace std;
 
 #define DEFINE_HUE_RANGE        (12)
 #define DEFINE_LIGHTNESS_RANGE  (32)
-#define DEFINE_SATURATION_RANGE (3)
+#define DEFINE_SATURATION_RANGE (5)
 
 #define DEFINE_HUE_WEIGHT       (4)
 #define DEFINE_LIGHTNESS_WEIGHT (2)
@@ -22,7 +22,8 @@ struct type_histogram {
     byte dst_h;
     byte dst_s;
     byte dst_l;
-    uint16 reserved;
+    byte reserved;
+    byte index;
     uint32 count;
 };
 #pragma pack(pop)
@@ -95,8 +96,8 @@ fn_calc_histogram(type_histogram* pHistogram, Bitmap* pBmp) {
     auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->pPix);
     Bitmap::position pos;
     Bitmap::pix24 rms_hsl;
-    /*** 周辺HSLの平均値と近ければ平均値をヒストグラムに反映 ***/
-    /*** 離れていればインデックスで指定されたHSLを反映 ***/
+    /*** 周辺HSLの平均値と離れていればインデックスで指定されたHSLをヒストグラムに反映 ***/
+    /*** 近ければ平均値を反映 ***/
     for (uint32 i = 0; i < size_max; i++) {
         auto hsl = pPix[i];
         bitmap_pix_pos(*pBmp, &pos, i);
@@ -105,7 +106,7 @@ fn_calc_histogram(type_histogram* pHistogram, Bitmap* pBmp) {
         auto ss = (hsl.g - rms_hsl.g);
         auto sl = (hsl.b - rms_hsl.b) * l_weight;
         auto dist = sqrt(sh * sh + ss * ss + sl * sl);
-        if (dist < DEFINE_HUE_WEIGHT) {
+        if (dist < l_weight) {
             hsl.r = rms_hsl.r;
             hsl.g = rms_hsl.g;
             hsl.b = rms_hsl.b;
@@ -225,7 +226,7 @@ fn_hsl2rgb(Bitmap::pix24* pPix, byte h, byte s, byte l) {
 }
 
 void
-fn_set_dst_hsl(type_histogram* pHistogram) {
+fn_set_color_top256(type_histogram* pHistogram, Bitmap::pix32* pPalette) {
     const int32 h_range = DEFINE_HUE_RANGE;
     const int32 s_range = DEFINE_SATURATION_RANGE;
     const int32 l_range = DEFINE_LIGHTNESS_RANGE;
@@ -256,9 +257,16 @@ fn_set_dst_hsl(type_histogram* pHistogram) {
         pTopHist->dst_h = pTopHist->src_h;
         pTopHist->dst_s = pTopHist->src_s;
         pTopHist->dst_l = pTopHist->src_l;
+        pTopHist->index = static_cast<byte>(t);
         pTop->h = pTopHist->src_h;
         pTop->s = pTopHist->src_s;
         pTop->l = pTopHist->src_l;
+    }
+
+    /*** 上位256個のHSL値からパレットに色を設定 ***/
+    for (int32 t = 0; t < 256; t++) {
+        auto top = hsl_top256[t];
+        fn_hsl2rgb(reinterpret_cast<Bitmap::pix24*>(&pPalette[t]), top.h, top.s, top.l);
     }
 
     /*** ヒストグラム上位256個の中で近いHSL値を変換先に設定 ***/
@@ -282,44 +290,45 @@ fn_set_dst_hsl(type_histogram* pHistogram) {
                 pHist->dst_h = pTop->h;
                 pHist->dst_s = pTop->s;
                 pHist->dst_l = pTop->l;
+                pHist->index = static_cast<byte>(t);
             }
         }
     }
 }
 
 void
-fn_exec_declease(Bitmap* pBmp) {
+fn_exec_declease(Bitmap* pInBmp, Bitmap* pOutBmp) {
     const int32 h_range = DEFINE_HUE_RANGE;
     const int32 s_range = DEFINE_SATURATION_RANGE;
     const int32 l_range = DEFINE_LIGHTNESS_RANGE;
     const int32 hist_count = h_range * s_range * l_range;
-    const auto size_max = static_cast<uint32>(pBmp->info_h.width * pBmp->info_h.height);
+    const auto size_max = static_cast<uint32>(pInBmp->info_h.width * pInBmp->info_h.height);
 
     auto pHist = reinterpret_cast<type_histogram*>(calloc(hist_count, sizeof(type_histogram)));
     if (NULL == pHist) {
-        pBmp->error = -1;
+        pInBmp->error = -1;
         return;
     }
 
-    auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->pPix);
+    auto pInPix = reinterpret_cast<Bitmap::pix24*>(pInBmp->pPix);
     for (uint32 i = 0; i < size_max; i++) {
-        fn_rgb2hsl(&pPix[i]);
+        fn_rgb2hsl(&pInPix[i]);
     }
 
-    fn_calc_histogram(pHist, pBmp);
-    fn_set_dst_hsl(pHist);
+    fn_calc_histogram(pHist, pInBmp);
+    fn_set_color_top256(pHist, pOutBmp->pPalette);
 
     for (uint32 i = 0; i < size_max; i++) {
-        auto pHsl = &pPix[i];
+        auto pHsl = &pInPix[i];
         auto hist_index
             = pHsl->r * s_range * l_range
             + pHsl->g * l_range
             + pHsl->b;
         auto hist = pHist[hist_index];
-        fn_hsl2rgb(pHsl, hist.dst_h, hist.dst_s, hist.dst_l);
+        pOutBmp->pPix[i] = hist.index;
     }
 
     free(pHist);
-    pBmp->error = 0;
+    pInBmp->error = 0;
     return;
 }

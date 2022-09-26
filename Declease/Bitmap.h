@@ -42,6 +42,15 @@ public:
     };
 #pragma pack(pop)
 
+#pragma pack(push, 4)
+    struct pix32 {
+        byte b;
+        byte g;
+        byte r;
+        byte a;
+    };
+#pragma pack(pop)
+
     struct position {
         uint32 x;
         uint32 y;
@@ -49,8 +58,9 @@ public:
 
 public:
     Bitmap(const string);
-    Bitmap(int32, int32);
+    Bitmap(int32, int32, int32);
     ~Bitmap();
+    void Save(const string);
     void print_fileheader();
     void print_infoheader();
     int32 copy_data_overwrite(string, string);
@@ -58,11 +68,13 @@ public:
 public:
     infohead info_h;
     byte     *pPix;
+    pix32    *pPalette;
     int32    error;
 
 private:
     string   name;
     filehead file_h;
+    uint32   palette_size;
 };
 
 extern inline uint32 bitmap_stride(Bitmap const&);

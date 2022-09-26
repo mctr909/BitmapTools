@@ -41,7 +41,8 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        fn_exec_declease(bmp);
+        auto out_bmp = new Bitmap(bmp->info_h.width, bmp->info_h.height, 8);
+        fn_exec_declease(bmp, out_bmp);
         if (bmp->error != 0) {
             cout << "bmp convert error... (" << bmp->error << ")" << endl;
             delete bmp;
@@ -51,8 +52,8 @@ int main(int argc, char* argv[]) {
         // save
         stringstream ss;
         ss << bmp_file << ".declease.bmp";
-
-        if (bmp->copy_data_overwrite(bmp_file, ss.str())) {
+        out_bmp->Save(ss.str());
+        if (out_bmp->error != 0) {
             cout << "bmp writing error..." << endl;
             delete bmp;
             continue;
