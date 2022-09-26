@@ -99,7 +99,7 @@ Bitmap::Save(const string path) {
 }
 
 void
-Bitmap::CopyDataSave(string inName, string outName) {
+Bitmap::SaveCopyData(string inName, string outName) {
     ifstream fin(inName, ios::in | ios::binary);
     if (!fin) {
         error = -1;
@@ -155,33 +155,33 @@ Bitmap::PrintInfoHeader() {
 }
 
 inline uint32
-bitmap_stride(Bitmap const& bmp) {
+bitmap_get_stride(Bitmap const& bmp) {
     return (((bmp.info_h.width + 3) >> 2) << 2);
 }
 
 inline uint32
-bitmap_pix_index(Bitmap const& bmp, const Bitmap::position p) {
-    if ((p.x >= bmp.info_h.width) || (p.y >= bmp.info_h.height)) {
+bitmap_get_index(Bitmap const& bmp, const Bitmap::position pos) {
+    if ((pos.x >= bmp.info_h.width) || (pos.y >= bmp.info_h.height)) {
         return UINT32_MAX;
     }
-    auto stride = bitmap_stride(bmp);
-    return ((p.x + (stride * p.y)));
+    auto stride = bitmap_get_stride(bmp);
+    return ((pos.x + (stride * pos.y)));
 }
 
 inline uint32
-bitmap_pix_ofs_index(Bitmap const& bmp, const Bitmap::position p, int32 dx, int32 dy) {
-    auto x = static_cast<int32>(p.x) + dx;
-    auto y = static_cast<int32>(p.y) + dy;
+bitmap_get_index_ofs(Bitmap const& bmp, const Bitmap::position pos, const int32 dx, const int32 dy) {
+    auto x = static_cast<int32>(pos.x) + dx;
+    auto y = static_cast<int32>(pos.y) + dy;
     if ((x < 0) || (x >= bmp.info_h.width) || (y < 0) || (y >= bmp.info_h.height)) {
         return UINT32_MAX;
     }
-    auto stride = bitmap_stride(bmp);
+    auto stride = bitmap_get_stride(bmp);
     return (x + (stride * y));
 }
 
 inline void
-bitmap_pix_pos(Bitmap const& bmp, Bitmap::position* pos, uint32 index) {
-    auto stride = bitmap_stride(bmp);
+bitmap_get_pos(Bitmap const& bmp, Bitmap::position* pos, uint32 index) {
+    auto stride = bitmap_get_stride(bmp);
     pos->x = index % stride;
     pos->y = index / stride;
 }

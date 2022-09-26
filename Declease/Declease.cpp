@@ -58,7 +58,7 @@ fn_calc_hsl_avg(Bitmap *pBmp, Bitmap::position pos, Bitmap::pix24* pHsl) {
             if (calc_dist < r) {
                 continue;
             }
-            auto index = bitmap_pix_ofs_index(*pBmp, pos, dx, dy);
+            auto index = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
             if (UINT32_MAX != index) {
                 auto hsl = pPix[index];
                 avg_h += hsl.r;
@@ -95,21 +95,21 @@ fn_calc_histogram(type_histogram* pHistogram, Bitmap* pBmp) {
     const auto size_max = static_cast<uint32>(pBmp->info_h.width * pBmp->info_h.height);
     auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->pPix);
     Bitmap::position pos;
-    Bitmap::pix24 rms_hsl;
+    Bitmap::pix24 avg_hsl;
     /*** 周辺HSLの平均値と離れていればインデックスで指定されたHSLをヒストグラムに反映 ***/
     /*** 近ければ平均値を反映 ***/
     for (uint32 i = 0; i < size_max; i++) {
         auto hsl = pPix[i];
-        bitmap_pix_pos(*pBmp, &pos, i);
-        auto weight = fn_calc_hsl_avg(pBmp, pos, &rms_hsl);        
-        auto sh = (hsl.r - rms_hsl.r) * h_weight;
-        auto ss = (hsl.g - rms_hsl.g);
-        auto sl = (hsl.b - rms_hsl.b) * l_weight;
+        bitmap_get_pos(*pBmp, &pos, i);
+        auto weight = fn_calc_hsl_avg(pBmp, pos, &avg_hsl);        
+        auto sh = (hsl.r - avg_hsl.r) * h_weight;
+        auto ss = (hsl.g - avg_hsl.g);
+        auto sl = (hsl.b - avg_hsl.b) * l_weight;
         auto dist = sqrt(sh * sh + ss * ss + sl * sl);
         if (dist < l_weight) {
-            hsl.r = rms_hsl.r;
-            hsl.g = rms_hsl.g;
-            hsl.b = rms_hsl.b;
+            hsl.r = avg_hsl.r;
+            hsl.g = avg_hsl.g;
+            hsl.b = avg_hsl.b;
             weight = 1;
         }
         auto hist_index

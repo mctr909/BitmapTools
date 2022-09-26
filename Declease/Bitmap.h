@@ -61,7 +61,7 @@ public:
     Bitmap(int32, int32, int32);
     ~Bitmap();
     void Save(const string);
-    void CopyDataSave(string, string);
+    void SaveCopyData(string, string);
     void PrintFileHeader();
     void PrintInfoHeader();
 
@@ -77,8 +77,8 @@ private:
     uint32   palette_size;
 };
 
-extern inline uint32 bitmap_stride(Bitmap const&);
-extern inline uint32 bitmap_pix_index(Bitmap const&, const Bitmap::position);
-extern inline uint32 bitmap_pix_ofs_index(Bitmap const&, const Bitmap::position, int32, int32);
-extern inline void bitmap_pix_pos(Bitmap const&, Bitmap::position*, uint32);
+extern inline uint32 bitmap_get_stride(Bitmap const&);
+extern inline uint32 bitmap_get_index(Bitmap const&, const Bitmap::position);
+extern inline uint32 bitmap_get_index_ofs(Bitmap const&, const Bitmap::position, const int32, const int32);
+extern inline void bitmap_get_pos(Bitmap const&, Bitmap::position*, uint32);
 #endif //__BITMAP_H__
