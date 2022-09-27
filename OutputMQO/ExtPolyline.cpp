@@ -18,83 +18,6 @@ fn_support_mqo_create_vertex(const point pos, type_mqo_object* pobj) {
     (*pobj).vertex.push_back(vertex);
 }
 
-void
-fn_even_poligon(vector<vector<int32>>* pSurfaceList, vector<int32> surface) {
-    const auto index_count = surface.size();
-    for (int32 i = 0; i < index_count / 2 - 1; i++) {
-        auto a0 = surface[i];
-        auto a1 = surface[i + 1];
-        auto a2 = surface[index_count - i - 2];
-        auto b0 = a2;
-        auto b1 = surface[index_count - i - 1];
-        auto b2 = a0;
-        vector<int32> surfA;
-        surfA.push_back(a0);
-        surfA.push_back(a1);
-        surfA.push_back(a2);
-        pSurfaceList->push_back(surfA);
-        vector<int32> surfB;
-        surfB.push_back(b0);
-        surfB.push_back(b1);
-        surfB.push_back(b2);
-        pSurfaceList->push_back(surfB);
-    }
-}
-
-void
-fn_odd_poligon(vector<vector<int32>>* pSurfaceList, vector<int32> surface) {
-    const auto index_count = surface.size();
-    {
-        auto a0 = surface[index_count - 2];
-        auto a1 = surface[index_count - 1];
-        auto a2 = surface[0];
-        vector<int32> surf;
-        surf.push_back(a0);
-        surf.push_back(a1);
-        surf.push_back(a2);
-        pSurfaceList->push_back(surf);
-    }
-    for (int32 i = 0; i < index_count / 2 - 1; i++) {
-        auto a0 = surface[i];
-        auto a1 = surface[i + 1];
-        auto a2 = surface[index_count - i - 3];
-        auto b0 = a2;
-        auto b1 = surface[index_count - i - 2];
-        auto b2 = a0;
-        vector<int32> surfA;
-        surfA.push_back(a0);
-        surfA.push_back(a1);
-        surfA.push_back(a2);
-        pSurfaceList->push_back(surfA);
-        vector<int32> surfB;
-        surfB.push_back(b0);
-        surfB.push_back(b1);
-        surfB.push_back(b2);
-        pSurfaceList->push_back(surfB);
-    }
-}
-
-void
-fn_to_triangle(vector<vector<int32>>* pLines) {
-    vector<vector<int32>> tmp_lines;
-    for (int32 i = 0; i < pLines->size(); i++) {
-        auto line = (*pLines)[i];
-        if (line.size() < 4) {
-            tmp_lines.push_back(line);
-            continue;
-        }
-        if (line.size() % 2 == 0) {
-            fn_even_poligon(&tmp_lines, line);
-        } else {
-            fn_odd_poligon(&tmp_lines, line);
-        }
-    }
-    pLines->clear();
-    for (int32 i = 0; i < tmp_lines.size(); i++) {
-        pLines->push_back(tmp_lines[i]);
-    }
-}
-
 vector<vector<point>>
 fn_get_outline(Bitmap* pbmp, type_worktable* table) {
     const auto table_size = pbmp->size_max;
@@ -132,7 +55,8 @@ fn_get_outline(Bitmap* pbmp, type_worktable* table) {
         }
         int32 pre_dir = 0;
         while (true) { // 点単位ループ
-            /*** 周囲の点を検索して、あればアウトラインの点として追加 ***/
+            /*** トレースの進行方向を優先して周囲の点を検索 ***/
+            /*** あればアウトラインの点として追加 ***/
             bool point_found = false;
             for (int32 i = -3; i <= 3; i++) {
                 auto cur_dir = (i + pre_dir + 8) % 8;
@@ -208,30 +132,20 @@ fn_convert_table_to_mqo(Bitmap* pbmp) {
     auto lines = fn_get_outline(pbmp, &table);
 
     uint32 index_ofs = 0;
-    vector<vector<int32>> index_list;
-    for (uint32 i = 0; i < 1; i++) {
-        vector<int32> index;
-        auto line = lines[i];
-        for (uint32 j = 0; j < line.size(); j++) {
-            auto pos = line[j];
-            fn_support_mqo_create_vertex(pos, &obj);
-            index.push_back(index_ofs + j);
-        }
-        index_ofs += line.size();
-        index_list.push_back(index);
-    }
-
-    //fn_to_triangle(&index_list);
-
-    for (uint32 i = 0; i < index_list.size(); i++) {
-        auto line = index_list[i];
+    for (uint32 i = 0; i < lines.size(); i++) {
         uint32 id = obj.face.size();
         type_mqo_face face;
         face.material = INT16_MAX;
         face.id = id;
-        for (uint32 j = 0; j < line.size(); j++) {
-            face.vertex.push_back(line[j]);
+        auto line = lines[i];
+        auto line_count = line.size();
+        for (uint32 j = 0; j < line_count; j++) {
+            auto pos = line[j];
+            pos.y = pbmp->info_h.height - pos.y - 1;
+            fn_support_mqo_create_vertex(pos, &obj);
+            face.vertex.push_back(index_ofs + line_count - j - 1);
         }
+        index_ofs += line_count;
         obj.face.push_back(face);
     }
 
