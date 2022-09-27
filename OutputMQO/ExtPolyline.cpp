@@ -38,10 +38,9 @@ fn_get_outline(Bitmap* pbmp, type_worktable* table) {
         {  1, -1 }
     };
 
-    /*** アウトライン単位ループ ***/
     vector<vector<point>> outlines;
-    point pos;
-    while (true) {
+    point cur_pos;
+    while (true) { // アウトライン単位ループ
         /*** アウトラインの始点を検索 ***/
         bool outline_found = false;
         vector<point> outline;
@@ -49,7 +48,7 @@ fn_get_outline(Bitmap* pbmp, type_worktable* table) {
             auto pCell = &table->pCells[i];
             if (pCell->enable) {
                 pCell->enable = false;
-                pos = pCell->pos;
+                cur_pos = pCell->pos;
                 outline.push_back(pCell->pos);
                 outline_found = true;
                 break;
@@ -58,23 +57,22 @@ fn_get_outline(Bitmap* pbmp, type_worktable* table) {
         if (!outline_found) {
             break;
         }
-        /*** 点単位ループ ***/
         int32 pre_dir = 0;
-        while (true) {
-            bool point_found = false;
+        while (true) { // 点単位ループ
             /*** 周囲の点を検索して、あればアウトラインの点として追加 ***/
+            bool point_found = false;
             for (int32 i = -3; i <= 3; i++) {
-                auto dir = (i + pre_dir + 8) % 8;
-                auto index = bitmap_get_index_ofs(*pbmp, pos, trace_dir[dir].x, trace_dir[dir].y);
+                auto cur_dir = (i + pre_dir + 8) % 8;
+                auto index = bitmap_get_index_ofs(*pbmp, cur_pos, trace_dir[cur_dir].x, trace_dir[cur_dir].y);
                 if (UINT32_MAX == index) {
                     continue;
                 }
                 auto pCell = &table->pCells[index];
                 if (pCell->enable) {
                     pCell->enable = false;
-                    pos = pCell->pos;
-                    pre_dir = dir;
-                    outline.push_back(pos);
+                    cur_pos = pCell->pos;
+                    pre_dir = cur_dir;
+                    outline.push_back(cur_pos);
                     point_found = true;
                     break;
                 }
