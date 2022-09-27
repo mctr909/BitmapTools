@@ -10,7 +10,7 @@ using namespace std;
 
 void
 fn_ext_outline(Bitmap* pbmp) {
-    const auto size_max = static_cast<uint32>(pbmp->info_h.width * pbmp->info_h.height);
+    const auto size_max = pbmp->size_max;
     type_worktable table;
     table.pCells = static_cast<type_workcell*>(calloc(size_max, sizeof(type_workcell)));
     if (NULL == table.pCells) {
@@ -61,13 +61,13 @@ fn_ext_outline(Bitmap* pbmp) {
 
 void
 fn_thickness(Bitmap* pbmp, int32 weight) {
+    const auto size_max = pbmp->size_max;
     const auto radius = weight / 2;
-    const auto index_count = pbmp->info_h.width * pbmp->info_h.height;
-    auto pTemp = new byte[index_count];
-    memset(pTemp, DEFINE_COLOR_OFF, index_count);
+    auto pTemp = new byte[size_max];
+    memset(pTemp, DEFINE_COLOR_OFF, size_max);
 
     point pos;
-    for (uint32 i = 0; i < index_count; i++) {
+    for (uint32 i = 0; i < size_max; i++) {
         if (DEFINE_COLOR_OFF == pbmp->pPix[i]) {
             continue;
         }
@@ -86,7 +86,7 @@ fn_thickness(Bitmap* pbmp, int32 weight) {
         }
     }
 
-    memcpy_s(pbmp->pPix, index_count, pTemp, index_count);
+    memcpy_s(pbmp->pPix, size_max, pTemp, size_max);
 
     delete pTemp;
 }

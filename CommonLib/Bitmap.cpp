@@ -48,12 +48,14 @@ Bitmap::Bitmap(const string path) {
     fin.close();
 
     stride = ((info_h.width + 3) >> 2) << 2;
+    size_max = stride * info_h.height;
     name = path;
     error = 0;
 }
 
 Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     stride = ((width + 3) >> 2) << 2;
+    size_max = stride * height;
 
     info_h.headsize = sizeof(info_h);
     info_h.width = width;

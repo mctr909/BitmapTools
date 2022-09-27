@@ -60,6 +60,7 @@ public:
     void PrintInfoHeader();
 
 public:
+    uint32   size_max;
     infohead info_h;
     byte     *pPix;
     pix32    *pPalette;

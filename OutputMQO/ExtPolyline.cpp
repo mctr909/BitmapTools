@@ -24,7 +24,7 @@ uint32 fn_support_mqo_create_vertex(
 
 vector<vector<point>>
 fn_get_outline(Bitmap* pbmp, type_worktable* table) {
-    const auto size_table = static_cast<uint32>(pbmp->info_h.width * pbmp->info_h.height);
+    const auto table_size = pbmp->size_max;
     const auto on = table->color_on;
     const auto off = table->color_off;
     const point trace_dir[] = {
@@ -44,7 +44,7 @@ fn_get_outline(Bitmap* pbmp, type_worktable* table) {
         /*** アウトラインの始点を検索 ***/
         bool outline_found = false;
         vector<point> outline;
-        for (uint32 i = 0; i < size_table; i++) {
+        for (uint32 i = 0; i < table_size; i++) {
             auto pCell = &table->pCells[i];
             if (pCell->enable) {
                 pCell->enable = false;
@@ -118,9 +118,9 @@ type_mqo_object fn_convert_table_to_mqo(Bitmap* pbmp) {
     obj.error = -1;
 
     // Table
-    const auto size_table = static_cast<uint32>(pbmp->info_h.width * pbmp->info_h.height);
+    const auto table_size = pbmp->size_max;
     type_worktable table;
-    table.pCells = static_cast<type_workcell*>(calloc(size_table, sizeof(type_workcell)));
+    table.pCells = static_cast<type_workcell*>(calloc(table_size, sizeof(type_workcell)));
     if (NULL == table.pCells) {
         pbmp->error = -1;
         return (obj);

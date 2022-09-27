@@ -88,11 +88,11 @@ fn_calc_hsl_avg(Bitmap *pBmp, point pos, Bitmap::pix24* pHsl) {
 
 void
 fn_calc_histogram(type_histogram* pHistogram, Bitmap* pBmp) {
+    const auto size_max = pBmp->size_max;
     const int32 s_range = DEFINE_SATURATION_RANGE;
     const int32 l_range = DEFINE_LIGHTNESS_RANGE;
     const int32 h_weight = DEFINE_HUE_WEIGHT;
     const int32 l_weight = DEFINE_LIGHTNESS_WEIGHT;
-    const auto size_max = static_cast<uint32>(pBmp->info_h.width * pBmp->info_h.height);
     auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->pPix);
     point pos;
     Bitmap::pix24 avg_hsl;
@@ -298,11 +298,11 @@ fn_set_color_top256(type_histogram* pHistogram, Bitmap::pix32* pPalette) {
 
 void
 fn_exec_declease(Bitmap* pInBmp, Bitmap* pOutBmp) {
+    const auto size_max = pInBmp->size_max;
     const int32 h_range = DEFINE_HUE_RANGE;
     const int32 s_range = DEFINE_SATURATION_RANGE;
     const int32 l_range = DEFINE_LIGHTNESS_RANGE;
     const int32 hist_count = h_range * s_range * l_range;
-    const auto size_max = static_cast<uint32>(pInBmp->info_h.width * pInBmp->info_h.height);
 
     auto pHist = reinterpret_cast<type_histogram*>(calloc(hist_count, sizeof(type_histogram)));
     if (NULL == pHist) {
