@@ -57,5 +57,9 @@ int main(int argc, char* argv[]) {
         return (EXIT_SUCCESS);
     }
 
+    stringstream sbmp;
+    sbmp << bmp_file << ".traced.bmp";
+    pBmp->Save(sbmp.str());
+
     return (EXIT_SUCCESS);
 }

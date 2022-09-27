@@ -8,4 +8,11 @@ typedef signed char    sbyte;
 typedef short int16;
 typedef int   int32;
 
+#pragma pack(push, 8)
+struct point {
+    int32 x;
+    int32 y;
+};
+#pragma pack(pop)
+
 #endif //__TYPES_H__

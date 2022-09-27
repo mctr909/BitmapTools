@@ -26,23 +26,23 @@ fn_ext_outline(Bitmap* pbmp) {
     }
 
     for (uint32 i = 0; i < size_max; i++) {
-        if (table.pCells[i].data == table.color_on) {
+        if (table.pCells[i].enable) {
             type_workcell tmp;
             bool flg = false;
             tmp = fn_worktable_get_data(i, E_DIRECTION::BOTTOM, &table, size_max);
-            if ((flg == false) && (tmp.data != table.color_on)) {
+            if ((flg == false) && !tmp.enable) {
                 flg = true;
             }
             tmp = fn_worktable_get_data(i, E_DIRECTION::LEFT, &table, size_max);
-            if ((flg == false) && (tmp.data != table.color_on)) {
+            if ((flg == false) && !tmp.enable) {
                 flg = true;
             }
             tmp = fn_worktable_get_data(i, E_DIRECTION::RIGHT, &table, size_max);
-            if ((flg == false) && (tmp.data != table.color_on)) {
+            if ((flg == false) && !tmp.enable) {
                 flg = true;
             }
             tmp = fn_worktable_get_data(i, E_DIRECTION::TOP, &table, size_max);
-            if ((flg == false) && (tmp.data != table.color_on)) {
+            if ((flg == false) && !tmp.enable) {
                 flg = true;
             }
 
@@ -66,7 +66,7 @@ fn_thickness(Bitmap* pbmp, int32 weight) {
     auto pTemp = new byte[index_count];
     memset(pTemp, DEFINE_COLOR_OFF, index_count);
 
-    Bitmap::position pos;
+    point pos;
     for (uint32 i = 0; i < index_count; i++) {
         if (DEFINE_COLOR_OFF == pbmp->pPix[i]) {
             continue;

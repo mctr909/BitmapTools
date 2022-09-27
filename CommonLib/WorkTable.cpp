@@ -6,7 +6,7 @@ using namespace std;
 
 void
 fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
-    const Bitmap::position bmp_size = { pbmp.info_h.width, pbmp.info_h.height };
+    const point bmp_size = { pbmp.info_h.width, pbmp.info_h.height };
     const byte on = DEFINE_COLOR_ON;
     const byte off = DEFINE_COLOR_OFF;
 
@@ -28,7 +28,7 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
     };
 
     uint32 cell_index = 0;
-    Bitmap::position pos;
+    point pos;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(pbmp, pos);
@@ -39,7 +39,7 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
             }
 
             type_workcell cell = {
-                off,
+                false,
                 pos,
                 index,
                 {
@@ -50,10 +50,10 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
             };
 
             if (pbmp.pPix[index] == on) {
-                cell.data = on;
+                cell.enable = true;
             }
 
-            Bitmap::position inv_pos = { (bmp_size.x - pos.x), (bmp_size.y - pos.y) };
+            point inv_pos = { (bmp_size.x - pos.x), (bmp_size.y - pos.y) };
 
             /* ¶‰º, ¶, ¶ã */
             if (pos.x < 1) {
@@ -82,7 +82,7 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
 
             for (int i = 0; i < 9; i++) {
                 if (delta_pos[i][0] != 0) {
-                    Bitmap::position pos_dir = { (pos.x + delta_pos[i][1]), (pos.y + delta_pos[i][2]) };
+                    point pos_dir = { (pos.x + delta_pos[i][1]), (pos.y + delta_pos[i][2]) };
                     cell.index_dir[i] = bitmap_get_index(pbmp, pos_dir);
                 }
             }

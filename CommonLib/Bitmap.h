@@ -51,13 +51,6 @@ public:
     };
 #pragma pack(pop)
 
-#pragma pack(push, 8)
-    struct position {
-        int32 x;
-        int32 y;
-    };
-#pragma pack(pop)
-
 public:
     Bitmap(const string);
     Bitmap(int32, int32, int32);
@@ -80,7 +73,7 @@ private:
 };
 
 inline uint32
-bitmap_get_index(Bitmap const& bmp, const Bitmap::position pos) {
+bitmap_get_index(Bitmap const& bmp, const point pos) {
     if ((pos.x >= bmp.info_h.width) || (pos.y >= bmp.info_h.height)) {
         return UINT32_MAX;
     }
@@ -88,7 +81,7 @@ bitmap_get_index(Bitmap const& bmp, const Bitmap::position pos) {
 }
 
 inline uint32
-bitmap_get_index_ofs(Bitmap const& bmp, const Bitmap::position pos, const int32 dx, const int32 dy) {
+bitmap_get_index_ofs(Bitmap const& bmp, const point pos, const int32 dx, const int32 dy) {
     auto x = pos.x + dx;
     auto y = pos.y + dy;
     if ((x < 0) || (x >= bmp.info_h.width) || (y < 0) || (y >= bmp.info_h.height)) {
@@ -98,7 +91,7 @@ bitmap_get_index_ofs(Bitmap const& bmp, const Bitmap::position pos, const int32 
 }
 
 inline void
-bitmap_get_pos(Bitmap const& bmp, Bitmap::position* pos, const uint32 index) {
+bitmap_get_pos(Bitmap const& bmp, point* pos, const uint32 index) {
     pos->x = index % bmp.stride;
     pos->y = index / bmp.stride;
 }

@@ -20,8 +20,8 @@ enum struct E_DIRECTION {
 
 #pragma pack(push, 1)
 	struct type_workcell {
-		byte data;
-		Bitmap::position pos;
+		bool enable;
+		point pos;
 		uint32 index_bmp;
 		uint32 index_dir[9];
 	};
@@ -44,7 +44,7 @@ fn_worktable_get_data(
     uint32 size_max
 ) {
     type_workcell ret = {
-        (*ptable).color_off,
+        false,
         { INT32_MAX, INT32_MAX },
         UINT32_MAX,
         {

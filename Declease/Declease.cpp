@@ -40,7 +40,7 @@ struct type_hsl_top {
 #pragma pack(pop)
 
 inline int32
-fn_calc_hsl_avg(Bitmap *pBmp, Bitmap::position pos, Bitmap::pix24* pHsl) {
+fn_calc_hsl_avg(Bitmap *pBmp, point pos, Bitmap::pix24* pHsl) {
     const int32 h_range = DEFINE_HUE_RANGE;
     const int32 s_range = DEFINE_SATURATION_RANGE;
     const int32 l_range = DEFINE_LIGHTNESS_RANGE;
@@ -94,7 +94,7 @@ fn_calc_histogram(type_histogram* pHistogram, Bitmap* pBmp) {
     const int32 l_weight = DEFINE_LIGHTNESS_WEIGHT;
     const auto size_max = static_cast<uint32>(pBmp->info_h.width * pBmp->info_h.height);
     auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->pPix);
-    Bitmap::position pos;
+    point pos;
     Bitmap::pix24 avg_hsl;
     /*** 周辺HSLの平均値と離れていればインデックスで指定されたHSLをヒストグラムに反映 ***/
     /*** 近ければ平均値を反映 ***/

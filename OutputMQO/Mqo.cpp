@@ -120,11 +120,15 @@ string fn_mqo_support_object_text(const type_mqo_object* pobject) {
     size_max = static_cast<uint32>((*pobject).face.size());
     ss << "\tface " << size_max << " {" << endl;
     for (uint32 i = 0; i < size_max; i++) {
-        const auto n = static_cast<uint32>((*pobject).face[i].vertex.size());
-        const auto s = (*pobject).face[i].vertex[0];
-        const auto e = (*pobject).face[i].vertex[1];
-        const auto           m = (*pobject).face[i].material;
-        ss << "\t\t" << n << " V(" << s << " " << e << ")";
+        auto face = (*pobject).face[i];
+        const auto n = static_cast<uint32>(face.vertex.size());
+        ss << "\t\t" << n << " V( ";
+        for (uint32 j = 0; j < face.vertex.size(); j++) {
+            const auto index = face.vertex[j];
+            ss << index << " ";
+        }
+        ss << ")";
+        const auto m = face.material;
         if (m < INT16_MAX) {
             ss << " M(" << m << ")";
         }
