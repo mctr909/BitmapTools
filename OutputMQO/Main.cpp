@@ -51,15 +51,10 @@ int main(int argc, char* argv[]) {
     // save
     stringstream ss;
     ss << bmp_file << ".mqo";
-
     if (fn_mqo_write(&mqo, ss.str())) {
         cout << "bmp writing error..." << endl;
         return (EXIT_SUCCESS);
     }
-
-    stringstream sbmp;
-    sbmp << bmp_file << ".traced.bmp";
-    pBmp->Save(sbmp.str());
 
     return (EXIT_SUCCESS);
 }

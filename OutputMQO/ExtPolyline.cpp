@@ -23,31 +23,11 @@ uint32 fn_support_mqo_create_vertex(
 }
 
 vector<vector<point>>
-get_polyline(Bitmap* pbmp, type_worktable* table) {
+fn_get_outline(Bitmap* pbmp, type_worktable* table) {
     const auto size_table = static_cast<uint32>(pbmp->info_h.width * pbmp->info_h.height);
     const auto on = table->color_on;
     const auto off = table->color_off;
-    vector<vector<point>> lines;
-
-    auto pPix = pbmp->pPix;
-    auto pr = &pbmp->pPalette[1];
-    auto pg = &pbmp->pPalette[2];
-    auto pb = &pbmp->pPalette[3];
-    auto ps = &pbmp->pPalette[4];
-    pr->r = 255;
-    pr->g = 0;
-    pr->b = 0;
-    pg->r = 0;
-    pg->g = 255;
-    pg->b = 0;
-    pb->r = 0;
-    pb->g = 0;
-    pb->b = 255;
-    ps->r = 0;
-    ps->g = 255;
-    ps->b = 255;
-
-    point trace_dir[] = {
+    const point trace_dir[] = {
         {  1,  0 },
         {  1,  1 },
         {  0,  1 },
@@ -58,31 +38,31 @@ get_polyline(Bitmap* pbmp, type_worktable* table) {
         {  1, -1 }
     };
 
-    /*** ポリラインループ ***/
+    /*** アウトライン単位ループ ***/
+    vector<vector<point>> outlines;
     point pos;
-    int32 off_index = 0;
     while (true) {
-        bool line_found = false;
-        vector<point> line;
+        /*** アウトラインの始点を検索 ***/
+        bool outline_found = false;
+        vector<point> outline;
         for (uint32 i = 0; i < size_table; i++) {
             auto pCell = &table->pCells[i];
             if (pCell->enable) {
                 pCell->enable = false;
-                pPix[i] = off_index + 1;
                 pos = pCell->pos;
-                line.push_back(pCell->pos);
-                line_found = true;
+                outline.push_back(pCell->pos);
+                outline_found = true;
                 break;
             }
         }
-        if (!line_found) {
+        if (!outline_found) {
             break;
         }
-
-        /*** 点トレースループ ***/
+        /*** 点単位ループ ***/
         int32 pre_dir = 0;
         while (true) {
             bool point_found = false;
+            /*** 周囲の点を検索して、あればアウトラインの点として追加 ***/
             for (int32 i = -3; i <= 3; i++) {
                 auto dir = (i + pre_dir + 8) % 8;
                 auto index = bitmap_get_index_ofs(*pbmp, pos, trace_dir[dir].x, trace_dir[dir].y);
@@ -92,25 +72,47 @@ get_polyline(Bitmap* pbmp, type_worktable* table) {
                 auto pCell = &table->pCells[index];
                 if (pCell->enable) {
                     pCell->enable = false;
-                    pPix[index] = off_index + 1;
                     pos = pCell->pos;
                     pre_dir = dir;
-                    line.push_back(pos);
+                    outline.push_back(pos);
                     point_found = true;
                     break;
                 }
             }
-            if (!point_found) {
-                if (3 <= line.size()) {
-                    lines.push_back(line);
-                    off_index = (off_index + 1) % 4;
+            if (!point_found) { // アウトラインの終端
+                if (outline.size() < 3) {
+                    break;
                 }
+                /*** 直線上にある点を除いたアウトラインをリストに追加 ***/
+                vector<point> tmp;
+                point pos0 = outline[1];
+                point pos1 = outline[0];
+                point pos2;
+                tmp.push_back(pos1);
+                for (int32 i = 2; i < outline.size(); i++) {
+                    pos2 = pos1;
+                    pos1 = pos0;
+                    pos0 = outline[i];
+                    double abx = pos0.x - pos2.x;
+                    double aby = pos0.y - pos2.y;
+                    double px = pos1.x - pos2.x;
+                    double py = pos1.y - pos2.y;
+                    double dist = sqrt(abx * abx + aby * aby);
+                    abx /= dist;
+                    aby /= dist;
+                    dist = sqrt(px * px + py * py);
+                    px = abx - px / dist;
+                    py = aby - py / dist;
+                    if (0.1 < abs(px) || 0.1 < abs(py)) {
+                        tmp.push_back(pos1);
+                    }
+                }
+                outlines.push_back(tmp);
                 break;
             }
         }
     }
-
-    return lines;
+    return outlines;
 }
 
 type_mqo_object fn_convert_table_to_mqo(Bitmap* pbmp) {
@@ -131,7 +133,7 @@ type_mqo_object fn_convert_table_to_mqo(Bitmap* pbmp) {
         return (obj);
     }
 
-    auto lines = get_polyline(pbmp, &table);
+    auto lines = fn_get_outline(pbmp, &table);
     uint32 index_ofs = 0;
     for (uint32 i = 0; i < lines.size(); i++) {
         uint32 id = obj.face.size();
