@@ -6,6 +6,37 @@ using namespace std;
 #include "../CommonLib/WorkTable.h"
 #include "ExtPolyline.h"
 
+uint32 fn_support_mqo_create_vertex(
+    const Bitmap::position position,
+    type_mqo_object* pobj) {
+    uint32 id = (*pobj).vertex.size();
+    type_mqo_vertex vertex = {
+        static_cast<double>(position.x),
+        0,
+        static_cast<double>(position.y),
+        id
+    };
+    (*pobj).vertex.push_back(vertex);
+
+    return (id);
+}
+
+uint32 fn_support_mqo_create_face(
+    const uint32 vertex_a,
+    const uint32 vertex_b,
+    type_mqo_object* pobj) {
+    uint32 id = (*pobj).face.size();
+
+    type_mqo_face face;
+    face.vertex.push_back(vertex_a);
+    face.vertex.push_back(vertex_b);
+    face.material = INT16_MAX;
+    face.id = id;
+    (*pobj).face.push_back(face);
+
+    return (id);
+}
+
 vector<vector<Bitmap::position>>
 get_polyline(Bitmap* pbmp, type_worktable* table) {
     const auto size_table = static_cast<uint32>(pbmp->info_h.width * pbmp->info_h.height);
@@ -92,35 +123,4 @@ type_mqo_object fn_convert_table_to_mqo(Bitmap* pbmp) {
 
     obj.error = 0;
     return (obj);
-}
-
-uint32 fn_support_mqo_create_vertex(
-    const Bitmap::position position,
-    type_mqo_object* pobj) {
-    uint32 id = (*pobj).vertex.size();
-    type_mqo_vertex vertex = {
-        static_cast<double>(position.x),
-        0,
-        static_cast<double>(position.y),
-        id
-    };
-    (*pobj).vertex.push_back(vertex);
-
-    return (id);
-}
-
-uint32 fn_support_mqo_create_face(
-    const uint32 vertex_a,
-    const uint32 vertex_b,
-    type_mqo_object* pobj) {
-    uint32 id = (*pobj).face.size();
-
-    type_mqo_face face;
-    face.vertex.push_back(vertex_a);
-    face.vertex.push_back(vertex_b);
-    face.material = INT16_MAX;
-    face.id = id;
-    (*pobj).face.push_back(face);
-
-    return (id);
 }

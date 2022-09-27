@@ -10,42 +10,37 @@ using namespace std;
 #include "mqo.h"
 #include "ExtPolyline.h"
 
-int32 fn_mqo_write(const type_mqo* pmqo, const string name) {
-    // èëçû
-    ofstream fout(name, ios::out);
-    if (!fout) {
-        return (-1);
-    }
+#define DEFINE_MQO_TAG_HEADER_DOCUMENT     ("Metasequoia Document")
+#define DEFINE_MQO_TAG_HEADER_FORMAT       ("Format")
+#define DEFINE_MQO_TAG_HEADER_VERSION      ("Ver")
+#define DEFINE_MQO_TAG_HEADER_CODEPAGE     ("CodePage")
 
-    fout << fn_mqo_support_header_text(&((*pmqo).header));
-    fout << fn_mqo_support_scene_text(&((*pmqo).scene));
-    fout << fn_mqo_support_object_text(&((*pmqo).object));
+#define DEFINE_MQO_TAG_SCENE_POS             ("pos")
+#define DEFINE_MQO_TAG_SCENE_LOOKAT          ("lookat")
+#define DEFINE_MQO_TAG_SCENE_HEAD            ("head")
+#define DEFINE_MQO_TAG_SCENE_PICH            ("pich")
+#define DEFINE_MQO_TAG_SCENE_BANK            ("bank")
+#define DEFINE_MQO_TAG_SCENE_ORTHO           ("ortho")
+#define DEFINE_MQO_TAG_SCENE_ZOOM2           ("zoom2")
+#define DEFINE_MQO_TAG_SCENE_AMB             ("amb")
+#define DEFINE_MQO_TAG_SCENE_FRONTCLIP       ("frontclip")
+#define DEFINE_MQO_TAG_SCENE_BACKCLIP        ("backclip")
+#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS       ("dirlights")
+#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS_DIR   ("dir")
+#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS_COLOR ("color")
 
-    fout.close();
-
-    return (0);
-}
-
-type_mqo fn_mqo_create_default_parameter() {
-    type_mqo mqo;
-
-    type_mqo_direction d = {
-        DEFINE_MQO_DEF_SCENE_LIGHT_DIR_X,
-        DEFINE_MQO_DEF_SCENE_LIGHT_DIR_Y,
-        DEFINE_MQO_DEF_SCENE_LIGHT_DIR_Z
-    };
-    type_mqo_color c = {
-        DEFINE_MQO_DEF_SCENE_LIGHT_COLOR_R,
-        DEFINE_MQO_DEF_SCENE_LIGHT_COLOR_G,
-        DEFINE_MQO_DEF_SCENE_LIGHT_COLOR_B
-    };
-
-    type_mqo_light light = { "light", d, c };
-
-    mqo.scene.dirlights.push_back(light);
-
-    return mqo;
-}
+#define DEFINE_MQO_TAG_OBJECT_DEPTH         ("depth")
+#define DEFINE_MQO_TAG_OBJECT_FOLDING       ("folding")
+#define DEFINE_MQO_TAG_OBJECT_SCALE         ("scale")
+#define DEFINE_MQO_TAG_OBJECT_ROTATION      ("rotation")
+#define DEFINE_MQO_TAG_OBJECT_TRANSLATION   ("translation")
+#define DEFINE_MQO_TAG_OBJECT_VISIBLE       ("visible")
+#define DEFINE_MQO_TAG_OBJECT_LOCKING       ("locking")
+#define DEFINE_MQO_TAG_OBJECT_SHADING       ("shading")
+#define DEFINE_MQO_TAG_OBJECT_FACET         ("facet")
+#define DEFINE_MQO_TAG_OBJECT_NORMALWEIGHT  ("normal_weight")
+#define DEFINE_MQO_TAG_OBJECT_COLOR         ("color")
+#define DEFINE_MQO_TAG_OBJECT_COLORTYPE     ("color_type")
 
 string fn_mqo_support_header_text(const type_mqo_header* pheader) {
     stringstream ss;
@@ -141,4 +136,41 @@ string fn_mqo_support_object_text(const type_mqo_object* pobject) {
     ss << endl;
 
     return ss.str();
+}
+
+int32 fn_mqo_write(const type_mqo* pmqo, const string name) {
+    // èëçû
+    ofstream fout(name, ios::out);
+    if (!fout) {
+        return (-1);
+    }
+
+    fout << fn_mqo_support_header_text(&((*pmqo).header));
+    fout << fn_mqo_support_scene_text(&((*pmqo).scene));
+    fout << fn_mqo_support_object_text(&((*pmqo).object));
+
+    fout.close();
+
+    return (0);
+}
+
+type_mqo fn_mqo_create_default_parameter() {
+    type_mqo mqo;
+
+    type_mqo_direction d = {
+        DEFINE_MQO_DEF_SCENE_LIGHT_DIR_X,
+        DEFINE_MQO_DEF_SCENE_LIGHT_DIR_Y,
+        DEFINE_MQO_DEF_SCENE_LIGHT_DIR_Z
+    };
+    type_mqo_color c = {
+        DEFINE_MQO_DEF_SCENE_LIGHT_COLOR_R,
+        DEFINE_MQO_DEF_SCENE_LIGHT_COLOR_G,
+        DEFINE_MQO_DEF_SCENE_LIGHT_COLOR_B
+    };
+
+    type_mqo_light light = { "light", d, c };
+
+    mqo.scene.dirlights.push_back(light);
+
+    return mqo;
 }

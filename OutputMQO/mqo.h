@@ -1,38 +1,6 @@
 #ifndef __MQO_H__
 #define __MQO_H__
 
-#define DEFINE_MQO_TAG_HEADER_DOCUMENT     ("Metasequoia Document")
-#define DEFINE_MQO_TAG_HEADER_FORMAT       ("Format")
-#define DEFINE_MQO_TAG_HEADER_VERSION      ("Ver")
-#define DEFINE_MQO_TAG_HEADER_CODEPAGE     ("CodePage")
-
-#define DEFINE_MQO_TAG_SCENE_POS             ("pos")
-#define DEFINE_MQO_TAG_SCENE_LOOKAT          ("lookat")
-#define DEFINE_MQO_TAG_SCENE_HEAD            ("head")
-#define DEFINE_MQO_TAG_SCENE_PICH            ("pich")
-#define DEFINE_MQO_TAG_SCENE_BANK            ("bank")
-#define DEFINE_MQO_TAG_SCENE_ORTHO           ("ortho")
-#define DEFINE_MQO_TAG_SCENE_ZOOM2           ("zoom2")
-#define DEFINE_MQO_TAG_SCENE_AMB             ("amb")
-#define DEFINE_MQO_TAG_SCENE_FRONTCLIP       ("frontclip")
-#define DEFINE_MQO_TAG_SCENE_BACKCLIP        ("backclip")
-#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS       ("dirlights")
-#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS_DIR   ("dir")
-#define DEFINE_MQO_TAG_SCENE_DIRLIGHTS_COLOR ("color")
-
-#define DEFINE_MQO_TAG_OBJECT_DEPTH         ("depth")
-#define DEFINE_MQO_TAG_OBJECT_FOLDING       ("folding")
-#define DEFINE_MQO_TAG_OBJECT_SCALE         ("scale")
-#define DEFINE_MQO_TAG_OBJECT_ROTATION      ("rotation")
-#define DEFINE_MQO_TAG_OBJECT_TRANSLATION   ("translation")
-#define DEFINE_MQO_TAG_OBJECT_VISIBLE       ("visible")
-#define DEFINE_MQO_TAG_OBJECT_LOCKING       ("locking")
-#define DEFINE_MQO_TAG_OBJECT_SHADING       ("shading")
-#define DEFINE_MQO_TAG_OBJECT_FACET         ("facet")
-#define DEFINE_MQO_TAG_OBJECT_NORMALWEIGHT  ("normal_weight")
-#define DEFINE_MQO_TAG_OBJECT_COLOR         ("color")
-#define DEFINE_MQO_TAG_OBJECT_COLORTYPE     ("color_type")
-
 #define DEFINE_MQO_DEF_HEADER_FORMAT       ("Text")
 #define DEFINE_MQO_DEF_HEADER_VERSION      (1.1f)
 #define DEFINE_MQO_DEF_HEADER_CODEPAGE     ("932")
@@ -194,10 +162,6 @@ struct type_mqo {
 	type_mqo_scene  scene;
 	type_mqo_object object;
 };
-
-string fn_mqo_support_header_text(const type_mqo_header*);
-string fn_mqo_support_scene_text(const type_mqo_scene*);
-string fn_mqo_support_object_text(const type_mqo_object*);
 
 int32 fn_mqo_write(const type_mqo*, const string);
 type_mqo fn_mqo_create_default_parameter(void);

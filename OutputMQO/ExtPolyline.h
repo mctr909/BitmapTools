@@ -2,7 +2,6 @@
 #define __EXT_POLYLINE_H__
 
 #include "../CommonLib/Bitmap.h"
-
 #include "mqo.h"
 
 struct type_mngmqo {
@@ -11,7 +10,5 @@ struct type_mngmqo {
 };
 
 type_mqo_object fn_convert_table_to_mqo(Bitmap*);
-uint32 fn_support_mqo_create_vertex(const Bitmap::position, type_mqo_object*);
-uint32 fn_support_mqo_create_face(const uint32, const uint32, type_mqo_object*);
 
 #endif //__EXT_POLYLINE_H__
