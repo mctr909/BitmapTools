@@ -102,17 +102,37 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
     const sbyte prefer_dir[] = {
         -3, -2, -1, 0, 1, 2, 3
     };
-    const point trace_dir[] = {
-        {  1,  0 },
-        {  1,  1 },
-        {  0,  1 },
-        { -1,  1 },
-        { -1,  0 },
-        { -1, -1 },
-        {  0, -1 },
-        {  1, -1 }
+    const point trace_dir[search_radius][8] = {
+        {
+            {  1,  0 },
+            {  1,  1 },
+            {  0,  1 },
+            { -1,  1 },
+            { -1,  0 },
+            { -1, -1 },
+            {  0, -1 },
+            {  1, -1 }
+        }, {
+            {  2,  0 },
+            {  2,  2 },
+            {  0,  2 },
+            { -2,  2 },
+            { -2,  0 },
+            { -2, -2 },
+            {  0, -2 },
+            {  2, -2 }
+        }, {
+            {  2,  1 },
+            {  1,  2 },
+            { -1,  2 },
+            { -2,  1 },
+            { -2, -1 },
+            { -1, -2 },
+            {  1, -2 },
+            {  2, -1 }
+        }
     };
-    const auto trace_dirs = static_cast<int32>(sizeof(trace_dir) / sizeof(point));
+    const auto trace_dirs = static_cast<int32>(sizeof(trace_dir[0]) / sizeof(point));
 
     vector<vector<point>> outlines;
     point cur_pos;
@@ -138,13 +158,13 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
             /*** トレースの進行方向を優先して検索半径を広げながら周囲の点を検索 ***/
             /*** あればアウトラインの点として追加 ***/
             bool point_found = false;
-            for (int32 radius = 1; radius <= search_radius; radius++) {
+            for (int32 r = 0; r < search_radius; r++) {
                 for (int32 d = 0; d < sizeof(prefer_dir); d++) {
                     auto curr_dir = (prefer_dir[d] + prev_dir + trace_dirs) % trace_dirs;
                     auto index = bitmap_get_index_ofs(*pbmp,
                         cur_pos, 
-                        trace_dir[curr_dir].x * radius, 
-                        trace_dir[curr_dir].y * radius
+                        trace_dir[r][curr_dir].x, 
+                        trace_dir[r][curr_dir].y
                     );
                     if (UINT32_MAX == index) {
                         continue;
@@ -164,47 +184,72 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                 }
             }
             if (!point_found) { // アウトラインの終端
-                if (outline.size() < 4) {
+                if (outline.size() < 3) {
                     outlines.push_back(outline);
                     break;
                 }
                 /*** 直線上に存在する点を除いたアウトラインをリストに追加 ***/
                 vector<point> tmp;
-                point pos3;
-                point pos2 = outline[0];
-                point pos1 = outline[1];
-                point pos0 = outline[2];
-                tmp.push_back(pos2);
-                for (int32 i = 3; i < outline.size(); i++) {
-                    pos3 = pos2;
-                    pos2 = pos1;
-                    pos1 = pos0;
-                    pos0 = outline[i];
-                    double abx = pos0.x - pos2.x;
-                    double aby = pos0.y - pos2.y;
-                    double l = sqrt(abx * abx + aby * aby);
-                    abx /= l;
-                    aby /= l;
-                    double px = pos1.x - pos2.x;
-                    double py = pos1.y - pos2.y;
-                    l = sqrt(px * px + py * py);
-                    px = px / l - abx;
-                    py = py / l - aby;
-                    if (abs(atan2(py, px)) < 1e-3) {
-                        continue;
-                    }
-                    abx = pos0.x - pos3.x;
-                    aby = pos0.y - pos3.y;
-                    l = sqrt(abx * abx + aby * aby);
-                    abx /= l;
-                    aby /= l;
-                    px = (pos1.x + pos2.x) / 2.0 - pos3.x;
-                    py = (pos1.y + pos2.y) / 2.0 - pos3.y;
-                    l = sqrt(px * px + py * py);
-                    px = px / l - abx;
-                    py = py / l - aby;
-                    if (1e-3 < abs(atan2(py, px))) {
-                        tmp.push_back(pos1);
+                point pos[4];
+                point_d op;
+                point_d oq;
+                double l;
+                pos[0] = outline[0];
+                tmp.push_back(pos[0]);
+                for (int32 i = 1; i < outline.size(); i++) {
+                    pos[3] = pos[2];
+                    pos[2] = pos[1];
+                    pos[1] = pos[0];
+                    pos[0] = outline[i];
+                    if (i < 3) {
+                        op.x = pos[0].x - pos[i].x;
+                        op.y = pos[0].y - pos[i].y;
+                        oq.x = 0.0;
+                        oq.y = 0.0;
+                        for (int32 j = 0; j <= i; j++) {
+                            oq.x += pos[j].x;
+                            oq.y += pos[j].y;
+                        }
+                        oq.x /= i + 1;
+                        oq.y /= i + 1;
+                        oq.x -= pos[i].x;
+                        oq.y -= pos[i].y;
+                        l = sqrt(op.x * op.x + op.y * op.y);
+                        op.x /= l;
+                        op.y /= l;
+                        l = sqrt(oq.x * oq.x + oq.y * oq.y);
+                        oq.x = oq.x / l - op.x;
+                        oq.y = oq.y / l - op.y;
+                        if (1e-3 < abs(atan2(oq.x, oq.y))) {
+                            tmp.push_back(pos[1]);
+                        }
+                    } else {
+                        op.x = pos[0].x - pos[2].x;
+                        op.y = pos[0].y - pos[2].y;
+                        oq.x = pos[1].x - pos[2].x;
+                        oq.y = pos[1].y - pos[2].y;
+                        l = sqrt(op.x * op.x + op.y * op.y);
+                        op.x /= l;
+                        op.y /= l;
+                        l = sqrt(oq.x * oq.x + oq.y * oq.y);
+                        oq.x = oq.x / l - op.x;
+                        oq.y = oq.y / l - op.y;
+                        if (abs(atan2(oq.x, oq.y)) < 1e-3) {
+                            continue;
+                        }
+                        op.x = pos[0].x - pos[3].x;
+                        op.y = pos[0].y - pos[3].y;
+                        oq.x = (pos[0].x + pos[1].x + pos[2].x + pos[3].x) / 4.0 - pos[3].x;
+                        oq.y = (pos[0].y + pos[1].y + pos[2].y + pos[3].y) / 4.0 - pos[3].y;
+                        l = sqrt(op.x * op.x + op.y * op.y);
+                        op.x /= l;
+                        op.y /= l;
+                        l = sqrt(oq.x * oq.x + oq.y * oq.y);
+                        oq.x = oq.x / l - op.x;
+                        oq.y = oq.y / l - op.y;
+                        if (1e-3 < abs(atan2(oq.x, oq.y))) {
+                            tmp.push_back(pos[1]);
+                        }
                     }
                 }
                 outlines.push_back(tmp);

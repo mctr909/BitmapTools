@@ -15,4 +15,11 @@ struct point {
 };
 #pragma pack(pop)
 
+#pragma pack(push, 8)
+struct point_d {
+    double x;
+    double y;
+};
+#pragma pack(pop)
+
 #endif //__TYPES_H__
