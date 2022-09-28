@@ -99,7 +99,7 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
     const auto on = table->color_on;
     const auto off = table->color_off;
     const sbyte prefer_dir[] = {
-        0, -1, 1, -2, 2, -3, 3
+        3, 2, 1, 0, -1, -2, -3
     };
     const point trace_dir[] = {
         {  1,  0 },
