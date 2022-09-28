@@ -190,66 +190,29 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                 }
                 /*** 直線上に存在する点を除いたアウトラインをリストに追加 ***/
                 vector<point> tmp;
-                point pos[4];
+                point pos_o;
+                point pos_p;
+                point pos_q;
                 point_d op;
                 point_d oq;
                 double l;
-                pos[0] = outline[0];
-                tmp.push_back(pos[0]);
-                for (int32 i = 1; i < outline.size(); i++) {
-                    pos[3] = pos[2];
-                    pos[2] = pos[1];
-                    pos[1] = pos[0];
-                    pos[0] = outline[i];
-                    if (i < 3) {
-                        op.x = pos[0].x - pos[i].x;
-                        op.y = pos[0].y - pos[i].y;
-                        oq.x = 0.0;
-                        oq.y = 0.0;
-                        for (int32 j = 0; j <= i; j++) {
-                            oq.x += pos[j].x;
-                            oq.y += pos[j].y;
-                        }
-                        oq.x /= i + 1;
-                        oq.y /= i + 1;
-                        oq.x -= pos[i].x;
-                        oq.y -= pos[i].y;
-                        l = sqrt(op.x * op.x + op.y * op.y);
-                        op.x /= l;
-                        op.y /= l;
-                        l = sqrt(oq.x * oq.x + oq.y * oq.y);
-                        oq.x = oq.x / l - op.x;
-                        oq.y = oq.y / l - op.y;
-                        if (1e-3 < abs(atan2(oq.x, oq.y))) {
-                            tmp.push_back(pos[1]);
-                        }
-                    } else {
-                        op.x = pos[0].x - pos[2].x;
-                        op.y = pos[0].y - pos[2].y;
-                        oq.x = pos[1].x - pos[2].x;
-                        oq.y = pos[1].y - pos[2].y;
-                        l = sqrt(op.x * op.x + op.y * op.y);
-                        op.x /= l;
-                        op.y /= l;
-                        l = sqrt(oq.x * oq.x + oq.y * oq.y);
-                        oq.x = oq.x / l - op.x;
-                        oq.y = oq.y / l - op.y;
-                        if (abs(atan2(oq.x, oq.y)) < 1e-3) {
-                            continue;
-                        }
-                        op.x = pos[0].x - pos[3].x;
-                        op.y = pos[0].y - pos[3].y;
-                        oq.x = (pos[0].x + pos[1].x + pos[2].x + pos[3].x) / 4.0 - pos[3].x;
-                        oq.y = (pos[0].y + pos[1].y + pos[2].y + pos[3].y) / 4.0 - pos[3].y;
-                        l = sqrt(op.x * op.x + op.y * op.y);
-                        op.x /= l;
-                        op.y /= l;
-                        l = sqrt(oq.x * oq.x + oq.y * oq.y);
-                        oq.x = oq.x / l - op.x;
-                        oq.y = oq.y / l - op.y;
-                        if (1e-3 < abs(atan2(oq.x, oq.y))) {
-                            tmp.push_back(pos[1]);
-                        }
+                tmp.push_back(outline[0]);
+                pos_q = outline[0];
+                pos_p = outline[1];
+                for (int32 i = 2; i < outline.size(); i++) {
+                    pos_o = pos_q;
+                    pos_q = pos_p;
+                    pos_p = outline[i];
+                    op.x = pos_p.x - pos_o.x;
+                    op.y = pos_p.y - pos_o.y;
+                    oq.x = pos_q.x - pos_o.x;
+                    oq.y = pos_q.y - pos_o.y;
+                    l = sqrt(op.x * op.x + op.y * op.y);
+                    op.x /= l;
+                    op.y /= l;
+                    l = sqrt(oq.x * oq.x + oq.y * oq.y);
+                    if (1e-3 < abs(oq.x / l - op.x) || 1e-3 < abs(oq.y / l - op.y)) {
+                        tmp.push_back(pos_q);
                     }
                 }
                 outlines.push_back(tmp);
