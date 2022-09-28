@@ -98,8 +98,9 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
     const auto table_size = pbmp->size_max;
     const auto on = table->color_on;
     const auto off = table->color_off;
+    const int32 search_radius = 3;
     const sbyte prefer_dir[] = {
-        3, 2, 1, 0, -1, -2, -3
+        -3, -2, -1, 0, 1, 2, 3
     };
     const point trace_dir[] = {
         {  1,  0 },
@@ -134,22 +135,31 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
         }
         int32 prev_dir = 0;
         while (true) { // 点検索ループ
-            /*** トレースの進行方向を優先して周囲の点を検索 ***/
+            /*** トレースの進行方向を優先して検索半径を広げながら周囲の点を検索 ***/
             /*** あればアウトラインの点として追加 ***/
             bool point_found = false;
-            for (int32 i = 0; i < sizeof(prefer_dir); i++) {
-                auto curr_dir = (prefer_dir[i] + prev_dir + trace_dirs) % trace_dirs;
-                auto index = bitmap_get_index_ofs(*pbmp, cur_pos, trace_dir[curr_dir].x, trace_dir[curr_dir].y);
-                if (UINT32_MAX == index) {
-                    continue;
+            for (int32 radius = 1; radius <= search_radius; radius++) {
+                for (int32 d = 0; d < sizeof(prefer_dir); d++) {
+                    auto curr_dir = (prefer_dir[d] + prev_dir + trace_dirs) % trace_dirs;
+                    auto index = bitmap_get_index_ofs(*pbmp,
+                        cur_pos, 
+                        trace_dir[curr_dir].x * radius, 
+                        trace_dir[curr_dir].y * radius
+                    );
+                    if (UINT32_MAX == index) {
+                        continue;
+                    }
+                    auto pCell = &table->pCells[index];
+                    if (pCell->enable) { // 点を発見、アウトラインの点として追加
+                        pCell->enable = false;
+                        cur_pos = pCell->pos;
+                        prev_dir = curr_dir;
+                        outline.push_back(cur_pos);
+                        point_found = true;
+                        break;
+                    }
                 }
-                auto pCell = &table->pCells[index];
-                if (pCell->enable) {
-                    pCell->enable = false;
-                    cur_pos = pCell->pos;
-                    prev_dir = curr_dir;
-                    outline.push_back(cur_pos);
-                    point_found = true;
+                if (point_found) { // 次の点を検索
                     break;
                 }
             }
@@ -182,7 +192,6 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                         tmp.push_back(pos1);
                     }
                 }
-                tmp.push_back(pos0);
                 outlines.push_back(tmp);
                 break;
             }
