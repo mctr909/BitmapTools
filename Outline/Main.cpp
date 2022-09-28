@@ -6,7 +6,7 @@
 using namespace std;
 
 #include "../CommonLib/Bitmap.h"
-#include "ExtOutline.h"
+#include "Outline.h"
 
 #pragma comment (lib, "CommonLib.lib")
 
@@ -43,14 +43,14 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        fn_ext_outline(pBmp);
+        fn_outline_exec(pBmp);
         if (pBmp->error != 0) {
             cout << "bmp convert error... (" << pBmp->error << ")" << endl;
             delete pBmp;
             continue;
         }
 
-        fn_thickness(pBmp, thickness);
+        fn_outline_thickness(pBmp, thickness);
 
         // save
         stringstream ss;
