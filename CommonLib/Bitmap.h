@@ -24,7 +24,7 @@ public:
         int32 width;
         int32 height;
         uint16 plane;
-        uint16 pixel;
+        uint16 bits;
         uint32 compression;
         uint32 imagesize;
         uint32 h_resolution;

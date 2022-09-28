@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
         }
 
         // palette chck
-        if (pBmp->info_h.pixel != DEFINE_SUPPORT_COLOR_256) {
+        if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_256) {
             cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_256 << " colors)" << endl;
             delete pBmp;
             continue;

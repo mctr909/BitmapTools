@@ -19,7 +19,7 @@ Bitmap::Bitmap(const string path) {
     fin.read(reinterpret_cast<char*>(&file_h), sizeof(file_h));
     fin.read(reinterpret_cast<char*>(&info_h), sizeof(info_h));
 
-    switch (info_h.pixel) {
+    switch (info_h.bits) {
     case 8:
         pPalette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
         if (NULL == pPalette) {
@@ -61,7 +61,7 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     info_h.width = width;
     info_h.height = height;
     info_h.plane = 1;
-    info_h.pixel = bits;
+    info_h.bits = bits;
     info_h.compression = 0;
     info_h.imagesize = stride * height * bits >> 3;
     info_h.h_resolution = 0;
@@ -139,7 +139,7 @@ Bitmap::PrintInfoHeader() {
     cout << "Image Width      : " << info_h.width << " pixels" << endl;
     cout << "Image Height     : " << info_h.height << " pixels" << endl;
     cout << "Number of Planes : " << info_h.plane << endl;
-    cout << "Bits per Pixel   : " << info_h.pixel << " bits/pixel" << endl;
+    cout << "Bits per Pixel   : " << info_h.bits << " bits/pixel" << endl;
     cout << "Compression Type : " << info_h.compression << endl;
     cout << "Image Size       : " << info_h.imagesize << " bytes" << endl;
     cout << "H Resolution     : " << info_h.h_resolution << " ppm" << endl;

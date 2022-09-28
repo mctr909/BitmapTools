@@ -26,40 +26,45 @@ int main(int argc, char* argv[]) {
         cout << "BMP FILE : " << bmp_file << endl;
 
         // get bitmap data
-        auto bmp = new Bitmap(bmp_file);
-        if (bmp->error != 0) {
-            cout << "bmp reading error... (" << bmp->error << ")" << endl;
-            delete bmp;
+        auto bmp24 = new Bitmap(bmp_file);
+        if (bmp24->error != 0) {
+            cout << "bmp reading error... (" << bmp24->error << ")" << endl;
+            delete bmp24;
             continue;
         } else {
-            bmp->PrintFileHeader();
-            bmp->PrintInfoHeader();
+            bmp24->PrintFileHeader();
+            bmp24->PrintInfoHeader();
         }
 
-        // palette chck
-        if (bmp->info_h.pixel != DEFINE_SUPPORT_COLOR_24BIT) {
+        // bit chck
+        if (bmp24->info_h.bits != DEFINE_SUPPORT_COLOR_24BIT) {
             cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_24BIT << " colors)" << endl;
-            delete bmp;
+            delete bmp24;
             continue;
         }
 
-        auto out_bmp = new Bitmap(bmp->info_h.width, bmp->info_h.height, 8);
-        fn_exec_declease(bmp, out_bmp);
-        if (bmp->error != 0) {
-            cout << "bmp convert error... (" << bmp->error << ")" << endl;
-            delete bmp;
+        auto bmp8 = new Bitmap(bmp24->info_h.width, bmp24->info_h.height, 8);
+        fn_declease_exec(bmp24, bmp8);
+        if (bmp24->error != 0) {
+            cout << "bmp convert error... (" << bmp24->error << ")" << endl;
+            delete bmp24;
+            delete bmp8;
             continue;
         }
 
         // save
         stringstream ss;
         ss << bmp_file << ".declease.bmp";
-        out_bmp->Save(ss.str());
-        if (out_bmp->error != 0) {
+        bmp8->Save(ss.str());
+        if (bmp8->error != 0) {
             cout << "bmp writing error..." << endl;
-            delete bmp;
+            delete bmp24;
+            delete bmp8;
             continue;
         }
+
+        delete bmp24;
+        delete bmp8;
     }
 
     return (EXIT_SUCCESS);
