@@ -1,4 +1,5 @@
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -90,4 +91,102 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
             output->pCells[cell_index++] = cell;
         }
     }
+}
+
+vector<vector<point>>
+fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
+    const auto table_size = pbmp->size_max;
+    const auto on = table->color_on;
+    const auto off = table->color_off;
+    const sbyte prefer_dir[] = {
+        0, -1, 1, -2, 2, -3, 3
+    };
+    const point trace_dir[] = {
+        {  1,  0 },
+        {  1,  1 },
+        {  0,  1 },
+        { -1,  1 },
+        { -1,  0 },
+        { -1, -1 },
+        {  0, -1 },
+        {  1, -1 }
+    };
+    const auto trace_dirs = static_cast<int32>(sizeof(trace_dir) / sizeof(point));
+
+    vector<vector<point>> outlines;
+    point cur_pos;
+    while (true) { // アウトライン検索ループ
+        /*** アウトラインの始点を検索 ***/
+        bool outline_found = false;
+        vector<point> outline;
+        for (uint32 i = 0; i < table_size; i++) {
+            auto pCell = &table->pCells[i];
+            if (pCell->enable) {
+                pCell->enable = false;
+                cur_pos = pCell->pos;
+                outline.push_back(pCell->pos);
+                outline_found = true;
+                break;
+            }
+        }
+        if (!outline_found) { // 残っているアウトラインなし
+            break;
+        }
+        int32 prev_dir = 0;
+        while (true) { // 点検索ループ
+            /*** トレースの進行方向を優先して周囲の点を検索 ***/
+            /*** あればアウトラインの点として追加 ***/
+            bool point_found = false;
+            for (int32 i = 0; i < sizeof(prefer_dir); i++) {
+                auto curr_dir = (prefer_dir[i] + prev_dir + trace_dirs) % trace_dirs;
+                auto index = bitmap_get_index_ofs(*pbmp, cur_pos, trace_dir[curr_dir].x, trace_dir[curr_dir].y);
+                if (UINT32_MAX == index) {
+                    continue;
+                }
+                auto pCell = &table->pCells[index];
+                if (pCell->enable) {
+                    pCell->enable = false;
+                    cur_pos = pCell->pos;
+                    prev_dir = curr_dir;
+                    outline.push_back(cur_pos);
+                    point_found = true;
+                    break;
+                }
+            }
+            if (!point_found) { // アウトラインの終端
+                if (outline.size() < 3) {
+                    outlines.push_back(outline);
+                    break;
+                }
+                /*** 直線上に存在する点を除いたアウトラインをリストに追加 ***/
+                vector<point> tmp;
+                point pos2;
+                point pos1 = outline[0];
+                point pos0 = outline[1];
+                tmp.push_back(pos1);
+                for (int32 i = 2; i < outline.size(); i++) {
+                    pos2 = pos1;
+                    pos1 = pos0;
+                    pos0 = outline[i];
+                    double abx = pos0.x - pos2.x;
+                    double aby = pos0.y - pos2.y;
+                    double px = pos1.x - pos2.x;
+                    double py = pos1.y - pos2.y;
+                    double dist = sqrt(abx * abx + aby * aby);
+                    abx /= dist;
+                    aby /= dist;
+                    dist = sqrt(px * px + py * py);
+                    px = abx - px / dist;
+                    py = aby - py / dist;
+                    if (0.1 < abs(px) || 0.1 < abs(py)) {
+                        tmp.push_back(pos1);
+                    }
+                }
+                tmp.push_back(pos0);
+                outlines.push_back(tmp);
+                break;
+            }
+        }
+    }
+    return outlines;
 }

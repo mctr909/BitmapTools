@@ -8,7 +8,6 @@ using namespace std;
 
 #include "../CommonLib/Bitmap.h"
 #include "mqo.h"
-#include "ExtPolyline.h"
 
 #define DEFINE_MQO_TAG_HEADER_DOCUMENT     ("Metasequoia Document")
 #define DEFINE_MQO_TAG_HEADER_FORMAT       ("Format")

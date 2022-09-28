@@ -8,7 +8,7 @@ using namespace std;
 
 #include "../CommonLib/Bitmap.h"
 #include "mqo.h"
-#include "ExtPolyline.h"
+#include "OutputMQO.h"
 
 #pragma comment (lib, "CommonLib.lib")
 
@@ -29,22 +29,24 @@ int main(int argc, char* argv[]) {
     auto pBmp = new Bitmap(bmp_file);
     if (pBmp->error != 0) {
         cout << "bmp reading error... (" << pBmp->error << ")" << endl;
+        delete pBmp;
         return (EXIT_SUCCESS);
-    } else {
-        pBmp->PrintFileHeader();
-        pBmp->PrintInfoHeader();
     }
+    pBmp->PrintFileHeader();
+    pBmp->PrintInfoHeader();
 
     // palette chck
     if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_256) {
         cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_256 << " colors)" << endl;
+        delete pBmp;
         return (EXIT_SUCCESS);
     }
 
     type_mqo mqo = fn_mqo_create_default_parameter();
-    mqo.object = fn_convert_table_to_mqo(pBmp);
+    mqo.object = fn_output_mqo_exec(pBmp);
     if (mqo.object.error != 0) {
         cout << "bmp convert error... (" << pBmp->error << ")" << endl;
+        delete pBmp;
         return (EXIT_SUCCESS);
     }
 
@@ -53,8 +55,16 @@ int main(int argc, char* argv[]) {
     ss << bmp_file << ".mqo";
     if (fn_mqo_write(&mqo, ss.str())) {
         cout << "bmp writing error..." << endl;
+        delete pBmp;
         return (EXIT_SUCCESS);
     }
 
+#ifdef DEBUG_OUTPUT_MQO
+    stringstream so;
+    so << bmp_file << ".traced.bmp";
+    pBmp->Save(so.str());
+#endif
+
+    delete pBmp;
     return (EXIT_SUCCESS);
 }

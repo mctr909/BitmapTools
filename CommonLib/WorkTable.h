@@ -1,6 +1,7 @@
 #ifndef __WORK_TABLE_H__
 #define __WORK_TABLE_H__
 
+#include <vector>
 #include "Bitmap.h"
 
 #define DEFINE_COLOR_ON  (0x00)
@@ -35,6 +36,9 @@ struct type_worktable {
 };
 
 void fn_worktable_create(type_worktable*, Bitmap& const);
+
+vector<vector<point>>
+fn_worktable_outline(Bitmap*, type_worktable*);
 
 inline type_workcell
 fn_worktable_get_data(

@@ -133,13 +133,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ExtPolyline.h" />
+    <ClInclude Include="OutputMQO.h" />
     <ClInclude Include="mqo.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ExtPolyline.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Mqo.cpp" />
+    <ClCompile Include="OutputMQO.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
