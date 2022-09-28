@@ -164,31 +164,46 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                 }
             }
             if (!point_found) { // アウトラインの終端
-                if (outline.size() < 3) {
+                if (outline.size() < 4) {
                     outlines.push_back(outline);
                     break;
                 }
                 /*** 直線上に存在する点を除いたアウトラインをリストに追加 ***/
                 vector<point> tmp;
-                point pos2;
-                point pos1 = outline[0];
-                point pos0 = outline[1];
-                tmp.push_back(pos1);
-                for (int32 i = 2; i < outline.size(); i++) {
+                point pos3;
+                point pos2 = outline[0];
+                point pos1 = outline[1];
+                point pos0 = outline[2];
+                tmp.push_back(pos2);
+                for (int32 i = 3; i < outline.size(); i++) {
+                    pos3 = pos2;
                     pos2 = pos1;
                     pos1 = pos0;
                     pos0 = outline[i];
                     double abx = pos0.x - pos2.x;
                     double aby = pos0.y - pos2.y;
-                    double dist = sqrt(abx * abx + aby * aby);
-                    abx /= dist;
-                    aby /= dist;
+                    double l = sqrt(abx * abx + aby * aby);
+                    abx /= l;
+                    aby /= l;
                     double px = pos1.x - pos2.x;
                     double py = pos1.y - pos2.y;
-                    dist = sqrt(px * px + py * py);
-                    px = abx - px / dist;
-                    py = aby - py / dist;
-                    if (1e-3 < abs(px) || 1e-3 < abs(py)) {
+                    l = sqrt(px * px + py * py);
+                    px = px / l - abx;
+                    py = py / l - aby;
+                    if (abs(atan2(py, px)) < 1e-3) {
+                        continue;
+                    }
+                    abx = pos0.x - pos3.x;
+                    aby = pos0.y - pos3.y;
+                    l = sqrt(abx * abx + aby * aby);
+                    abx /= l;
+                    aby /= l;
+                    px = (pos1.x + pos2.x) / 2.0 - pos3.x;
+                    py = (pos1.y + pos2.y) / 2.0 - pos3.y;
+                    l = sqrt(px * px + py * py);
+                    px = px / l - abx;
+                    py = py / l - aby;
+                    if (1e-3 < abs(atan2(py, px))) {
                         tmp.push_back(pos1);
                     }
                 }
