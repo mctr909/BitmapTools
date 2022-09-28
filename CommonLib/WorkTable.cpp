@@ -180,15 +180,15 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                     pos0 = outline[i];
                     double abx = pos0.x - pos2.x;
                     double aby = pos0.y - pos2.y;
-                    double px = pos1.x - pos2.x;
-                    double py = pos1.y - pos2.y;
                     double dist = sqrt(abx * abx + aby * aby);
                     abx /= dist;
                     aby /= dist;
+                    double px = pos1.x - pos2.x;
+                    double py = pos1.y - pos2.y;
                     dist = sqrt(px * px + py * py);
                     px = abx - px / dist;
                     py = aby - py / dist;
-                    if (0.1 < abs(px) || 0.1 < abs(py)) {
+                    if (1e-3 < abs(px) || 1e-3 < abs(py)) {
                         tmp.push_back(pos1);
                     }
                 }

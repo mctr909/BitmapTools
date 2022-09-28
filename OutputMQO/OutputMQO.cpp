@@ -40,7 +40,11 @@ fn_output_mqo_exec(Bitmap* pbmp) {
     auto lines = fn_worktable_outline(pbmp, &table);
 
 #ifdef DEBUG_OUTPUT_MQO
-    auto p = &pbmp->pPalette[1];
+    auto p = &pbmp->pPalette[0];
+    p->r = 239;
+    p->g = 239;
+    p->b = 239;
+    p = &pbmp->pPalette[1];
     p->r = 0;
     p->g = 211;
     p->b = 0;
