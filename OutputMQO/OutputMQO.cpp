@@ -84,26 +84,43 @@ fn_output_mqo_exec(Bitmap* pbmp) {
         }
     }
 #endif
-
+    vector<vector<uint32>> index_list;
+    vector<point> verts;
     uint32 index_ofs = 0;
     for (uint32 i = 0; i < lines.size(); i++) {
-        uint32 id = obj.face.size();
-        type_mqo_face face;
-        face.material = INT16_MAX;
-        face.id = id;
         auto line = lines[i];
         auto point_count = line.size();
         if (point_count < 3) {
             continue;
         }
+        vector<uint32> index;
         for (uint32 j = 0; j < point_count; j++) {
             auto pos = line[j];
-            pos.y = pbmp->info_h.height - pos.y - 1;
+            verts.push_back(pos);
+            index.push_back(index_ofs + j);
             fn_output_mqo_create_vertex(pos, &obj);
-            face.vertex.push_back(index_ofs + point_count - j - 1);
         }
+        index_list.push_back(index);
         index_ofs += point_count;
-        obj.face.push_back(face);
+    }
+
+    for (uint32 i = 0; i < 1; i++) {
+        auto index = index_list[i];
+
+        vector<vector<uint32>> surf;
+        fn_worktable_create_polygon(verts, &index, &surf);
+
+        for (uint32 j = 0; j < surf.size(); j++) {
+            uint32 id = obj.face.size();
+            type_mqo_face face;
+            face.material = INT16_MAX;
+            face.id = id;
+            auto idx = surf[j];
+            face.vertex.push_back(idx[0]);
+            face.vertex.push_back(idx[1]);
+            face.vertex.push_back(idx[2]);
+            obj.face.push_back(face);
+        }
     }
 
     obj.error = 0;

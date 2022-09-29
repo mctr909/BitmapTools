@@ -40,6 +40,9 @@ void fn_worktable_create(type_worktable*, Bitmap& const);
 vector<vector<point>>
 fn_worktable_outline(Bitmap*, type_worktable*);
 
+void
+fn_worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<vector<uint32>>* pSurf);
+
 inline type_workcell
 fn_worktable_get_data(
     uint32      center_index,
@@ -68,6 +71,33 @@ fn_worktable_get_data(
     }
 
     return (ret);
+}
+
+inline bool
+fn_worktable_inner_triangle(point va, point vo, point vb, point p) {
+	point oa, op;
+	oa.x = va.x - vb.x;
+	oa.y = va.y - vb.y;
+	op.x = p.x - vb.x;
+	op.y = p.y - vb.y;
+	double na = oa.x * op.y - oa.y * op.x;
+	oa.x = vo.x - va.x;
+	oa.y = vo.y - va.y;
+	op.x = p.x - va.x;
+	op.y = p.y - va.y;
+	double nb = oa.x * op.y - oa.y * op.x;
+	oa.x = vb.x - vo.x;
+	oa.y = vb.y - vo.y;
+	op.x = p.x - vo.x;
+	op.y = p.y - vo.y;
+	double nc = oa.x * op.y - oa.y * op.x;
+	if (na < 0 && nb < 0 && nc < 0) {
+		return true;
+	}
+	if (na > 0 && nb > 0 && nc > 0) {
+		return true;
+	}
+	return false;
 }
 
 #endif //__WORK_TABLE_H__
