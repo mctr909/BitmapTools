@@ -113,15 +113,6 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
             {  0, -1 },
             {  1, -1 }
         }, {
-            {  2,  0 },
-            {  2,  2 },
-            {  0,  2 },
-            { -2,  2 },
-            { -2,  0 },
-            { -2, -2 },
-            {  0, -2 },
-            {  2, -2 }
-        }, {
             {  2,  1 },
             {  1,  2 },
             { -1,  2 },
@@ -130,6 +121,15 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
             { -1, -2 },
             {  1, -2 },
             {  2, -1 }
+        }, {
+            {  2,  0 },
+            {  2,  2 },
+            {  0,  2 },
+            { -2,  2 },
+            { -2,  0 },
+            { -2, -2 },
+            {  0, -2 },
+            {  2, -2 }
         }
     };
     const auto trace_dirs = static_cast<int32>(sizeof(trace_dir[0]) / sizeof(point));
@@ -211,7 +211,9 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                     op.x /= l;
                     op.y /= l;
                     l = sqrt(oq.x * oq.x + oq.y * oq.y);
-                    if (1e-3 < abs(oq.x / l - op.x) || 1e-3 < abs(oq.y / l - op.y)) {
+                    oq.x /= l;
+                    oq.y /= l;
+                    if (1e-3 < abs(oq.x - op.x) || 1e-3 < abs(oq.y - op.y)) {
                         tmp.push_back(pos_q);
                     }
                 }
