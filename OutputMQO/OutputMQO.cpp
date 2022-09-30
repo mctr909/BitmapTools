@@ -79,6 +79,9 @@ fn_output_mqo_exec(Bitmap* pbmp) {
             for (uint32 j = 0; j < point_count; j++) {
                 auto pos = line[j];
                 auto index = bitmap_get_index(*pbmp, pos);
+                if (UINT32_MAX == index) {
+                    continue;
+                }
                 pbmp->pPix[index] = static_cast<byte>(color + 1);
             }
             color = (color + 1) % 4;
@@ -86,6 +89,9 @@ fn_output_mqo_exec(Bitmap* pbmp) {
             for (uint32 j = 0; j < point_count; j++) {
                 auto pos = line[j];
                 auto index = bitmap_get_index(*pbmp, pos);
+                if (UINT32_MAX == index) {
+                    continue;
+                }
                 pbmp->pPix[index] = 5;
             }
         }
