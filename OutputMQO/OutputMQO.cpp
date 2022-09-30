@@ -37,7 +37,14 @@ fn_output_mqo_exec(Bitmap* pbmp) {
         return (obj);
     }
 
-    auto lines = worktable_create_outline(pbmp, &table);
+    worktable_write_outline(table, pbmp);
+
+    worktable_create(&table, *pbmp);
+    if (table.error != 0) {
+        return (obj);
+    }
+
+    auto lines = worktable_create_polyline(&table, *pbmp);
 
 #ifdef DEBUG_OUTPUT_MQO
     auto p = &pbmp->pPalette[0];

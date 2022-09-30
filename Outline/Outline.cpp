@@ -24,34 +24,7 @@ fn_outline_exec(Bitmap* pBmp) {
         return;
     }
 
-    for (uint32 i = 0; i < size_max; i++) {
-        if (table.pCells[i].enable) {
-            type_workcell tmp;
-            bool flg = false;
-            tmp = worktable_get_data(i, E_DIRECTION::BOTTOM, &table, size_max);
-            if (!flg && !tmp.enable) {
-                flg = true;
-            }
-            tmp = worktable_get_data(i, E_DIRECTION::RIGHT, &table, size_max);
-            if (!flg && !tmp.enable) {
-                flg = true;
-            }
-            tmp = worktable_get_data(i, E_DIRECTION::LEFT, &table, size_max);
-            if (!flg && !tmp.enable) {
-                flg = true;
-            }
-            tmp = worktable_get_data(i, E_DIRECTION::TOP, &table, size_max);
-            if (!flg && !tmp.enable) {
-                flg = true;
-            }
-            auto index = table.pCells[i].index_bmp;
-            if (flg) {
-                pBmp->pPix[index] = table.color_on;
-            } else {
-                pBmp->pPix[index] = table.color_off;
-            }
-        }
-    }
+    worktable_write_outline(table, pBmp);
 
     free(table.pCells);
     pBmp->error = 0;

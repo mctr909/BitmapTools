@@ -6,11 +6,11 @@ using namespace std;
 #include "WorkTable.h"
 
 /**
-アウトラインから直線上の点を除く
+ポリラインから直線上の点を除く
 */
 void
-__worktable_eliminate_points_on_straightline(vector<point>* pOutline) {
-    if (pOutline->size() < 3) {
+__worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
+    if (pPolyline->size() < 3) {
         return;
     }
 
@@ -23,13 +23,13 @@ __worktable_eliminate_points_on_straightline(vector<point>* pOutline) {
     double len;
 
     vector<point> temp;
-    temp.push_back((*pOutline)[0]);
-    pos_b = (*pOutline)[0];
-    pos_a = (*pOutline)[1];
-    for (int32 i = 2; i < pOutline->size(); i++) {
+    temp.push_back((*pPolyline)[0]);
+    pos_b = (*pPolyline)[0];
+    pos_a = (*pPolyline)[1];
+    for (int32 i = 2; i < pPolyline->size(); i++) {
         pos_o = pos_b;
         pos_b = pos_a;
-        pos_a = (*pOutline)[i];
+        pos_a = (*pPolyline)[i];
         oa.x = pos_a.x - pos_o.x;
         oa.y = pos_a.y - pos_o.y;
         og.x = pos_b.x - pos_o.x;
@@ -45,9 +45,9 @@ __worktable_eliminate_points_on_straightline(vector<point>* pOutline) {
         }
     }
 
-    pOutline->clear();
-    pOutline->push_back(temp[0]);
-    pOutline->push_back(temp[1]);
+    pPolyline->clear();
+    pPolyline->push_back(temp[0]);
+    pPolyline->push_back(temp[1]);
     pos_c = temp[0];
     pos_b = temp[1];
     pos_a = temp[2];
@@ -67,21 +67,21 @@ __worktable_eliminate_points_on_straightline(vector<point>* pOutline) {
         og.x /= len;
         og.y /= len;
         if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
-            pOutline->push_back(pos_b);
+            pPolyline->push_back(pos_b);
         }
     }
-    pOutline->push_back(pos_a);
+    pPolyline->push_back(pos_a);
 }
 
 void
-worktable_create(type_worktable* output, Bitmap& const pbmp) {
-    const point bmp_size = { pbmp.info_h.width, pbmp.info_h.height };
+worktable_create(type_worktable* pTable, Bitmap& const bmp) {
+    const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
     const byte on = DEFINE_COLOR_ON;
     const byte off = DEFINE_COLOR_OFF;
 
-    output->color_on = on;
-    output->color_off = off;
-    output->error = 0;
+    pTable->color_on = on;
+    pTable->color_off = off;
+    pTable->error = 0;
 
     sbyte delta_pos[9][3] = {
         /* DIRECTION     f   x   y */
@@ -100,10 +100,10 @@ worktable_create(type_worktable* output, Bitmap& const pbmp) {
     point pos;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
-            auto index = bitmap_get_index(pbmp, pos);
+            auto index = bitmap_get_index(bmp, pos);
 
             if (index == UINT32_MAX) {
-                output->error = -1;
+                pTable->error = -1;
                 return;
             }
 
@@ -119,7 +119,7 @@ worktable_create(type_worktable* output, Bitmap& const pbmp) {
                 }
             };
 
-            if (pbmp.pPix[index] == on) {
+            if (bmp.pPix[index] == on) {
                 cell.enable = true;
             }
 
@@ -153,20 +153,53 @@ worktable_create(type_worktable* output, Bitmap& const pbmp) {
             for (int i = 0; i < 9; i++) {
                 if (delta_pos[i][0] != 0) {
                     point pos_dir = { (pos.x + delta_pos[i][1]), (pos.y + delta_pos[i][2]) };
-                    cell.index_dir[i] = bitmap_get_index(pbmp, pos_dir);
+                    cell.index_dir[i] = bitmap_get_index(bmp, pos_dir);
                 }
             }
 
-            output->pCells[cell_index++] = cell;
+            pTable->pCells[cell_index++] = cell;
+        }
+    }
+}
+
+void
+worktable_write_outline(type_worktable& const table, Bitmap* pBmp) {
+    const auto size_max = pBmp->size_max;
+    for (uint32 i = 0; i < size_max; i++) {
+        if (table.pCells[i].enable) {
+            type_workcell tmp;
+            bool flg = false;
+            tmp = worktable_get_data(i, E_DIRECTION::BOTTOM, table, size_max);
+            if (!flg && !tmp.enable) {
+                flg = true;
+            }
+            tmp = worktable_get_data(i, E_DIRECTION::RIGHT, table, size_max);
+            if (!flg && !tmp.enable) {
+                flg = true;
+            }
+            tmp = worktable_get_data(i, E_DIRECTION::LEFT, table, size_max);
+            if (!flg && !tmp.enable) {
+                flg = true;
+            }
+            tmp = worktable_get_data(i, E_DIRECTION::TOP, table, size_max);
+            if (!flg && !tmp.enable) {
+                flg = true;
+            }
+            auto index = table.pCells[i].index_bmp;
+            if (flg) {
+                pBmp->pPix[index] = table.color_on;
+            } else {
+                pBmp->pPix[index] = table.color_off;
+            }
         }
     }
 }
 
 vector<vector<point>>
-worktable_create_outline(Bitmap* pbmp, type_worktable* table) {
-    const auto table_size = pbmp->size_max;
-    const auto on = table->color_on;
-    const auto off = table->color_off;
+worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
+    const auto table_size = bmp.size_max;
+    const auto on = pTable->color_on;
+    const auto off = pTable->color_off;
     const int32 search_radius = 3;
     const sbyte prefer_dir[] = {
         -3, -2, -1, 0, 1, 2, 3
@@ -203,34 +236,34 @@ worktable_create_outline(Bitmap* pbmp, type_worktable* table) {
     };
     const auto trace_dirs = static_cast<int32>(sizeof(trace_dir[0]) / sizeof(point));
 
-    vector<vector<point>> outline_list;
-    while (true) { // アウトライン検索ループ
-        /*** アウトラインの始点を検索 ***/
-        bool outline_found = false;
+    vector<vector<point>> polyline_list;
+    while (true) { // ポリライン検索ループ
+        /*** ポリラインの始点を検索 ***/
+        bool polyline_found = false;
         point curr_pos;
-        vector<point> outline;
+        vector<point> polyline;
         for (uint32 i = 0; i < table_size; i++) {
-            auto pCell = &table->pCells[i];
-            if (pCell->enable && !pCell->traced) { // 点を発見、アウトラインの始点として追加
+            auto pCell = &pTable->pCells[i];
+            if (pCell->enable && !pCell->traced) { // 点を発見、ポリラインの始点として追加
                 pCell->traced = true;
                 curr_pos = pCell->pos;
-                outline.push_back(pCell->pos);
-                outline_found = true;
+                polyline.push_back(pCell->pos);
+                polyline_found = true;
                 break;
             }
         }
-        if (!outline_found) { // 残っているアウトラインなし
+        if (!polyline_found) { // 残っているポリラインなし
             break;
         }
         int32 prev_dir = 0;
         while (true) { // 点検索ループ
             /*** トレースの進行方向を優先して検索半径を広げながら周囲の点を検索 ***/
-            /*** あればアウトラインの点として追加 ***/
+            /*** あればポリラインの点として追加 ***/
             bool point_found = false;
             for (int32 r = 0; r < search_radius; r++) {
                 for (int32 d = 0; d < sizeof(prefer_dir); d++) {
                     auto curr_dir = (prefer_dir[d] + prev_dir + trace_dirs) % trace_dirs;
-                    auto index = bitmap_get_index_ofs(*pbmp,
+                    auto index = bitmap_get_index_ofs(bmp,
                         curr_pos, 
                         trace_dir[r][curr_dir].x, 
                         trace_dir[r][curr_dir].y
@@ -238,12 +271,12 @@ worktable_create_outline(Bitmap* pbmp, type_worktable* table) {
                     if (UINT32_MAX == index) {
                         continue;
                     }
-                    auto pCell = &table->pCells[index];
-                    if (pCell->enable && !pCell->traced) { // 点を発見、アウトラインの点として追加
+                    auto pCell = &pTable->pCells[index];
+                    if (pCell->enable && !pCell->traced) { // 点を発見、ポリラインの点として追加
                         pCell->traced = true;
                         curr_pos = pCell->pos;
                         prev_dir = curr_dir;
-                        outline.push_back(curr_pos);
+                        polyline.push_back(curr_pos);
                         point_found = true;
                         break;
                     }
@@ -252,14 +285,14 @@ worktable_create_outline(Bitmap* pbmp, type_worktable* table) {
                     break;
                 }
             }
-            if (!point_found) { // アウトラインの終端、アウトラインをリストに追加
-                __worktable_eliminate_points_on_straightline(&outline);
-                outline_list.push_back(outline);
+            if (!point_found) { // ポリラインの終端、ポリラインをリストに追加
+                __worktable_eliminate_points_on_straightline(&polyline);
+                polyline_list.push_back(polyline);
                 break;
             }
         }
     }
-    return outline_list;
+    return polyline_list;
 }
 
 void

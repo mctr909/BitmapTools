@@ -36,10 +36,14 @@ struct type_worktable {
 	int32 error;
 };
 
-void worktable_create(type_worktable*, Bitmap& const);
+void
+worktable_create(type_worktable*, Bitmap& const);
+
+void
+worktable_write_outline(type_worktable& const, Bitmap*);
 
 vector<vector<point>>
-worktable_create_outline(Bitmap*, type_worktable*);
+worktable_create_polyline(type_worktable*, Bitmap& const);
 
 void
 worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<vector<uint32>>* pSurf);
@@ -48,7 +52,7 @@ inline type_workcell
 worktable_get_data(
     uint32      center_index,
     E_DIRECTION direction,
-    const type_worktable* ptable,
+    type_worktable& const table,
     uint32 size_max
 ) {
     type_workcell ret = {
@@ -67,9 +71,9 @@ worktable_get_data(
         return (ret);
     }
 
-    auto index = (*ptable).pCells[center_index].index_dir[static_cast<uint32>(direction)];
+    auto index = table.pCells[center_index].index_dir[static_cast<uint32>(direction)];
     if (index < size_max) {
-        ret = (*ptable).pCells[index];
+        ret = table.pCells[index];
     }
 
     return (ret);
