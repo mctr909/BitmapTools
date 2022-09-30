@@ -32,12 +32,12 @@ fn_output_mqo_exec(Bitmap* pbmp) {
         return (obj);
     }
 
-    fn_worktable_create(&table, *pbmp);
+    worktable_create(&table, *pbmp);
     if (table.error != 0) {
         return (obj);
     }
 
-    auto lines = fn_worktable_outline(pbmp, &table);
+    auto lines = worktable_create_outline(pbmp, &table);
 
 #ifdef DEBUG_OUTPUT_MQO
     auto p = &pbmp->pPalette[0];
@@ -108,7 +108,7 @@ fn_output_mqo_exec(Bitmap* pbmp) {
         auto index = index_list[i];
 
         vector<vector<uint32>> surf;
-        fn_worktable_create_polygon(verts, &index, &surf);
+        worktable_create_polygon(verts, &index, &surf);
 
         for (uint32 j = 0; j < surf.size(); j++) {
             uint32 id = obj.face.size();

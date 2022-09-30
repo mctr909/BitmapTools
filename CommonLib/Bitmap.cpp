@@ -63,7 +63,7 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     info_h.plane = 1;
     info_h.bits = bits;
     info_h.compression = 0;
-    info_h.imagesize = stride * height * bits >> 3;
+    info_h.imagesize = size_max * bits >> 3;
     info_h.h_resolution = 0;
     info_h.v_resolution = 0;
     info_h.color_id = 0;
@@ -71,10 +71,10 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
 
     file_h.type[0] = 'B';
     file_h.type[1] = 'M';
-    file_h.size = (file_h.offset - 6) + palette_size + info_h.imagesize;
     file_h.reserve1 = 0;
     file_h.reserve2 = 0;
     file_h.offset = (sizeof(file_h) + sizeof(info_h)) + palette_size;
+    file_h.size = file_h.offset + info_h.imagesize;
 
     pPix = reinterpret_cast<byte*>(calloc(1, info_h.imagesize));
     if (NULL == pPix) {

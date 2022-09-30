@@ -18,7 +18,7 @@ fn_outline_exec(Bitmap* pBmp) {
         return;
     }
 
-    fn_worktable_create(&table, *pBmp);
+    worktable_create(&table, *pBmp);
     if (table.error != 0) {
         pBmp->error = -1;
         return;
@@ -28,19 +28,19 @@ fn_outline_exec(Bitmap* pBmp) {
         if (table.pCells[i].enable) {
             type_workcell tmp;
             bool flg = false;
-            tmp = fn_worktable_get_data(i, E_DIRECTION::BOTTOM, &table, size_max);
+            tmp = worktable_get_data(i, E_DIRECTION::BOTTOM, &table, size_max);
             if (!flg && !tmp.enable) {
                 flg = true;
             }
-            tmp = fn_worktable_get_data(i, E_DIRECTION::RIGHT, &table, size_max);
+            tmp = worktable_get_data(i, E_DIRECTION::RIGHT, &table, size_max);
             if (!flg && !tmp.enable) {
                 flg = true;
             }
-            tmp = fn_worktable_get_data(i, E_DIRECTION::LEFT, &table, size_max);
+            tmp = worktable_get_data(i, E_DIRECTION::LEFT, &table, size_max);
             if (!flg && !tmp.enable) {
                 flg = true;
             }
-            tmp = fn_worktable_get_data(i, E_DIRECTION::TOP, &table, size_max);
+            tmp = worktable_get_data(i, E_DIRECTION::TOP, &table, size_max);
             if (!flg && !tmp.enable) {
                 flg = true;
             }

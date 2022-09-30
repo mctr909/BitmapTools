@@ -9,69 +9,72 @@ using namespace std;
 アウトラインから直線上の点を除く
 */
 void
-fn_worktable_eliminate_points_on_line(vector<point> *pList) {
-    point pos_o2;
+__worktable_eliminate_points_on_straightline(vector<point>* pOutline) {
+    if (pOutline->size() < 3) {
+        return;
+    }
+
+    point pos_a;
+    point pos_b;
+    point pos_c;
     point pos_o;
-    point pos_p;
-    point pos_q;
-    point_d op;
-    point_d oq;
-    double l;
+    point_d oa;
+    point_d og;
+    double len;
 
-    vector<point> tmp;
-    tmp.push_back((*pList)[0]);
-
-    pos_p = (*pList)[0];
-    pos_q = (*pList)[1];
-    for (int32 i = 2; i < pList->size(); i++) {
-        pos_o = pos_p;
-        pos_p = pos_q;
-        pos_q = (*pList)[i];
-        op.x = pos_p.x - pos_o.x;
-        op.y = pos_p.y - pos_o.y;
-        oq.x = pos_q.x - pos_o.x;
-        oq.y = pos_q.y - pos_o.y;
-        l = sqrt(op.x * op.x + op.y * op.y);
-        op.x /= l;
-        op.y /= l;
-        l = sqrt(oq.x * oq.x + oq.y * oq.y);
-        oq.x /= l;
-        oq.y /= l;
-        if (1e-3 < abs(op.x - oq.x) || 1e-3 < abs(op.y - oq.y)) {
-            tmp.push_back(pos_p);
+    vector<point> temp;
+    temp.push_back((*pOutline)[0]);
+    pos_b = (*pOutline)[0];
+    pos_a = (*pOutline)[1];
+    for (int32 i = 2; i < pOutline->size(); i++) {
+        pos_o = pos_b;
+        pos_b = pos_a;
+        pos_a = (*pOutline)[i];
+        oa.x = pos_a.x - pos_o.x;
+        oa.y = pos_a.y - pos_o.y;
+        og.x = pos_b.x - pos_o.x;
+        og.y = pos_b.y - pos_o.y;
+        len = sqrt(oa.x * oa.x + oa.y * oa.y);
+        oa.x /= len;
+        oa.y /= len;
+        len = sqrt(og.x * og.x + og.y * og.y);
+        og.x /= len;
+        og.y /= len;
+        if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
+            temp.push_back(pos_b);
         }
     }
 
-    pList->clear();
-    pList->push_back(tmp[0]);
-    pList->push_back(tmp[1]);
-    pos_o = tmp[0];
-    pos_p = tmp[1];
-    pos_q = tmp[2];
-    for (int32 i = 3; i < tmp.size(); i++) {
-        pos_o2 = pos_o;
-        pos_o = pos_p;
-        pos_p = pos_q;
-        pos_q = tmp[i];
-        op.x = (pos_q.x + pos_p.x + pos_o.x + pos_o2.x) / 4.0 - pos_o2.x;
-        op.y = (pos_q.y + pos_p.y + pos_o.y + pos_o2.y) / 4.0 - pos_o2.y;
-        oq.x = pos_q.x - pos_o2.x;
-        oq.y = pos_q.y - pos_o2.y;
-        l = sqrt(op.x * op.x + op.y * op.y);
-        op.x /= l;
-        op.y /= l;
-        l = sqrt(oq.x * oq.x + oq.y * oq.y);
-        oq.x /= l;
-        oq.y /= l;
-        if (1e-3 < abs(op.x - oq.x) || 1e-3 < abs(op.y - oq.y)) {
-            pList->push_back(pos_p);
+    pOutline->clear();
+    pOutline->push_back(temp[0]);
+    pOutline->push_back(temp[1]);
+    pos_c = temp[0];
+    pos_b = temp[1];
+    pos_a = temp[2];
+    for (int32 i = 3; i < temp.size(); i++) {
+        pos_o = pos_c;
+        pos_c = pos_b;
+        pos_b = pos_a;
+        pos_a = temp[i];
+        oa.x = pos_a.x - pos_o.x;
+        oa.y = pos_a.y - pos_o.y;
+        og.x = (pos_a.x + pos_b.x + pos_c.x + pos_o.x) / 4.0 - pos_o.x;
+        og.y = (pos_a.y + pos_b.y + pos_c.y + pos_o.y) / 4.0 - pos_o.y;
+        len = sqrt(oa.x * oa.x + oa.y * oa.y);
+        oa.x /= len;
+        oa.y /= len;
+        len = sqrt(og.x * og.x + og.y * og.y);
+        og.x /= len;
+        og.y /= len;
+        if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
+            pOutline->push_back(pos_b);
         }
     }
-    pList->push_back(pos_q);
+    pOutline->push_back(pos_a);
 }
 
 void
-fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
+worktable_create(type_worktable* output, Bitmap& const pbmp) {
     const point bmp_size = { pbmp.info_h.width, pbmp.info_h.height };
     const byte on = DEFINE_COLOR_ON;
     const byte off = DEFINE_COLOR_OFF;
@@ -105,6 +108,7 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
             }
 
             type_workcell cell = {
+                false,
                 false,
                 pos,
                 index,
@@ -159,7 +163,7 @@ fn_worktable_create(type_worktable* output, Bitmap& const pbmp) {
 }
 
 vector<vector<point>>
-fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
+worktable_create_outline(Bitmap* pbmp, type_worktable* table) {
     const auto table_size = pbmp->size_max;
     const auto on = table->color_on;
     const auto off = table->color_off;
@@ -199,17 +203,17 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
     };
     const auto trace_dirs = static_cast<int32>(sizeof(trace_dir[0]) / sizeof(point));
 
-    vector<vector<point>> outlines;
-    point cur_pos;
+    vector<vector<point>> outline_list;
     while (true) { // アウトライン検索ループ
         /*** アウトラインの始点を検索 ***/
         bool outline_found = false;
+        point curr_pos;
         vector<point> outline;
         for (uint32 i = 0; i < table_size; i++) {
             auto pCell = &table->pCells[i];
-            if (pCell->enable) {
-                pCell->enable = false;
-                cur_pos = pCell->pos;
+            if (pCell->enable && !pCell->traced) { // 点を発見、アウトラインの始点として追加
+                pCell->traced = true;
+                curr_pos = pCell->pos;
                 outline.push_back(pCell->pos);
                 outline_found = true;
                 break;
@@ -227,7 +231,7 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                 for (int32 d = 0; d < sizeof(prefer_dir); d++) {
                     auto curr_dir = (prefer_dir[d] + prev_dir + trace_dirs) % trace_dirs;
                     auto index = bitmap_get_index_ofs(*pbmp,
-                        cur_pos, 
+                        curr_pos, 
                         trace_dir[r][curr_dir].x, 
                         trace_dir[r][curr_dir].y
                     );
@@ -235,11 +239,11 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                         continue;
                     }
                     auto pCell = &table->pCells[index];
-                    if (pCell->enable) { // 点を発見、アウトラインの点として追加
-                        pCell->enable = false;
-                        cur_pos = pCell->pos;
+                    if (pCell->enable && !pCell->traced) { // 点を発見、アウトラインの点として追加
+                        pCell->traced = true;
+                        curr_pos = pCell->pos;
                         prev_dir = curr_dir;
-                        outline.push_back(cur_pos);
+                        outline.push_back(curr_pos);
                         point_found = true;
                         break;
                     }
@@ -248,22 +252,18 @@ fn_worktable_outline(Bitmap* pbmp, type_worktable* table) {
                     break;
                 }
             }
-            if (!point_found) { // アウトラインの終端
-                if (outline.size() < 3) {
-                    outlines.push_back(outline);
-                    break;
-                }
-                fn_worktable_eliminate_points_on_line(&outline);
-                outlines.push_back(outline);
+            if (!point_found) { // アウトラインの終端、アウトラインをリストに追加
+                __worktable_eliminate_points_on_straightline(&outline);
+                outline_list.push_back(outline);
                 break;
             }
         }
     }
-    return outlines;
+    return outline_list;
 }
 
 void
-fn_worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<vector<uint32>>* pSurf) {
+worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<vector<uint32>>* pSurf) {
     vector<point> vert_tmp;
     for (int32 i = 0; i < vert.size(); i++) {
         vert_tmp.push_back(vert[i]);
@@ -312,7 +312,7 @@ fn_worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<v
         /*** 三角形(va vo vb)の内部に他の頂点があるかを調べる ***/
         bool innner_triangle = false;
         for (int32 i = size - 1; 0 <= i; i--) {
-            innner_triangle = fn_worktable_inner_triangle(va, vo, vb, vert[(*pIndex)[i]]);
+            innner_triangle = worktable_inner_triangle(va, vo, vb, vert[(*pIndex)[i]]);
             if (innner_triangle) {
                 break;
             }
@@ -367,7 +367,7 @@ fn_worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<v
                 /*** 法線(norm_a)と法線(norm_b)が同じ場合 ***/
                 /*** 三角形(va vo vb)の内部に他の頂点があるかを調べる ***/
                 for (int32 i = size - 1; 0 <= i; i--) {
-                    innner_triangle = fn_worktable_inner_triangle(vo, va, vb, vert[(*pIndex)[i]]);
+                    innner_triangle = worktable_inner_triangle(va, vo, vb, vert[(*pIndex)[i]]);
                     if (innner_triangle) {
                         break;
                     }
