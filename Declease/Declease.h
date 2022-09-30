@@ -16,13 +16,14 @@
 減色を行う
 24bitビットマップを8bitビットマップに変換
 */
-void fn_declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8);
+void
+declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8);
 
 /*
 HSLエンコード
 */
 inline void
-fn_declease_rgb2hsl(Bitmap::pix24* pPix) {
+declease_rgb2hsl(Bitmap::pix24* pPix) {
     int32 h, s, l;
     const byte h_range = DEFINE_HUE_RANGE;
     const byte s_range = DEFINE_SATURATION_RANGE;
@@ -75,7 +76,7 @@ fn_declease_rgb2hsl(Bitmap::pix24* pPix) {
 HSLデコード
 */
 inline void
-fn_declease_hsl2rgb(Bitmap::pix24* pPix, byte h, byte s, byte l) {
+declease_hsl2rgb(Bitmap::pix24* pPix, byte h, byte s, byte l) {
     const byte h_range = DEFINE_HUE_RANGE;
     const byte s_range = DEFINE_SATURATION_RANGE;
     const byte l_range = DEFINE_LIGHTNESS_RANGE;
@@ -126,7 +127,7 @@ fn_declease_hsl2rgb(Bitmap::pix24* pPix, byte h, byte s, byte l) {
 周辺HSLの平均を求める
 */
 inline int32
-fn_declease_hsl_avg(Bitmap* pBmp, Bitmap::pix24* pHsl, point pos) {
+declease_avghsl(Bitmap* pBmp, Bitmap::pix24* pHsl, point pos) {
     const byte h_range = DEFINE_HUE_RANGE;
     const byte s_range = DEFINE_SATURATION_RANGE;
     const byte l_range = DEFINE_LIGHTNESS_RANGE;

@@ -43,14 +43,14 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        fn_outline_exec(pBmp);
+        outline_exec(pBmp);
         if (pBmp->error != 0) {
             cout << "bmp convert error... (" << pBmp->error << ")" << endl;
             delete pBmp;
             continue;
         }
 
-        fn_outline_thickness(pBmp, thickness);
+        outline_thickness(pBmp, thickness);
 
         // save
         stringstream ss;

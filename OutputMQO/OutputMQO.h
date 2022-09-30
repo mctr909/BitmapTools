@@ -11,6 +11,7 @@ struct type_mngmqo {
 	unsigned long index_face[9];
 };
 
-type_mqo_object fn_output_mqo_exec(Bitmap* pBmp);
+type_mqo_object
+output_mqo_exec(Bitmap* pBmp);
 
 #endif //__EXT_POLYLINE_H__

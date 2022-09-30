@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
         }
 
         auto bmp8 = new Bitmap(bmp24->info_h.width, bmp24->info_h.height, 8);
-        fn_declease_exec(bmp24, bmp8);
+        declease_exec(bmp24, bmp8);
         if (bmp24->error != 0) {
             cout << "bmp convert error... (" << bmp24->error << ")" << endl;
             delete bmp24;

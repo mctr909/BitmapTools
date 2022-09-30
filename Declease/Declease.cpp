@@ -38,7 +38,7 @@ struct type_declease_hsltop {
 離れていればインデックス指定のHSLを反映
 */
 double
-fn_declease_histogram(type_declease_histogram* pHistogram, Bitmap* pBmp) {
+__declease_histogram(type_declease_histogram* pHistogram, Bitmap* pBmp) {
     const byte h_range = DEFINE_HUE_RANGE;
     const byte s_range = DEFINE_SATURATION_RANGE;
     const byte l_range = DEFINE_LIGHTNESS_RANGE;
@@ -54,7 +54,7 @@ fn_declease_histogram(type_declease_histogram* pHistogram, Bitmap* pBmp) {
     for (uint32 i = 0; i < size_max; i++) {
         auto hsl = pPix[i];
         bitmap_get_pos(*pBmp, &pos, i);
-        auto hist_weight = fn_declease_hsl_avg(pBmp, &avg_hsl, pos);
+        auto hist_weight = declease_avghsl(pBmp, &avg_hsl, pos);
         auto sh = (hsl.r - avg_hsl.r) * h_weight / h_range;
         auto ss = (hsl.g - avg_hsl.g) * s_weight / s_range;
         auto sl = (hsl.b - avg_hsl.b) * l_weight / l_range;
@@ -87,7 +87,7 @@ fn_declease_histogram(type_declease_histogram* pHistogram, Bitmap* pBmp) {
 上位256個のHSL値をもとにパレットに色を設定
 */
 void
-fn_declease_color_top256(type_declease_histogram* pHistogram, Bitmap::pix32* pPalette) {
+__declease_color_top256(type_declease_histogram* pHistogram, Bitmap::pix32* pPalette) {
     const byte h_range = DEFINE_HUE_RANGE;
     const byte s_range = DEFINE_SATURATION_RANGE;
     const byte l_range = DEFINE_LIGHTNESS_RANGE;
@@ -148,12 +148,12 @@ fn_declease_color_top256(type_declease_histogram* pHistogram, Bitmap::pix32* pPa
     /*** 上位256個のHSL値をもとにパレットに色を設定 ***/
     for (int32 t = 0; t < 256; t++) {
         auto top = hsl_top256[t];
-        fn_declease_hsl2rgb(reinterpret_cast<Bitmap::pix24*>(&pPalette[t]), top.h, top.s, top.l);
+        declease_hsl2rgb(reinterpret_cast<Bitmap::pix24*>(&pPalette[t]), top.h, top.s, top.l);
     }
 }
 
 void
-fn_declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
+declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
     const auto size_max = pInBmp24->size_max;
     const int32 h_range = DEFINE_HUE_RANGE;
     const int32 s_range = DEFINE_SATURATION_RANGE;
@@ -166,10 +166,10 @@ fn_declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
     }
     auto pInPix = reinterpret_cast<Bitmap::pix24*>(pInBmp24->pPix);
     for (uint32 i = 0; i < size_max; i++) {
-        fn_declease_rgb2hsl(&pInPix[i]);
+        declease_rgb2hsl(&pInPix[i]);
     }
-    fn_declease_histogram(pHist, pInBmp24);
-    fn_declease_color_top256(pHist, pOutBmp8->pPalette);
+    __declease_histogram(pHist, pInBmp24);
+    __declease_color_top256(pHist, pOutBmp8->pPalette);
     for (uint32 i = 0; i < size_max; i++) {
         auto pHsl = &pInPix[i];
         auto hist_index

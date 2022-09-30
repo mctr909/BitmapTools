@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     }
 
     type_mqo mqo = fn_mqo_create_default_parameter();
-    mqo.object = fn_output_mqo_exec(pBmp);
+    mqo.object = output_mqo_exec(pBmp);
     if (mqo.object.error != 0) {
         cout << "bmp convert error... (" << pBmp->error << ")" << endl;
         delete pBmp;

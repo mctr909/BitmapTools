@@ -7,7 +7,7 @@ using namespace std;
 #include "OutputMQO.h"
 
 void
-fn_output_mqo_create_vertex(const point pos, type_mqo_object* pobj) {
+__output_mqo_create_vertex(const point pos, type_mqo_object* pobj) {
     auto id = (*pobj).vertex.size();
     type_mqo_vertex vertex = {
         static_cast<double>(pos.x),
@@ -19,7 +19,7 @@ fn_output_mqo_create_vertex(const point pos, type_mqo_object* pobj) {
 }
 
 type_mqo_object
-fn_output_mqo_exec(Bitmap* pbmp) {
+output_mqo_exec(Bitmap* pbmp) {
     type_mqo_object obj;
     obj.error = -1;
 
@@ -111,7 +111,7 @@ fn_output_mqo_exec(Bitmap* pbmp) {
             auto pos = line[j];
             verts.push_back(pos);
             index.push_back(index_ofs + j);
-            fn_output_mqo_create_vertex(pos, &obj);
+            __output_mqo_create_vertex(pos, &obj);
         }
         index_list.push_back(index);
         index_ofs += point_count;

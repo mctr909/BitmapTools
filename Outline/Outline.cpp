@@ -9,7 +9,7 @@ using namespace std;
 #include "Outline.h"
 
 void
-fn_outline_exec(Bitmap* pBmp) {
+outline_exec(Bitmap* pBmp) {
     const auto size_max = pBmp->size_max;
     type_worktable table;
     table.pCells = reinterpret_cast<type_workcell*>(calloc(size_max, sizeof(type_workcell)));
@@ -31,7 +31,7 @@ fn_outline_exec(Bitmap* pBmp) {
 }
 
 void
-fn_outline_thickness(Bitmap* pBmp, int32 weight) {
+outline_thickness(Bitmap* pBmp, int32 weight) {
     const auto size_max = pBmp->size_max;
     const auto radius = weight / 2;
     auto pTempPix = reinterpret_cast<byte*>(malloc(size_max * sizeof(byte)));

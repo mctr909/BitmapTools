@@ -3,7 +3,10 @@
 
 #include "../CommonLib/Bitmap.h"
 
-void fn_outline_exec(Bitmap* pBmp);
-void fn_outline_thickness(Bitmap* pBmp, int32 weight);
+void
+outline_exec(Bitmap* pBmp);
+
+void
+outline_thickness(Bitmap* pBmp, int32 weight);
 
 #endif //__EXT_OUTLINE_H__
