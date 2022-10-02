@@ -296,126 +296,84 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
 }
 
 void
-worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<vector<uint32>>* pSurf) {
-    vector<point> vert_tmp;
-    for (int32 i = 0; i < vert.size(); i++) {
-        vert_tmp.push_back(vert[i]);
-    }
-    vector<uint32> index_far;
-    for (int32 j = 0; j < vert_tmp.size(); j++) {
-        double dist_max = 0;
-        uint32 index_max = 0;
-        for (uint32 i = 0; i < vert_tmp.size(); i++) {
-            auto pos = &vert_tmp[i];
-            auto dist = sqrt(pos->x * pos->x + pos->y * pos->y);
-            if (dist_max < dist) {
-                dist_max = dist;
-                index_max = i;
-            }
-        }
-        auto tmp = &vert_tmp[index_max];
-        tmp->x = 0;
-        tmp->y = 0;
-        index_far.push_back(index_max);
-    }
-    vert_tmp.clear();
+worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<surface>* pSurf) {
+    const uint32 index_size = pIndex->size();
 
-    vector<uint32> index_near;
-    while (0 < index_far.size()) {
-        index_near.push_back(index_far.back());
-        index_far.pop_back();
+    vector<type_workindex> index_list;
+    for (uint32 i = 0; i < index_size; i++) {
+        auto x = vert[(*pIndex)[i]].x - INT32_MAX;
+        auto y = vert[(*pIndex)[i]].y - INT32_MAX;
+        type_workindex index;
+        index.distance = sqrt(x * x + y * y);
+        index.deleted = false;
+        index_list.push_back(index);
     }
 
-    const size_t size = pIndex->size();
-    uint32 index;
-    point va, vo, vb;
-    uint32 ia, io, ib;
-    point oa, ob;
-    int32 norm_a, norm_b;
-
-    while (3 <= index_near.size()) {
-        /*** 最も遠い三角形(va vo vb)を取り出す ***/
-        index = index_near.back();
-        ia = (index - 1 + size) % size;
-        io = index;
-        ib = (index + 1) % size;
-        va = vert[ia];
-        vo = vert[io];
-        vb = vert[ib];
-        /*** 三角形(va vo vb)の内部に他の頂点があるかを調べる ***/
-        bool innner_triangle = false;
-        for (int32 i = size - 1; 0 <= i; i--) {
-            innner_triangle = worktable_inner_triangle(va, vo, vb, vert[(*pIndex)[i]]);
-            if (innner_triangle) {
-                break;
+    bool point_in_triangle = false;
+    uint32 count = 0;
+    do {
+        double dist_max = 0.0;
+        uint32 io = 0;
+        count = 0;
+        for (uint32 i = 0; i < index_size; i++) {
+            auto index = index_list[i];
+            if (index.deleted) {
+                continue;
             }
-        }
-        if (!innner_triangle) {
-            /*** 内部に頂点がなければ三角形(va vo vb)をリストに追加、 ***/
-            /*** 頂点インデックス(va)を削除して次の頂点(va vo vb)に移動 ***/
-            vector<uint32> index;
-            index.push_back(ia);
-            index.push_back(io);
-            index.push_back(ib);
-            pSurf->push_back(index);
-            index_near.pop_back();
-            continue;
-        }
-
-        /*** 三角形(va vo vb)の法線(norm_a)を計算 ***/
-        oa.x = va.x - vo.x;
-        oa.y = va.y - vo.y;
-        ob.x = vb.x - vo.x;
-        ob.y = vb.y - vo.y;
-        norm_a = oa.x * ob.y - oa.y * ob.x;
-        if (norm_a < 0) {
-            norm_a = -1;
-        } else {
-            norm_a = 1;
-        }
-
-        index_near.pop_back();
-        while (3 <= index_near.size()) {
-            /*** 次の三角形(va vo vb)の法線(norm_b)を計算 ***/
-            index = index_near.back();
-            ia = (index - 1 + size) % size;
-            io = index;
-            ib = (index + 1) % size;
-            index_near.pop_back();
-            va = vert[ia];
-            vo = vert[io];
-            vb = vert[ib];
-            oa.x = va.x - vo.x;
-            oa.y = va.y - vo.y;
-            ob.x = vb.x - vo.x;
-            ob.y = vb.y - vo.y;
-            norm_b = oa.x * ob.y - oa.y * ob.x;
-            if (norm_b < 0) {
-                norm_b = -1;
-            } else {
-                norm_b = 1;
+            if (dist_max < index.distance) {
+                dist_max = index.distance;
+                io = i;
             }
-            innner_triangle = false;
-            if (norm_a == norm_b) {
-                /*** 法線(norm_a)と法線(norm_b)が同じ場合 ***/
-                /*** 三角形(va vo vb)の内部に他の頂点があるかを調べる ***/
-                for (int32 i = size - 1; 0 <= i; i--) {
-                    innner_triangle = worktable_inner_triangle(va, vo, vb, vert[(*pIndex)[i]]);
-                    if (innner_triangle) {
+            count++;
+        }
+        do {
+            uint32 ia = (io + index_size - 1) % index_size;
+            for (uint32 i = 0; i < index_size; i++) {
+                if (index_list[ia].deleted) {
+                    ia = (ia + index_size - 1) % index_size;
+                } else {
+                    break;
+                }
+            }
+            uint32 ib = (io + 1) % index_size;
+            for (uint32 i = 0; i < index_size; i++) {
+                if (index_list[ib].deleted) {
+                    ib = (ib + 1) % index_size;
+                } else {
+                    break;
+                }
+            }
+            auto va = vert[(*pIndex)[ia]];
+            auto vo = vert[(*pIndex)[io]];
+            auto vb = vert[(*pIndex)[ib]];
+            point_in_triangle = false;
+            for (uint32 i = 0; i < index_size; i++) {
+                if (i == ia || i == io || i == ib || index_list[i].deleted) {
+                    continue;
+                }
+                auto p = vert[(*pIndex)[i]];
+                if (worktable_inner_triangle(va, vo, vb, p)) {
+                    point_in_triangle = true;
+                    break;
+                }
+            }
+            if (point_in_triangle) {
+                io = (io + index_size - 1) % index_size;
+                for (uint32 i = 0; i < index_size; i++) {
+                    if (index_list[io].deleted) {
+                        io = (io + index_size - 1) % index_size;
+                    } else {
                         break;
                     }
                 }
+            } else {
+                surface surf;
+                surf.a = (*pIndex)[ia];
+                surf.o = (*pIndex)[io];
+                surf.b = (*pIndex)[ib];
+                pSurf->push_back(surf);
+                index_list[io].deleted = true;
             }
-            if (!innner_triangle) {
-                /*** 内部に頂点がなければ三角形(va vo vb)をリストに追加、 ***/
-                /*** 次の頂点(va vo vb)に移動 ***/
-                vector<uint32> index;
-                index.push_back(ia);
-                index.push_back(io);
-                index.push_back(ib);
-                pSurf->push_back(index);
-                break;
-            }
-        }
-    }
+        } while (point_in_triangle);
+    } while (3 <= count);
 }

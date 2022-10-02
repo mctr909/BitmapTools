@@ -22,4 +22,12 @@ struct point_d {
 };
 #pragma pack(pop)
 
+#pragma pack(push, 8)
+struct surface {
+    uint32 a;
+    uint32 o;
+    uint32 b;
+};
+#pragma pack(pop)
+
 #endif //__TYPES_H__

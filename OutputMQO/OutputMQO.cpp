@@ -109,18 +109,19 @@ output_mqo_exec(Bitmap* pbmp) {
         vector<uint32> index;
         for (uint32 j = 0; j < point_count; j++) {
             auto pos = line[j];
+            pos.y = pbmp->info_h.height - pos.y - 1;
             verts.push_back(pos);
-            index.push_back(index_ofs + j);
+            index.push_back(index_ofs + point_count - j - 1);
             __output_mqo_create_vertex(pos, &obj);
         }
         index_list.push_back(index);
         index_ofs += point_count;
     }
 
-    for (uint32 i = 0; i < 1; i++) {
+    for (uint32 i = 0; i < index_list.size(); i++) {
         auto index = index_list[i];
 
-        vector<vector<uint32>> surf;
+        vector<surface> surf;
         worktable_create_polygon(verts, &index, &surf);
 
         for (uint32 j = 0; j < surf.size(); j++) {
@@ -129,9 +130,9 @@ output_mqo_exec(Bitmap* pbmp) {
             face.material = INT16_MAX;
             face.id = id;
             auto idx = surf[j];
-            face.vertex.push_back(idx[0]);
-            face.vertex.push_back(idx[1]);
-            face.vertex.push_back(idx[2]);
+            face.vertex.push_back(idx.a);
+            face.vertex.push_back(idx.o);
+            face.vertex.push_back(idx.b);
             obj.face.push_back(face);
         }
     }
