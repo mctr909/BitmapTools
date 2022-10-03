@@ -36,7 +36,7 @@ struct type_worktable {
 	int32 error;
 };
 
-struct type_workindex {
+struct type_worktable_vert_info {
 	double distance;
 	bool deleted;
 };
@@ -51,7 +51,7 @@ vector<vector<point>>
 worktable_create_polyline(type_worktable*, Bitmap& const);
 
 void
-worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<surface>* pSurf);
+worktable_create_polygon(vector<point>& const, vector<uint32>& const, vector<surface>*);
 
 inline type_workcell
 worktable_get_data(

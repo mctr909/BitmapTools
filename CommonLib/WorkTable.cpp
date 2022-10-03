@@ -296,84 +296,127 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
 }
 
 void
-worktable_create_polygon(vector<point> vert, vector<uint32>* pIndex, vector<surface>* pSurf) {
-    const uint32 index_size = pIndex->size();
-
-    vector<type_workindex> index_list;
+worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index, vector<surface>* pSurf_list) {
+    const uint32 index_size = index.size();
+    /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
+    vector<type_worktable_vert_info> vert_info;
     for (uint32 i = 0; i < index_size; i++) {
-        auto x = vert[(*pIndex)[i]].x - INT32_MAX;
-        auto y = vert[(*pIndex)[i]].y - INT32_MAX;
-        type_workindex index;
-        index.distance = sqrt(x * x + y * y);
-        index.deleted = false;
-        index_list.push_back(index);
+        auto x = vert[index[i]].x - INT32_MAX;
+        auto y = vert[index[i]].y - INT32_MAX;
+        type_worktable_vert_info info;
+        info.distance = sqrt(x * x + y * y);
+        info.deleted = false;
+        vert_info.push_back(info);
     }
-
-    bool point_in_triangle = false;
-    uint32 count = 0;
-    do {
+    uint32 reverse_count = 0;
+    uint32 vert_count = 0;
+    do { // 最も遠くにある頂点(vo)の取得ループ
+        /*** 最も遠くにある頂点(vo)を取得 ***/
+        point vo; uint32 io = 0;
         double dist_max = 0.0;
-        uint32 io = 0;
-        count = 0;
+        vert_count = 0;
         for (uint32 i = 0; i < index_size; i++) {
-            auto index = index_list[i];
-            if (index.deleted) {
+            auto info = vert_info[i];
+            if (info.deleted) {
                 continue;
             }
-            if (dist_max < index.distance) {
-                dist_max = index.distance;
+            if (dist_max < info.distance) {
+                dist_max = info.distance;
                 io = i;
             }
-            count++;
+            vert_count++;
         }
-        do {
-            uint32 ia = (io + index_size - 1) % index_size;
+        vo = vert[index[io]];
+        while (true) { // 頂点(vo)の移動ループ
+            /*** 頂点(vo)の隣にある頂点(va)を取得 ***/
+            point va; uint32 ia;
+            ia = (io + index_size - 1) % index_size;
             for (uint32 i = 0; i < index_size; i++) {
-                if (index_list[ia].deleted) {
+                if (vert_info[ia].deleted) {
                     ia = (ia + index_size - 1) % index_size;
                 } else {
                     break;
                 }
             }
-            uint32 ib = (io + 1) % index_size;
+            va = vert[index[ia]];
+            /*** 頂点(vo)の隣にある頂点(vb)を取得 ***/
+            point vb; uint32 ib;
+            ib = (io + 1) % index_size;
             for (uint32 i = 0; i < index_size; i++) {
-                if (index_list[ib].deleted) {
+                if (vert_info[ib].deleted) {
                     ib = (ib + 1) % index_size;
                 } else {
                     break;
                 }
             }
-            auto va = vert[(*pIndex)[ia]];
-            auto vo = vert[(*pIndex)[io]];
-            auto vb = vert[(*pIndex)[ib]];
-            point_in_triangle = false;
+            vb = vert[index[ib]];
+            /*** 三角形(va vo vb)の表裏を確認 ***/
+            int32 normal_aob; point oa, ob;
+            oa.x = va.x - vo.x;
+            oa.y = va.y - vo.y;
+            ob.x = vb.x - vo.x;
+            ob.y = vb.y - vo.y;
+            normal_aob = oa.x * ob.y - oa.y * ob.x;
+            if (0 < normal_aob) {
+                /*** 裏の場合 ***/
+                reverse_count++;
+                if (index_size + 3 <= reverse_count) {
+                    /*** 表になる三角形(va vo vb)がない場合 ***/
+                    /*** 頂点(vo)を検索対象から削除 ***/
+                    vert_info[io].deleted = true;
+                    /*** 次の最も遠くにある頂点(vo)を取得 ***/
+                    reverse_count = 0;
+                    break;
+                }
+                /*** 頂点(vo)を隣に移動 ***/
+                io = (io + 1) % index_size;
+                for (uint32 i = 0; i < index_size; i++) {
+                    if (vert_info[io].deleted) {
+                        io = (io + 1) % index_size;
+                    } else {
+                        break;
+                    }
+                }
+                vo = vert[index[io]];
+                continue;
+            }
+            /*** 三角形(va vo vb)の内側にva vo vb以外の頂点がないか確認 ***/
+            bool point_in_triangle = false;
             for (uint32 i = 0; i < index_size; i++) {
-                if (i == ia || i == io || i == ib || index_list[i].deleted) {
+                if (i == ia || i == io || i == ib || vert_info[i].deleted) {
                     continue;
                 }
-                auto p = vert[(*pIndex)[i]];
+                auto p = vert[index[i]];
                 if (worktable_inner_triangle(va, vo, vb, p)) {
                     point_in_triangle = true;
                     break;
                 }
             }
             if (point_in_triangle) {
-                io = (io + index_size - 1) % index_size;
+                /*** 内側に他の頂点がある場合 ***/
+                /*** 頂点(vo)を隣に移動 ***/
+                io = (io + 1) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
-                    if (index_list[io].deleted) {
-                        io = (io + index_size - 1) % index_size;
+                    if (vert_info[io].deleted) {
+                        io = (io + 1) % index_size;
                     } else {
                         break;
                     }
                 }
+                vo = vert[index[io]];
             } else {
+                /*** 内側に他の頂点がない場合 ***/
+                /*** 三角形(va vo vb)を面リストに追加 ***/
                 surface surf;
-                surf.a = (*pIndex)[ia];
-                surf.o = (*pIndex)[io];
-                surf.b = (*pIndex)[ib];
-                pSurf->push_back(surf);
-                index_list[io].deleted = true;
+                surf.a = index[ia];
+                surf.o = index[io];
+                surf.b = index[ib];
+                pSurf_list->push_back(surf);
+                /*** 頂点(vo)を検索対象から削除 ***/
+                vert_info[io].deleted = true;
+                /*** 次の最も遠くにある頂点(vo)を取得 ***/
+                break;
             }
-        } while (point_in_triangle);
-    } while (3 <= count);
+        } // 頂点(vo)の移動ループ
+    } while (3 <= vert_count); // 最も遠くにある頂点(vo)の取得ループ
 }

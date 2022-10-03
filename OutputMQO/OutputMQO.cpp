@@ -122,7 +122,7 @@ output_mqo_exec(Bitmap* pbmp) {
         auto index = index_list[i];
 
         vector<surface> surf;
-        worktable_create_polygon(verts, &index, &surf);
+        worktable_create_polygon(verts, index, &surf);
 
         for (uint32 j = 0; j < surf.size(); j++) {
             uint32 id = obj.face.size();
