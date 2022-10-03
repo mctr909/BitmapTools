@@ -369,10 +369,10 @@ worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index,
                     break;
                 }
                 /*** ’¸“_(vo)‚ğ—×‚ÉˆÚ“® ***/
-                io = (io + 1) % index_size;
+                io = (io + index_size - 1) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
                     if (vert_info[io].deleted) {
-                        io = (io + 1) % index_size;
+                        io = (io + index_size - 1) % index_size;
                     } else {
                         break;
                     }
@@ -395,10 +395,10 @@ worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index,
             if (point_in_triangle) {
                 /*** “à‘¤‚É‘¼‚Ì’¸“_‚ª‚ ‚éê‡ ***/
                 /*** ’¸“_(vo)‚ğ—×‚ÉˆÚ“® ***/
-                io = (io + 1) % index_size;
+                io = (io + index_size - 1) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
                     if (vert_info[io].deleted) {
-                        io = (io + 1) % index_size;
+                        io = (io + index_size - 1) % index_size;
                     } else {
                         break;
                     }
