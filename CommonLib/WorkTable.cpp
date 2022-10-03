@@ -202,7 +202,7 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
     const auto off = pTable->color_off;
     const int32 search_radius = 3;
     const sbyte prefer_dir[] = {
-        -3, -2, -1, 0, 1, 2, 3
+        0, -1, 1, -2, 2, -3, 3
     };
     const point trace_dir[search_radius][8] = {
         {
@@ -418,5 +418,5 @@ worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index,
                 break;
             }
         } // 頂点(vo)の移動ループ
-    } while (3 <= vert_count); // 最も遠くにある頂点(vo)の取得ループ
+    } while (3 < vert_count); // 最も遠くにある頂点(vo)の取得ループ
 }
