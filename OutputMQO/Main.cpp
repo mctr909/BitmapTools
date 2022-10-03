@@ -31,13 +31,13 @@ int main(int argc, char* argv[]) {
         cout << "bmp reading error... (" << pBmp->error << ")" << endl;
         delete pBmp;
         return (EXIT_SUCCESS);
+    } else {
+        pBmp->PrintHeader();
     }
-    pBmp->PrintFileHeader();
-    pBmp->PrintInfoHeader();
 
     // palette chck
-    if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_256) {
-        cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_256 << " colors)" << endl;
+    if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
+        cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
         delete pBmp;
         return (EXIT_SUCCESS);
     }

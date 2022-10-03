@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define DEFINE_SUPPORT_COLOR_256   (8)
+#define DEFINE_SUPPORT_COLOR_8BIT  (8)
 #define DEFINE_SUPPORT_COLOR_24BIT (24)
 
 class Bitmap {
@@ -56,8 +56,7 @@ public:
     Bitmap(int32, int32, int32);
     ~Bitmap();
     void Save(const string);
-    void PrintFileHeader();
-    void PrintInfoHeader();
+    void PrintHeader();
 
 public:
     uint32   size_max;

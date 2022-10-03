@@ -32,13 +32,12 @@ int main(int argc, char* argv[]) {
             delete bmp24;
             continue;
         } else {
-            bmp24->PrintFileHeader();
-            bmp24->PrintInfoHeader();
+            bmp24->PrintHeader();
         }
 
         // bit chck
         if (bmp24->info_h.bits != DEFINE_SUPPORT_COLOR_24BIT) {
-            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_24BIT << " colors)" << endl;
+            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_24BIT << "bit colors)" << endl;
             delete bmp24;
             continue;
         }

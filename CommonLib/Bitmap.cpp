@@ -20,7 +20,7 @@ Bitmap::Bitmap(const string path) {
     fin.read(reinterpret_cast<char*>(&info_h), sizeof(info_h));
 
     switch (info_h.bits) {
-    case 8:
+    case DEFINE_SUPPORT_COLOR_8BIT:
         pPalette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
         if (NULL == pPalette) {
             error = -2;
@@ -83,7 +83,7 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     }
 
     switch (bits) {
-    case 8:
+    case DEFINE_SUPPORT_COLOR_8BIT:
         pPalette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
         if (NULL == pPalette) {
             free(pPix);
@@ -124,16 +124,12 @@ Bitmap::Save(const string path) {
 }
 
 void
-Bitmap::PrintFileHeader() {
+Bitmap::PrintHeader() {
     cout << "<File Header> " << endl;
     cout << "File Type        : " << file_h.type[0] << file_h.type[1] << endl;
     cout << "File Size        : " << file_h.size << " bytes" << endl;
     cout << "Image Data Offset: " << file_h.offset << " bytes" << endl;
     cout << endl;
-}
-
-void
-Bitmap::PrintInfoHeader() {
     cout << "<Information Header> " << endl;
     cout << "Header Size      : " << info_h.headsize << " bytes" << endl;
     cout << "Image Width      : " << info_h.width << " pixels" << endl;

@@ -58,8 +58,8 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
         pos_a = temp[i];
         oa.x = pos_a.x - pos_o.x;
         oa.y = pos_a.y - pos_o.y;
-        og.x = (pos_a.x + pos_b.x + pos_c.x + pos_o.x) / 4.0 - pos_o.x;
-        og.y = (pos_a.y + pos_b.y + pos_c.y + pos_o.y) / 4.0 - pos_o.y;
+        og.x = (pos_b.x + pos_c.x) / 2.0 - pos_o.x;
+        og.y = (pos_b.y + pos_c.y) / 2.0 - pos_o.y;
         len = sqrt(oa.x * oa.x + oa.y * oa.y);
         oa.x /= len;
         oa.y /= len;

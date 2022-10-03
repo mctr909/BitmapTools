@@ -32,13 +32,12 @@ int main(int argc, char* argv[]) {
             delete pBmp;
             continue;
         } else {
-            pBmp->PrintFileHeader();
-            pBmp->PrintInfoHeader();
+            pBmp->PrintHeader();
         }
 
         // palette chck
-        if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_256) {
-            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_256 << " colors)" << endl;
+        if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
+            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
             delete pBmp;
             continue;
         }
