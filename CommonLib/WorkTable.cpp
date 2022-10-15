@@ -296,7 +296,7 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
 }
 
 void
-worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index, vector<surface>* pSurf_list) {
+worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index, vector<surface>* pSurf_list, int32 order) {
     const uint32 index_size = index.size();
     /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
     vector<type_worktable_vert_info> vert_info;
@@ -357,7 +357,7 @@ worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index,
             ob.x = vb.x - vo.x;
             ob.y = vb.y - vo.y;
             normal_aob = oa.x * ob.y - oa.y * ob.x;
-            if (0 < normal_aob) {
+            if (normal_aob * order < 0) {
                 /*** 裏の場合 ***/
                 reverse_count++;
                 if (index_size + 3 <= reverse_count) {

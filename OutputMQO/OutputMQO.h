@@ -4,7 +4,7 @@
 #include "../CommonLib/Bitmap.h"
 #include "mqo.h"
 
-#define DEBUG_OUTPUT_MQO ()
+//#define DEBUG_OUTPUT_MQO ()
 
 struct type_mngmqo {
 	unsigned long index_vertex;
@@ -12,6 +12,6 @@ struct type_mngmqo {
 };
 
 type_mqo_object
-output_mqo_exec(Bitmap* pBmp);
+output_mqo_exec(Bitmap* pBmp, double thickness, double y_offset);
 
 #endif //__EXT_POLYLINE_H__

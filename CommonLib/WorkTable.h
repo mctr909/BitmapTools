@@ -51,7 +51,7 @@ vector<vector<point>>
 worktable_create_polyline(type_worktable*, Bitmap& const);
 
 void
-worktable_create_polygon(vector<point>& const, vector<uint32>& const, vector<surface>*);
+worktable_create_polygon(vector<point>& const, vector<uint32>& const, vector<surface>*, int32 order);
 
 inline type_workcell
 worktable_get_data(
