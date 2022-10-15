@@ -7,11 +7,8 @@ namespace ToBMP {
         static void Main(string[] args) {
             for (int i = 0; i < args.Length; i++) {
                 var path = args[i];
-                if (".bmp" == Path.GetExtension(path)) {
-                    continue;
-                }
                 var bmpSrc = new Bitmap(path);
-                var bmpDst = new Bitmap(((bmpSrc.Width + 3) >> 2) << 2, bmpSrc.Height);
+                var bmpDst = new Bitmap(((bmpSrc.Width + 3) >> 2) << 2, bmpSrc.Height, PixelFormat.Format24bppRgb);
                 var g = Graphics.FromImage(bmpDst);
                 g.Clear(Color.White);
                 g.DrawImage(bmpSrc, 0, 0);
@@ -20,8 +17,6 @@ namespace ToBMP {
                     + ".bmp";
                 System.Console.WriteLine(path);
                 bmpDst.Save(path, ImageFormat.Bmp);
-                bmpSrc.Dispose();
-                bmpDst.Dispose();
             }
         }
     }
