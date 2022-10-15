@@ -13,6 +13,7 @@ namespace ToBMP {
                 var bmpSrc = new Bitmap(path);
                 var bmpDst = new Bitmap(((bmpSrc.Width + 3) >> 2) << 2, bmpSrc.Height);
                 var g = Graphics.FromImage(bmpDst);
+                g.Clear(Color.White);
                 g.DrawImage(bmpSrc, 0, 0);
                 path = Path.GetDirectoryName(path)
                     + "\\" + Path.GetFileNameWithoutExtension(path)
