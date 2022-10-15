@@ -19,6 +19,9 @@ Bitmap::Bitmap(const string path) {
     fin.read(reinterpret_cast<char*>(&file_h), sizeof(file_h));
     fin.read(reinterpret_cast<char*>(&info_h), sizeof(info_h));
 
+    stride = ((info_h.width + 3) >> 2) << 2;
+    size_max = stride * info_h.height;
+
     switch (info_h.bits) {
     case DEFINE_SUPPORT_COLOR_8BIT:
         pPalette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
@@ -35,7 +38,7 @@ Bitmap::Bitmap(const string path) {
         break;
     }
 
-    pPix = reinterpret_cast<byte*>(calloc(info_h.imagesize, 1));
+    pPix = reinterpret_cast<byte*>(calloc(size_max * info_h.bits >> 3, 1));
     if (NULL == pPix) {
         free(pPalette);
         error = -2;
@@ -43,12 +46,10 @@ Bitmap::Bitmap(const string path) {
     }
 
     fin.seekg(file_h.offset, ios::beg);
-    fin.read(reinterpret_cast<char*>(pPix), info_h.imagesize);
+    fin.read(reinterpret_cast<char*>(pPix), size_max * info_h.bits >> 3);
     fin.seekg(current_pos);
     fin.close();
 
-    stride = ((info_h.width + 3) >> 2) << 2;
-    size_max = stride * info_h.height;
     name = path;
     error = 0;
 }

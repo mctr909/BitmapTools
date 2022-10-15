@@ -8,7 +8,7 @@ namespace ToBMP {
             for (int i = 0; i < args.Length; i++) {
                 var path = args[i];
                 var bmpSrc = new Bitmap(path);
-                if (bmpSrc.PixelFormat == PixelFormat.Format24bppRgb) {
+                if (Path.GetExtension(path) == ".bmp" && bmpSrc.PixelFormat == PixelFormat.Format24bppRgb) {
                     continue;
                 }
                 var bmpDst = new Bitmap(((bmpSrc.Width + 3) >> 2) << 2, bmpSrc.Height, PixelFormat.Format24bppRgb);
