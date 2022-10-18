@@ -237,18 +237,20 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
     const auto trace_dirs = static_cast<int32>(sizeof(trace_dir[0]) / sizeof(point));
 
     vector<vector<point>> polyline_list;
+    uint32 index_ofs = 0;
     while (true) { // ポリライン検索ループ
         /*** ポリラインの始点を検索 ***/
         bool polyline_found = false;
         point curr_pos;
         vector<point> polyline;
-        for (uint32 i = 0; i < table_size; i++) {
+        for (uint32 i = index_ofs; i < table_size; i++) {
             auto pCell = &pTable->pCells[i];
             if (pCell->enable && !pCell->traced) { // 点を発見、ポリラインの始点として追加
                 pCell->traced = true;
                 curr_pos = pCell->pos;
                 polyline.push_back(pCell->pos);
                 polyline_found = true;
+                index_ofs = i;
                 break;
             }
         }

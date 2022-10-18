@@ -4,7 +4,7 @@
 #include "../CommonLib/Bitmap.h"
 #include "mqo.h"
 
-//#define DEBUG_OUTPUT_MQO ()
+#define DEBUG_OUTPUT_MQO ()
 
 struct type_mngmqo {
 	unsigned long index_vertex;
