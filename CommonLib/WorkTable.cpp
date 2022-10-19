@@ -202,7 +202,7 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
     const auto off = pTable->color_off;
     const int32 search_radius = 3;
     const sbyte prefer_dir[] = {
-        0, -1, 1, -2, 2, -3, 3
+        0, -1, 1, -2, 2, -3, 3, 4
     };
     const point trace_dir[search_radius][8] = {
         {
