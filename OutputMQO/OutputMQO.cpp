@@ -91,9 +91,10 @@ output_mqo_exec(Bitmap* pbmp, double thickness, double y_offset) {
     }
 #endif
 
+    /*** 頂点とインデックスを取得 ***/
+    vector<point> verts;
     vector<vector<uint32>> indexes_bottom;
     vector<vector<uint32>> indexes_top;
-    vector<point> verts;
     uint32 index_ofs = 0;
     for (uint32 i = 0; i < lines.size(); i++) {
         auto line = lines[i];
@@ -101,7 +102,7 @@ output_mqo_exec(Bitmap* pbmp, double thickness, double y_offset) {
         if (point_count < 3) {
             continue;
         }
-        /*** 頂点とインデックスを取得(底面) ***/
+        /*** 底面 ***/
         vector<uint32> index_bottom;
         for (int32 j = 0; j < point_count; j++) {
             auto pos = line[j];
@@ -112,7 +113,7 @@ output_mqo_exec(Bitmap* pbmp, double thickness, double y_offset) {
         }
         indexes_bottom.push_back(index_bottom);
         index_ofs += point_count;
-        /*** 頂点とインデックスを取得(上面) ***/
+        /*** 上面 ***/
         vector<uint32> index_top;
         for (int32 j = 0; j < point_count; j++) {
             auto pos = line[j];
@@ -123,26 +124,6 @@ output_mqo_exec(Bitmap* pbmp, double thickness, double y_offset) {
         }
         indexes_top.push_back(index_top);
         index_ofs += point_count;
-        /*** 面を出力(側面) ***/
-        for (int32 ib = 0, it = point_count - 1; ib < point_count; ib++, it--) {
-            auto idx0 = index_bottom[(ib + 1) % point_count];
-            auto idx1 = index_bottom[ib];
-            auto idx2 = index_top[it];
-            auto idx3 = index_top[(it + point_count - 1) % point_count];
-            type_mqo_face face;
-            face.material = INT16_MAX;
-            face.id = obj.face.size();
-            face.vertex.push_back(idx0);
-            face.vertex.push_back(idx1);
-            face.vertex.push_back(idx2);
-            obj.face.push_back(face);
-            face.material = INT16_MAX;
-            face.id = obj.face.size();
-            face.vertex.push_back(idx0);
-            face.vertex.push_back(idx2);
-            face.vertex.push_back(idx3);
-            obj.face.push_back(face);
-        }
     }
     /*** 面を出力(底面) ***/
     for (uint32 i = 0; i < indexes_bottom.size(); i++) {
@@ -176,7 +157,31 @@ output_mqo_exec(Bitmap* pbmp, double thickness, double y_offset) {
             obj.face.push_back(face);
         }
     }
-
+    /*** 面を出力(側面) ***/
+    for (uint32 i = 0; i < indexes_bottom.size(); i++) {
+        auto index_bottom = indexes_bottom[i];
+        auto index_top = indexes_top[i];
+        auto point_count = index_bottom.size();
+        for (int32 ib = 0, it = point_count - 1; ib < point_count; ib++, it--) {
+            auto idx0 = index_bottom[(ib + 1) % point_count];
+            auto idx1 = index_bottom[ib];
+            auto idx2 = index_top[it];
+            auto idx3 = index_top[(it + point_count - 1) % point_count];
+            type_mqo_face face;
+            face.material = INT16_MAX;
+            face.id = obj.face.size();
+            face.vertex.push_back(idx0);
+            face.vertex.push_back(idx1);
+            face.vertex.push_back(idx2);
+            obj.face.push_back(face);
+            face.material = INT16_MAX;
+            face.id = obj.face.size();
+            face.vertex.push_back(idx0);
+            face.vertex.push_back(idx2);
+            face.vertex.push_back(idx3);
+            obj.face.push_back(face);
+        }
+    }
     obj.error = 0;
     return (obj);
 }
