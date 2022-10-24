@@ -297,9 +297,10 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
     return polyline_list;
 }
 
-void
+double
 worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index, vector<surface>* pSurf_list, int32 order) {
     const uint32 index_size = index.size();
+    double sur = 0.0;
     /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
     vector<type_worktable_vert_info> vert_info;
     for (uint32 i = 0; i < index_size; i++) {
@@ -414,6 +415,8 @@ worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index,
                 surf.o = index[io];
                 surf.b = index[ib];
                 pSurf_list->push_back(surf);
+                /*** 三角形の面積を加算 ***/
+                sur += abs(normal_aob) / 2.0;
                 /*** 頂点(vo)を検索対象から削除 ***/
                 vert_info[io].deleted = true;
                 /*** 次の最も遠くにある頂点(vo)を取得 ***/
@@ -421,4 +424,10 @@ worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index,
             }
         } // 頂点(vo)の移動ループ
     } while (3 < vert_count); // 最も遠くにある頂点(vo)の取得ループ
+    return sur;
+}
+
+bool
+worktable_inner_polygon(vector<point>& const outer, vector<uint32>& const inner) {
+    return false;
 }

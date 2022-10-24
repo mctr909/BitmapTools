@@ -45,11 +45,33 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
 
     auto lines = worktable_create_polyline(&table, *pbmp);
 
-    /*** 頂点とインデックスを取得 ***/
     vector<point> verts;
-    vector<vector<uint32>> indexes_bottom;
-    vector<vector<uint32>> indexes_top;
+    vector<vector<uint32>> indexes;
     uint32 index_ofs = 0;
+    for (uint32 i = 0; i < lines.size(); i++) {
+        auto line = lines[i];
+        auto point_count = line.size();
+        if (point_count < 3) {
+            continue;
+        }
+        vector<uint32> index;
+        for (int32 j = 0; j < point_count; j++) {
+            verts.push_back(line[j]);
+            index.push_back(index_ofs + j);
+        }
+        indexes.push_back(index);
+        index_ofs += point_count;
+    }
+    for (uint32 i = 0; i < indexes.size(); i++) {
+        auto index = indexes[i];
+        vector<surface> surf;
+        worktable_create_polygon(verts, index, &surf, 1);
+    }
+
+    /*** 頂点とインデックスを取得 ***/
+    vector<vector<uint32>> indexes_bottom, indexes_top;
+    verts.clear();
+    index_ofs = 0;
     for (uint32 i = 0; i < lines.size(); i++) {
         auto line = lines[i];
         auto point_count = line.size();
