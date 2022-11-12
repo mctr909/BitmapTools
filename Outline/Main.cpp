@@ -37,13 +37,13 @@ write_outline(Bitmap* pBmp, int32 weight) {
         pBmp->error = -1;
         return;
     }
-    memset(pTempPix, DEFINE_COLOR_OFF, size_max);
+    memset(pTempPix, DEFINE_COLOR_WHITE, size_max);
     point pos;
     for (uint32 i = 0; i < size_max; i++) {
-        if (DEFINE_COLOR_ON != pBmp->pPix[i]) {
+        if (table.color_on != pBmp->pPix[i]) {
             continue;
         }
-        pTempPix[i] = DEFINE_COLOR_ON;
+        pTempPix[i] = DEFINE_COLOR_BLACK;
         bitmap_get_pos(*pBmp, &pos, i);
         for (int32 dy = -radius; dy <= radius; dy++) {
             for (int32 dx = -radius; dx <= radius; dx++) {
@@ -51,7 +51,7 @@ write_outline(Bitmap* pBmp, int32 weight) {
                 if (r <= weight / 2.0) {
                     auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
                     if (ULONG_MAX != arownd) {
-                        pTempPix[arownd] = DEFINE_COLOR_ON;
+                        pTempPix[arownd] = DEFINE_COLOR_BLACK;
                     }
                 }
             }

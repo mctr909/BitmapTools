@@ -76,11 +76,45 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
 void
 worktable_create(type_worktable* pTable, Bitmap& const bmp) {
     const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
-    const byte on = DEFINE_COLOR_ON;
-    const byte off = DEFINE_COLOR_OFF;
+    double most_dark = 10.0;
+    double most_light = 0.0;
+    point pos;
+    for (uint32 i = 0; i < 256; i++) {
+        auto pix = (byte)bmp.pPix[i];
+        auto color = bmp.pPalette[pix];
+        auto gray = (color.r + color.g + color.b) / (255.0 * 3);
+        if (gray < most_dark) {
+            most_dark = gray;
+            DEFINE_COLOR_BLACK = pix;
+        }
+        if (most_light < gray) {
+            most_light = gray;
+            DEFINE_COLOR_WHITE = pix;
+        }
+    }
+    most_dark = 10.0;
+    most_light = 0.0;
+    for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
+        for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
+            auto index = bitmap_get_index(bmp, pos);
+            if (UINT32_MAX != index) {
+                auto pix = (byte)bmp.pPix[index];
+                auto color = bmp.pPalette[pix];
+                auto gray = (color.r + color.g + color.b) / (255.0 * 3);
+                if (gray < most_dark) {
+                    most_dark = gray;
+                    DEFINE_COLOR_ON = pix;
+                }
+                if (most_light < gray) {
+                    most_light = gray;
+                    DEFINE_COLOR_OFF = pix;
+                }
+            }
+        }
+    }
 
-    pTable->color_on = on;
-    pTable->color_off = off;
+    pTable->color_on = DEFINE_COLOR_ON;
+    pTable->color_off = DEFINE_COLOR_OFF;
     pTable->error = 0;
 
     sbyte delta_pos[9][3] = {
@@ -97,7 +131,6 @@ worktable_create(type_worktable* pTable, Bitmap& const bmp) {
     };
 
     uint32 cell_index = 0;
-    point pos;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
@@ -119,7 +152,7 @@ worktable_create(type_worktable* pTable, Bitmap& const bmp) {
                 }
             };
 
-            if (bmp.pPix[index] == on) {
+            if (bmp.pPix[index] == DEFINE_COLOR_ON) {
                 cell.enable = true;
             }
 

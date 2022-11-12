@@ -4,9 +4,6 @@
 #include <vector>
 #include "Bitmap.h"
 
-#define DEFINE_COLOR_ON  (0x00)
-#define DEFINE_COLOR_OFF (0xFF)
-
 enum struct E_DIRECTION {
 	BOTTOM_L = 0, // ç∂â∫
 	BOTTOM,       // â∫
@@ -20,13 +17,13 @@ enum struct E_DIRECTION {
 };
 
 #pragma pack(push, 1)
-	struct type_workcell {
-		bool enable;
-		bool traced;
-		point pos;
-		uint32 index_bmp;
-		uint32 index_dir[9];
-	};
+struct type_workcell {
+	bool enable;
+	bool traced;
+	point pos;
+	uint32 index_bmp;
+	uint32 index_dir[9];
+};
 #pragma pack(pop)
 
 struct type_worktable {
@@ -40,6 +37,11 @@ struct type_worktable_vert_info {
 	double distance;
 	bool deleted;
 };
+
+static byte DEFINE_COLOR_BLACK = 0x00;
+static byte DEFINE_COLOR_WHITE = 0xFF;
+static byte DEFINE_COLOR_ON = 0x00;
+static byte DEFINE_COLOR_OFF = 0xFF;
 
 void
 worktable_create(type_worktable*, Bitmap& const);

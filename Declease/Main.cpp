@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 
         // save
         stringstream ss;
-        ss << bmp_file << ".declease.bmp";
+        ss << bmp_file.substr(0, bmp_file.size() - 4) << "_declease.bmp";
         bmp8->Save(ss.str());
         if (bmp8->error != 0) {
             cout << "bmp writing error..." << endl;
