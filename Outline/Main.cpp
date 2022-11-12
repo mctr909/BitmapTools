@@ -102,7 +102,12 @@ int main(int argc, char* argv[]) {
 
         // save
         stringstream ss;
-        ss << bmp_file << ".outline.bmp";
+        ss << bmp_file.substr(0, bmp_file.size() - 4);
+        if (1 < thickness) {
+            ss << "_thickness" << thickness << ".bmp";
+        } else {
+            ss << "_outline.bmp";
+        }
         pBmp->Save(ss.str());
         if (pBmp->error != 0) {
             cout << "bmp writing error..." << endl;
