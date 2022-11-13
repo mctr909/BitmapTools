@@ -8,7 +8,7 @@ using namespace std;
 
 #include "../CommonLib/Bitmap.h"
 #include "../CommonLib/WorkTable.h"
-#include "mqo.h"
+#include "../CommonLib/Mqo.h"
 
 #pragma comment (lib, "CommonLib.lib")
 

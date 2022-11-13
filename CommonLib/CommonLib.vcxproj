@@ -129,10 +129,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Bitmap.cpp" />
+    <ClCompile Include="Mqo.cpp" />
     <ClCompile Include="WorkTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="Mqo.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="WorkTable.h" />
   </ItemGroup>
