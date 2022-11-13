@@ -21,13 +21,14 @@ struct type_workcell {
 	bool enable;
 	bool traced;
 	point pos;
-	uint32 index_bmp;
-	uint32 index_dir[9];
+	uint32 index_around[9];
 };
 #pragma pack(pop)
 
 struct type_worktable {
 	type_workcell* pCells;
+	byte color_white;
+	byte color_black;
 	byte color_on;
 	byte color_off;
 	int32 error;
@@ -37,11 +38,6 @@ struct type_worktable_vert_info {
 	double distance;
 	bool deleted;
 };
-
-static byte DEFINE_COLOR_BLACK = 0x00;
-static byte DEFINE_COLOR_WHITE = 0xFF;
-static byte DEFINE_COLOR_ON = 0x00;
-static byte DEFINE_COLOR_OFF = 0xFF;
 
 void
 worktable_create(type_worktable*, Bitmap& const);
@@ -69,7 +65,6 @@ worktable_get_data(
         false,
 		false,
         { INT32_MAX, INT32_MAX },
-        UINT32_MAX,
         {
             UINT32_MAX, UINT32_MAX, UINT32_MAX,
             UINT32_MAX, UINT32_MAX, UINT32_MAX,
@@ -81,7 +76,7 @@ worktable_get_data(
         return (ret);
     }
 
-    auto index = table.pCells[center_index].index_dir[static_cast<uint32>(direction)];
+    auto index = table.pCells[center_index].index_around[static_cast<uint32>(direction)];
     if (index < size_max) {
         ret = table.pCells[index];
     }

@@ -28,7 +28,6 @@ write_outline(Bitmap* pBmp, int32 weight) {
 
     worktable_write_outline(table, pBmp);
 
-    free(table.pCells);
     pBmp->error = 0;
 
     const auto radius = weight / 2;
@@ -37,21 +36,19 @@ write_outline(Bitmap* pBmp, int32 weight) {
         pBmp->error = -1;
         return;
     }
-    memset(pTempPix, DEFINE_COLOR_WHITE, size_max);
-    point pos;
+    memset(pTempPix, table.color_white, size_max);
     for (uint32 i = 0; i < size_max; i++) {
         if (table.color_on != pBmp->pPix[i]) {
             continue;
         }
-        pTempPix[i] = DEFINE_COLOR_BLACK;
-        bitmap_get_pos(*pBmp, &pos, i);
+        auto pos = table.pCells[i].pos;
         for (int32 dy = -radius; dy <= radius; dy++) {
             for (int32 dx = -radius; dx <= radius; dx++) {
                 auto r = sqrt(dx * dx + dy * dy);
                 if (r <= weight / 2.0) {
                     auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
                     if (ULONG_MAX != arownd) {
-                        pTempPix[arownd] = DEFINE_COLOR_BLACK;
+                        pTempPix[arownd] = table.color_black;
                     }
                 }
             }
@@ -59,6 +56,8 @@ write_outline(Bitmap* pBmp, int32 weight) {
     }
     memcpy_s(pBmp->pPix, size_max, pTempPix, size_max);
     free(pTempPix);
+
+    free(table.pCells);
 }
 
 int main(int argc, char* argv[]) {

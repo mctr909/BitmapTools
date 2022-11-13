@@ -22,8 +22,9 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
     point_d og;
     double len;
 
-    vector<point> temp;
-    temp.push_back((*pPolyline)[0]);
+    /*** 3点の直線チェック ***/
+    vector<point> line_3p;
+    line_3p.push_back((*pPolyline)[0]);
     pos_b = (*pPolyline)[0];
     pos_a = (*pPolyline)[1];
     for (int32 i = 2; i < pPolyline->size(); i++) {
@@ -41,21 +42,22 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
         og.x /= len;
         og.y /= len;
         if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
-            temp.push_back(pos_b);
+            line_3p.push_back(pos_b);
         }
     }
 
+    /*** 4点の直線チェック ***/
     pPolyline->clear();
-    pPolyline->push_back(temp[0]);
-    pPolyline->push_back(temp[1]);
-    pos_c = temp[0];
-    pos_b = temp[1];
-    pos_a = temp[2];
-    for (int32 i = 3; i < temp.size(); i++) {
+    pPolyline->push_back(line_3p[0]);
+    pPolyline->push_back(line_3p[1]);
+    pos_c = line_3p[0];
+    pos_b = line_3p[1];
+    pos_a = line_3p[2];
+    for (int32 i = 3; i < line_3p.size(); i++) {
         pos_o = pos_c;
         pos_c = pos_b;
         pos_b = pos_a;
-        pos_a = temp[i];
+        pos_a = line_3p[i];
         oa.x = pos_a.x - pos_o.x;
         oa.y = pos_a.y - pos_o.y;
         og.x = (pos_b.x + pos_c.x) / 2.0 - pos_o.x;
@@ -75,47 +77,43 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
 
 void
 worktable_create(type_worktable* pTable, Bitmap& const bmp) {
-    const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
+    /*** パレットから最暗色と最明色を取得 ***/
     double most_dark = 10.0;
     double most_light = 0.0;
-    point pos;
     for (uint32 i = 0; i < 256; i++) {
-        auto pix = (byte)bmp.pPix[i];
-        auto color = bmp.pPalette[pix];
-        auto gray = (color.r + color.g + color.b) / (255.0 * 3);
-        if (gray < most_dark) {
-            most_dark = gray;
-            DEFINE_COLOR_BLACK = pix;
+        auto color = bmp.pPalette[i];
+        auto lum = bitmap_get_lum(color.r, color.g, color.b);
+        if (lum < most_dark) {
+            most_dark = lum;
+            pTable->color_black = i;
         }
-        if (most_light < gray) {
-            most_light = gray;
-            DEFINE_COLOR_WHITE = pix;
+        if (most_light < lum) {
+            most_light = lum;
+            pTable->color_white = i;
         }
     }
+
+    /*** ピクセルから最暗色(塗り部)と最明色(塗っていない部分)を取得 ***/
+    const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
+    point pos;
     most_dark = 10.0;
     most_light = 0.0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
-            if (UINT32_MAX != index) {
-                auto pix = (byte)bmp.pPix[index];
-                auto color = bmp.pPalette[pix];
-                auto gray = (color.r + color.g + color.b) / (255.0 * 3);
-                if (gray < most_dark) {
-                    most_dark = gray;
-                    DEFINE_COLOR_ON = pix;
-                }
-                if (most_light < gray) {
-                    most_light = gray;
-                    DEFINE_COLOR_OFF = pix;
-                }
+            auto pix = bmp.pPix[index];
+            auto color = bmp.pPalette[pix];
+            auto lum = bitmap_get_lum(color.r, color.g, color.b);
+            if (lum < most_dark) {
+                most_dark = lum;
+                pTable->color_on = pix;
+            }
+            if (most_light < lum) {
+                most_light = lum;
+                pTable->color_off = pix;
             }
         }
     }
-
-    pTable->color_on = DEFINE_COLOR_ON;
-    pTable->color_off = DEFINE_COLOR_OFF;
-    pTable->error = 0;
 
     sbyte delta_pos[9][3] = {
         /* DIRECTION     f   x   y */
@@ -129,22 +127,18 @@ worktable_create(type_worktable* pTable, Bitmap& const bmp) {
         /* TOP      */ { 1,  0,  1},
         /* TOP_R    */ { 1,  1,  1}
     };
-
-    uint32 cell_index = 0;
+    
+    /*** ワークテーブルの初期化 ***/
+    pTable->error = 0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
 
-            if (index == UINT32_MAX) {
-                pTable->error = -1;
-                return;
-            }
-
+            /*** ピクセル情報の初期化 ***/
             type_workcell cell = {
-                false,
-                false,
+                pTable->color_on == bmp.pPix[index],
+                false, // traced: false
                 pos,
-                index,
                 {
                     UINT32_MAX, UINT32_MAX, UINT32_MAX,
                     UINT32_MAX, UINT32_MAX, UINT32_MAX,
@@ -152,45 +146,41 @@ worktable_create(type_worktable* pTable, Bitmap& const bmp) {
                 }
             };
 
-            if (bmp.pPix[index] == DEFINE_COLOR_ON) {
-                cell.enable = true;
-            }
-
-            point inv_pos = { (bmp_size.x - pos.x), (bmp_size.y - pos.y) };
-
             /* 左下, 左, 左上 */
-            if (pos.x < 1) {
+            if (0 == pos.x) {
                 delta_pos[0][0] = delta_pos[3][0] = delta_pos[6][0] = 0; /* 無効 */
             } else {
                 delta_pos[0][0] = delta_pos[3][0] = delta_pos[6][0] = 1; /* 有効 */
             }
             /* 左下, 下, 右下 */
-            if (pos.y < 1) {
+            if (0 == pos.y) {
                 delta_pos[0][0] = delta_pos[1][0] = delta_pos[2][0] = 0; /* 無効 */
             } else {
                 delta_pos[0][0] = delta_pos[1][0] = delta_pos[2][0] = 1; /* 有効 */
             }
             /* 右下, 右, 右上 */
-            if (inv_pos.x < 2) {
+            if (1 == (bmp_size.x - pos.x)) {
                 delta_pos[2][0] = delta_pos[5][0] = delta_pos[8][0] = 0; /* 無効 */
             } else {
                 delta_pos[2][0] = delta_pos[5][0] = delta_pos[8][0] = 1; /* 有効 */
             }
             /* 左上, 上, 右上 */
-            if (inv_pos.y < 2) {
+            if (1 == (bmp_size.y - pos.y)) {
                 delta_pos[6][0] = delta_pos[7][0] = delta_pos[8][0] = 0; /* 無効 */
             } else {
                 delta_pos[6][0] = delta_pos[7][0] = delta_pos[8][0] = 1; /* 有効 */
             }
 
-            for (int i = 0; i < 9; i++) {
+            /*** 周囲ピクセルのインデックスを取得してセット ***/
+            for (uint32 i = 0; i < 9; i++) {
                 if (delta_pos[i][0] != 0) {
-                    point pos_dir = { (pos.x + delta_pos[i][1]), (pos.y + delta_pos[i][2]) };
-                    cell.index_dir[i] = bitmap_get_index(bmp, pos_dir);
+                    point pos_around = { (pos.x + delta_pos[i][1]), (pos.y + delta_pos[i][2]) };
+                    cell.index_around[i] = bitmap_get_index(bmp, pos_around);
                 }
             }
 
-            pTable->pCells[cell_index++] = cell;
+            /*** ピクセル情報をワークテーブルにセット ***/
+            pTable->pCells[index] = cell;
         }
     }
 }
@@ -218,11 +208,10 @@ worktable_write_outline(type_worktable& const table, Bitmap* pBmp) {
             if (!flg && !tmp.enable) {
                 flg = true;
             }
-            auto index = table.pCells[i].index_bmp;
             if (flg) {
-                pBmp->pPix[index] = table.color_on;
+                pBmp->pPix[i] = table.color_on;
             } else {
-                pBmp->pPix[index] = table.color_off;
+                pBmp->pPix[i] = table.color_off;
             }
         }
     }
