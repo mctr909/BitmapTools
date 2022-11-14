@@ -76,7 +76,7 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
 }
 
 void
-worktable_create(type_worktable* pTable, Bitmap& const bmp) {
+worktable_create(type_worktable* pTable, Bitmap& bmp) {
     /*** パレットから最暗色と最明色を取得 ***/
     double most_dark = 10.0;
     double most_light = 0.0;
@@ -186,7 +186,7 @@ worktable_create(type_worktable* pTable, Bitmap& const bmp) {
 }
 
 void
-worktable_write_outline(type_worktable& const table, Bitmap* pBmp) {
+worktable_write_outline(type_worktable& table, Bitmap* pBmp) {
     const auto size_max = pBmp->size_max;
     for (uint32 i = 0; i < size_max; i++) {
         if (table.pCells[i].enable) {
@@ -218,7 +218,7 @@ worktable_write_outline(type_worktable& const table, Bitmap* pBmp) {
 }
 
 vector<vector<point>>
-worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
+worktable_create_polyline(type_worktable* pTable, Bitmap& bmp) {
     const auto table_size = bmp.size_max;
     const auto on = pTable->color_on;
     const auto off = pTable->color_off;
@@ -320,9 +320,9 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& const bmp) {
 }
 
 double
-worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index, vector<surface>* pSurf_list, int32 order) {
-    const uint32 index_size = index.size();
-    double sur = 0.0;
+worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surface>* pSurf_list, int32 order) {
+    const auto index_size = static_cast<uint32>(index.size());
+    double area = 0.0;
     /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
     vector<type_worktable_vert_info> vert_info;
     for (uint32 i = 0; i < index_size; i++) {
@@ -438,7 +438,7 @@ worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index,
                 surf.b = index[ib];
                 pSurf_list->push_back(surf);
                 /*** 三角形の面積を加算 ***/
-                sur += abs(normal_aob) / 2.0;
+                area += abs(normal_aob) / 2.0;
                 /*** 頂点(vo)を検索対象から削除 ***/
                 vert_info[io].deleted = true;
                 /*** 次の最も遠くにある頂点(vo)を取得 ***/
@@ -446,10 +446,31 @@ worktable_create_polygon(vector<point>& const vert, vector<uint32>& const index,
             }
         } // 頂点(vo)の移動ループ
     } while (3 < vert_count); // 最も遠くにある頂点(vo)の取得ループ
-    return sur;
+    return area;
 }
 
 bool
-worktable_inner_polygon(vector<point>& const outer, vector<uint32>& const inner) {
+worktable_inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<point>& vert) {
+    for (uint32 i = 0; i < outer_surf.size(); i++) {
+        auto outer = outer_surf[i];
+        auto outer_a = vert[outer.a];
+        auto outer_o = vert[outer.o];
+        auto outer_b = vert[outer.b];
+        for (uint32 j = 0; j < inner_surf.size(); j++) {
+            auto inner = inner_surf[j];
+            auto inner_a = vert[inner.a];
+            auto inner_o = vert[inner.o];
+            auto inner_b = vert[inner.b];
+            if (worktable_inner_triangle(outer_a, outer_o, outer_b, inner_a)) {
+                return true;
+            }
+            if (worktable_inner_triangle(outer_a, outer_o, outer_b, inner_o)) {
+                return true;
+            }
+            if (worktable_inner_triangle(outer_a, outer_o, outer_b, inner_b)) {
+                return true;
+            }
+        }
+    }
     return false;
 }
