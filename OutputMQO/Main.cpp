@@ -62,24 +62,30 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
             continue;
         }
 
-        auto index_p = indexes[nest.parent];
+        auto parent_i = nest.parent;
+        auto index_p = indexes[parent_i];
         auto index_c = indexes[nest_i];
 
         /*** マージ先とマージ元で互いに最も近い点を検索 ***/
         uint32 most_near = UINT32_MAX;
         uint32 insert_dst = 0;
         uint32 insert_src = 0;
-        for (uint32 c = 0; c < index_c.size(); c++) {
-            for (uint32 p = 0; p < index_p.size(); p++) {
-                auto ip = index_p[p];
-                auto ic = index_c[c];
-                auto sx = verts[ic].x - verts[ip].x;
-                auto sy = verts[ic].y - verts[ip].y;
-                auto dist = static_cast<uint32>(sx * sx + sy * sy);
-                if (dist < most_near) {
-                    insert_dst = p;
-                    insert_src = c;
-                    most_near = dist;
+        {
+            auto index_n = indexes[nest.parent];
+            for (uint32 c = 0; c < index_c.size(); c++) {
+                for (uint32 n = 0; n < index_n.size(); n++) {
+                    auto in = index_n[n];
+                    auto ic = index_c[c];
+                    auto sx = verts[ic].x - verts[in].x;
+                    auto sy = verts[ic].y - verts[in].y;
+                    auto dist = static_cast<uint32>(sx * sx + sy * sy);
+                    if (dist < most_near) {
+                        insert_dst = n;
+                        insert_src = c;
+                        most_near = dist;
+                        parent_i = nest.parent;
+                        index_p = index_n;
+                    }
                 }
             }
         }
@@ -98,7 +104,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
         for (uint32 i = insert_dst; i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
         }
-        indexes[nest.parent] = temp;
+        indexes[parent_i] = temp;
         indexes[nest_i].clear();
     }
 }
@@ -275,8 +281,8 @@ int main(int argc, char* argv[]) {
 
         // save
         stringstream ss;
-        ss << bmp_file.substr(0, bmp_file.size() - 4) << ".mqo";
-        if (fn_mqo_write(&mqo, ss.str())) {
+        ss << bmp_file.substr(0, bmp_file.size() - 4) << ".stl";
+        if (fn_stl_write(&mqo, ss.str())) {
             cout << "bmp writing error..." << endl;
             delete pBmp;
             return (EXIT_SUCCESS);

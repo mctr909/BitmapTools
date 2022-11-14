@@ -157,6 +157,46 @@ int32 fn_mqo_write(const type_mqo* pmqo, const string name) {
     return (0);
 }
 
+int32 fn_stl_write(const type_mqo* pmqo, const string name) {
+    auto vert = pmqo->object.vertex;
+    auto faces = pmqo->object.face;
+
+    // ‘
+    ofstream fout(name, ios::out);
+    if (!fout) {
+        return (-1);
+    }
+
+    fout << "solid notitle\n";
+    for (uint32 i = 0; i < faces.size(); i++) {
+        auto face = faces[i];
+        auto ia = face.vertex[0];
+        auto io = face.vertex[1];
+        auto ib = face.vertex[2];
+        auto va = vert[ia];
+        auto vo = vert[io];
+        auto vb = vert[ib];
+        char str[128];
+
+        fout << "facet normal 1 1 1\n";
+
+        fout << "outer loop\n";
+        sprintf_s(str, sizeof(str), "vertex %f %f %f\n", vb.x, vb.y, vb.z);
+        fout << str;
+        sprintf_s(str, sizeof(str), "vertex %f %f %f\n", vo.x, vo.y, vo.z);
+        fout << str;
+        sprintf_s(str, sizeof(str), "vertex %f %f %f\n", va.x, va.y, va.z);
+        fout << str;
+        fout << "endloop\n";
+
+        fout << "endfacet\n";
+    }
+    
+    fout << "endsolid notitle\n";
+    fout.close();
+    return (0);
+}
+
 type_mqo fn_mqo_create_default_parameter() {
     type_mqo mqo;
 

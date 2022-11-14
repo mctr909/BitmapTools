@@ -164,6 +164,7 @@ struct type_mqo {
 };
 
 int32 fn_mqo_write(const type_mqo*, const string);
+int32 fn_stl_write(const type_mqo*, const string);
 type_mqo fn_mqo_create_default_parameter(void);
 
 #endif //__MQO_H__
