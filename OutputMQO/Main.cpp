@@ -210,7 +210,7 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
     for (uint32 i = 0; i < indexes_bottom.size(); i++) {
         auto index_bottom = indexes_bottom[i];
         auto index_top = indexes_top[i];
-        if (index_bottom.size() < 3 || index_top.size() < 3) {
+        if (0 == index_bottom.size() || 0 == index_top.size()) {
             continue;
         }
         auto point_count = static_cast<int32>(index_bottom.size());
