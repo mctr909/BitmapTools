@@ -281,8 +281,8 @@ int main(int argc, char* argv[]) {
 
         // save
         stringstream ss;
-        ss << bmp_file.substr(0, bmp_file.size() - 4) << ".stl";
-        if (fn_stl_write(&mqo, ss.str())) {
+        ss << bmp_file.substr(0, bmp_file.size() - 4) << ".mqo";
+        if (fn_mqo_write(&mqo, ss.str())) {
             cout << "bmp writing error..." << endl;
             delete pBmp;
             return (EXIT_SUCCESS);
