@@ -33,6 +33,8 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
         nest.depth = 0;
         nest_info.push_back(nest);
     }
+
+    /*** 入れ子になっているアウトラインを検索 ***/
     for (uint32 i = 0; i < indexes.size(); i++) {
         for (uint32 j = 0; j < indexes.size(); j++) {
             if (i == j) {
@@ -45,60 +47,59 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
             if (outer_area < inner_area) {
                 continue;
             }
-            auto a = worktable_inner_polygon(outer_surf, inner_surf, verts);
-            if (!a) {
-                continue;
+            if (worktable_inner_polygon(outer_surf, inner_surf, verts)) {
+                nest_info[j].parent = i;
+                nest_info[j].depth++;
             }
-            nest_info[j].parent = i;
-            nest_info[j].depth++;
         }
     }
 
-    for (uint32 me_i = 0; me_i < nest_info.size(); me_i++) {
-        auto nest = nest_info[me_i];
-        if (0 == nest.depth || 0 == nest.depth % 2) {
+    for (uint32 nest_i = 0; nest_i < nest_info.size(); nest_i++) {
+        auto nest = nest_info[nest_i];
+        /*** depth=0   : 一番外側 ***/
+        /*** depth=偶数: 穴に該当するアウトライン ***/
+        if (0 == nest.depth % 2) {
             continue;
         }
 
-        auto index_m = indexes[me_i];
         auto index_p = indexes[nest.parent];
+        auto index_c = indexes[nest_i];
 
-        uint32 insert_pos = 0;
-        uint32 insert_begin = 0;
-        double most_near = UINT32_MAX;
-        for (uint32 m = 0; m < index_m.size(); m++) {
+        /*** マージ先とマージ元で互いに最も近い点を検索 ***/
+        uint32 most_near = UINT32_MAX;
+        uint32 insert_dst = 0;
+        uint32 insert_src = 0;
+        for (uint32 c = 0; c < index_c.size(); c++) {
             for (uint32 p = 0; p < index_p.size(); p++) {
-                auto im = index_m[m];
                 auto ip = index_p[p];
-                auto sx = verts[im].x - verts[ip].x;
-                auto sy = verts[im].y - verts[ip].y;
-                auto dist = sqrt(sx * sx + sy * sy);
+                auto ic = index_c[c];
+                auto sx = verts[ic].x - verts[ip].x;
+                auto sy = verts[ic].y - verts[ip].y;
+                auto dist = static_cast<uint32>(sx * sx + sy * sy);
                 if (dist < most_near) {
-                    insert_pos = p;
-                    insert_begin = m;
+                    insert_dst = p;
+                    insert_src = c;
                     most_near = dist;
                 }
             }
         }
 
-        vector<uint32> tmp;
-        for (uint32 i = 0; i <= insert_pos; i++) {
-            tmp.push_back(index_p[i]);
+        /*** 穴に該当するアウトラインをマージ ***/
+        vector<uint32> temp;
+        for (uint32 i = 0; i <= insert_dst; i++) {
+            temp.push_back(index_p[i]);
         }
-
-        auto inner_size = index_m.size();
+        auto inner_size = index_c.size();
         for (int32 i = 0; i < inner_size; i++) {
-            auto idx = (inner_size + insert_begin - i) % inner_size;
-            tmp.push_back(index_m[idx]);
+            auto im = (inner_size + insert_src - i) % inner_size;
+            temp.push_back(index_c[im]);
         }
-        tmp.push_back(index_m[insert_begin]);
-
-        for (uint32 i = insert_pos; i < index_p.size(); i++) {
-            tmp.push_back(index_p[i]);
+        temp.push_back(index_c[insert_src]);
+        for (uint32 i = insert_dst; i < index_p.size(); i++) {
+            temp.push_back(index_p[i]);
         }
-
-        indexes[nest.parent] = tmp;
-        indexes[me_i].clear();
+        indexes[nest.parent] = temp;
+        indexes[nest_i].clear();
     }
 }
 
