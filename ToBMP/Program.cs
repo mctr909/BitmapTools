@@ -11,10 +11,10 @@ namespace ToBMP {
                 if (Path.GetExtension(path) == ".bmp" && bmpSrc.PixelFormat == PixelFormat.Format24bppRgb) {
                     continue;
                 }
-                var bmpDst = new Bitmap(((bmpSrc.Width + 3) >> 2) << 2, bmpSrc.Height, PixelFormat.Format24bppRgb);
+                var bmpDst = new Bitmap(bmpSrc.Width, bmpSrc.Height, PixelFormat.Format24bppRgb);
                 var g = Graphics.FromImage(bmpDst);
                 g.Clear(Color.White);
-                g.DrawImage(bmpSrc, 0, 0);
+                g.DrawImage(bmpSrc, 0, 0, bmpSrc.Width, bmpSrc.Height);
                 path = Path.GetDirectoryName(path)
                     + "\\" + Path.GetFileNameWithoutExtension(path)
                     + (Path.GetExtension(path) == ".bmp" ? "_24bit.bmp" : ".bmp");
