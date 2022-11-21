@@ -137,7 +137,7 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
     for (uint32 i = 0; i < outlines.size(); i++) {
         auto outline = outlines[i];
         auto point_count = static_cast<uint32>(outline.size());
-        if (point_count < 3) {
+        if (0 == point_count) {
             continue;
         }
         /*** íÍñ  ***/
@@ -171,7 +171,7 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
     /*** ñ ÇèoóÕ(íÍñ ) ***/
     for (uint32 i = 0; i < indexes_bottom.size(); i++) {
         auto index = indexes_bottom[i];
-        if (index.size() < 3) {
+        if (0 == index.size()) {
             continue;
         }
         vector<surface> surf;
@@ -190,7 +190,7 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
     /*** ñ ÇèoóÕ(è„ñ ) ***/
     for (uint32 i = 0; i < indexes_top.size(); i++) {
         auto index = indexes_top[i];
-        if (index.size() < 3) {
+        if (0 == index.size()) {
             continue;
         }
         vector<surface> surf;
@@ -214,11 +214,35 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
             continue;
         }
         auto point_count = static_cast<int32>(index_bottom.size());
-        for (int32 ib = 0, it = point_count - 1; ib < point_count; ib++, it--) {
+        for (int32 ib = 0; ib < point_count; ib++) {
             auto idx0 = index_bottom[(ib + 1) % point_count];
             auto idx1 = index_bottom[ib];
-            auto idx2 = index_top[it];
-            auto idx3 = index_top[(it + point_count - 1) % point_count];
+            uint32 idx2;
+            for (int32 it = 0; it < point_count; it++) {
+                auto idx = index_top[it];
+                if (idx == idx1) {
+                    continue;
+                }
+                auto sx = verts[idx].x - verts[idx1].x;
+                auto sy = verts[idx].y - verts[idx1].y;
+                if (0 == sx * sx + sy * sy) {
+                    idx2 = idx;
+                    break;
+                }
+            }
+            uint32 idx3;
+            for (int32 it = 0; it < point_count; it++) {
+                auto idx = index_top[it];
+                if (idx == idx0) {
+                    continue;
+                }
+                auto sx = verts[idx].x - verts[idx0].x;
+                auto sy = verts[idx].y - verts[idx0].y;
+                if (0 == sx * sx + sy * sy) {
+                    idx3 = idx;
+                    break;
+                }
+            }
             type_mqo_face face;
             face.material = INT16_MAX;
             face.id = static_cast<uint32>(obj.face.size());
