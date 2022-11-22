@@ -218,9 +218,6 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
             uint32 idx2;
             for (int32 it = 0; it < point_count; it++) {
                 auto idx = index_top[it];
-                if (idx == idx1) {
-                    continue;
-                }
                 auto sx = verts[idx].x - verts[idx1].x;
                 auto sy = verts[idx].y - verts[idx1].y;
                 if (0 == sx * sx + sy * sy) {
@@ -231,9 +228,6 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
             uint32 idx3;
             for (int32 it = 0; it < point_count; it++) {
                 auto idx = index_top[it];
-                if (idx == idx0) {
-                    continue;
-                }
                 auto sx = verts[idx].x - verts[idx0].x;
                 auto sy = verts[idx].y - verts[idx0].y;
                 if (0 == sx * sx + sy * sy) {
