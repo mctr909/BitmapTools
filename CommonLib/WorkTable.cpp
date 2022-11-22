@@ -351,6 +351,7 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
             }
             vert_count++;
         }
+        reverse_count = 0;
         vo = vert[index[io]];
         while (true) { // 頂点(vo)の移動ループ
             /*** 頂点(vo)の隣にある頂点(va)を取得 ***/
@@ -385,19 +386,18 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
             if (normal_aob * order < 0) {
                 /*** 裏の場合 ***/
                 reverse_count++;
-                if (index_size * 2 < reverse_count) {
+                if (index_size < reverse_count) {
                     /*** 表になる三角形(va vo vb)がない場合 ***/
                     /*** 頂点(vo)を検索対象から削除 ***/
                     vert_info[io].deleted = true;
                     /*** 次の最も遠くにある頂点(vo)を取得 ***/
-                    reverse_count = 0;
                     break;
                 }
                 /*** 頂点(vo)を隣に移動 ***/
-                io = (io + index_size - order) % index_size;
+                io = (io + index_size + order) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
                     if (vert_info[io].deleted) {
-                        io = (io + index_size - order) % index_size;
+                        io = (io + index_size + order) % index_size;
                     } else {
                         break;
                     }
@@ -420,10 +420,10 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
             if (point_in_triangle) {
                 /*** 内側に他の頂点がある場合 ***/
                 /*** 頂点(vo)を隣に移動 ***/
-                io = (io + index_size - order) % index_size;
+                io = (io + index_size + order) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
                     if (vert_info[io].deleted) {
-                        io = (io + index_size - order) % index_size;
+                        io = (io + index_size + order) % index_size;
                     } else {
                         break;
                     }
