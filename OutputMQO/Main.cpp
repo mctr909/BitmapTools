@@ -33,7 +33,6 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
         nest.depth = 0;
         nest_info.push_back(nest);
     }
-
     /*** 入れ子になっているアウトラインを検索 ***/
     for (uint32 iOut = 0; iOut < indexes.size(); iOut++) {
         if (indexes[iOut].size() < 3) {
@@ -61,44 +60,35 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
             }
         }
     }
-
+    /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
     for (uint32 iNest = 0; iNest < nest_info.size(); iNest++) {
         auto nest = nest_info[iNest];
         /*** depth=0   : 一番外側 ***/
-        /*** depth=偶数: 穴に該当するアウトライン ***/
+        /*** depth=偶数: 穴に該当しないアウトライン ***/
         if (0 == nest.depth % 2) {
             continue;
         }
-
-        auto iParent = nest.parent;
-        auto index_p = indexes[iParent];
-        auto index_c = indexes[iNest];
-
-        /*** マージ先とマージ元で互いに最も近い点を検索 ***/
+        /*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
+        /*** 互いに最も近い点をマージ開始位置に設定する ***/
+        uint32 insert_dst = 0, insert_src = 0;
         uint32 most_near = UINT32_MAX;
-        uint32 insert_dst = 0;
-        uint32 insert_src = 0;
-        {
-            auto index_n = indexes[nest.parent];
-            for (uint32 c = 0; c < index_c.size(); c++) {
-                for (uint32 n = 0; n < index_n.size(); n++) {
-                    auto in = index_n[n];
-                    auto ic = index_c[c];
-                    auto sx = verts[ic].x - verts[in].x;
-                    auto sy = verts[ic].y - verts[in].y;
-                    auto dist = static_cast<uint32>(sx * sx + sy * sy);
-                    if (dist < most_near) {
-                        insert_dst = n;
-                        insert_src = c;
-                        most_near = dist;
-                        iParent = nest.parent;
-                        index_p = index_n;
-                    }
+        auto index_p = indexes[nest.parent];
+        auto index_c = indexes[iNest];
+        for (uint32 c = 0; c < index_c.size(); c++) {
+            for (uint32 n = 0; n < index_p.size(); n++) {
+                auto ip = index_p[n];
+                auto ic = index_c[c];
+                auto sx = verts[ic].x - verts[ip].x;
+                auto sy = verts[ic].y - verts[ip].y;
+                auto dist = static_cast<uint32>(sx * sx + sy * sy);
+                if (dist < most_near) {
+                    insert_dst = n;
+                    insert_src = c;
+                    most_near = dist;
                 }
             }
         }
-
-        /*** 穴に該当するアウトラインをマージ ***/
+        /*** マージ ***/
         vector<uint32> temp;
         for (uint32 i = 0; i <= insert_dst; i++) {
             temp.push_back(index_p[i]);
@@ -112,7 +102,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
         for (uint32 i = insert_dst; i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
         }
-        indexes[iParent] = temp;
+        indexes[nest.parent] = temp;
         indexes[iNest].clear();
     }
 }
