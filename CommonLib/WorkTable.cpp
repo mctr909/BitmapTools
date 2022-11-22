@@ -326,8 +326,8 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
     /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
     vector<type_worktable_vert_info> vert_info;
     for (uint32 i = 0; i < index_size; i++) {
-        auto x = vert[index[i]].x - INT32_MAX;
-        auto y = vert[index[i]].y - INT32_MAX;
+        auto x = static_cast<int64>(vert[index[i]].x) - INT32_MIN;
+        auto y = static_cast<int64>(vert[index[i]].y) - INT32_MIN;
         type_worktable_vert_info info;
         info.distance = sqrt(x * x + y * y);
         info.deleted = false;
@@ -394,10 +394,10 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
                     break;
                 }
                 /*** 頂点(vo)を隣に移動 ***/
-                io = (io + index_size - 1) % index_size;
+                io = (io + index_size + order) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
                     if (vert_info[io].deleted) {
-                        io = (io + index_size - 1) % index_size;
+                        io = (io + index_size + order) % index_size;
                     } else {
                         break;
                     }
@@ -420,10 +420,10 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
             if (point_in_triangle) {
                 /*** 内側に他の頂点がある場合 ***/
                 /*** 頂点(vo)を隣に移動 ***/
-                io = (io + index_size - 1) % index_size;
+                io = (io + index_size + order) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
                     if (vert_info[io].deleted) {
-                        io = (io + index_size - 1) % index_size;
+                        io = (io + index_size + order) % index_size;
                     } else {
                         break;
                     }

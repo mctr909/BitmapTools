@@ -4,9 +4,11 @@
 typedef unsigned char  byte;
 typedef unsigned short uint16;
 typedef unsigned int   uint32;
+typedef unsigned long  uint64;
 typedef signed char    sbyte;
 typedef short int16;
 typedef int   int32;
+typedef long  int64;
 
 #pragma pack(push, 8)
 struct point {
