@@ -35,36 +35,44 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
     }
 
     /*** 入れ子になっているアウトラインを検索 ***/
-    for (uint32 i = 0; i < indexes.size(); i++) {
-        for (uint32 j = 0; j < indexes.size(); j++) {
-            if (i == j) {
+    for (uint32 iOut = 0; iOut < indexes.size(); iOut++) {
+        if (indexes[iOut].size() < 3) {
+            indexes[iOut].clear();
+            continue;
+        }
+        for (uint32 iIn = iOut + 1; iIn < indexes.size(); iIn++) {
+            if (indexes[iIn].size() < 3) {
+                indexes[iIn].clear();
+                continue;
+            }
+            if (nest_info[iOut].depth < nest_info[iIn].depth) {
                 continue;
             }
             vector<surface> outer_surf;
             vector<surface> inner_surf;
-            auto outer_area = worktable_create_polygon(verts, indexes[i], &outer_surf, order);
-            auto inner_area = worktable_create_polygon(verts, indexes[j], &inner_surf, order);
+            auto outer_area = worktable_create_polygon(verts, indexes[iOut], &outer_surf, order);
+            auto inner_area = worktable_create_polygon(verts, indexes[iIn], &inner_surf, order);
             if (outer_area < inner_area) {
                 continue;
             }
             if (worktable_inner_polygon(outer_surf, inner_surf, verts)) {
-                nest_info[j].parent = i;
-                nest_info[j].depth++;
+                nest_info[iIn].parent = iOut;
+                nest_info[iIn].depth++;
             }
         }
     }
 
-    for (uint32 nest_i = 0; nest_i < nest_info.size(); nest_i++) {
-        auto nest = nest_info[nest_i];
+    for (uint32 iNest = 0; iNest < nest_info.size(); iNest++) {
+        auto nest = nest_info[iNest];
         /*** depth=0   : 一番外側 ***/
         /*** depth=偶数: 穴に該当するアウトライン ***/
         if (0 == nest.depth % 2) {
             continue;
         }
 
-        auto parent_i = nest.parent;
-        auto index_p = indexes[parent_i];
-        auto index_c = indexes[nest_i];
+        auto iParent = nest.parent;
+        auto index_p = indexes[iParent];
+        auto index_c = indexes[iNest];
 
         /*** マージ先とマージ元で互いに最も近い点を検索 ***/
         uint32 most_near = UINT32_MAX;
@@ -83,7 +91,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
                         insert_dst = n;
                         insert_src = c;
                         most_near = dist;
-                        parent_i = nest.parent;
+                        iParent = nest.parent;
                         index_p = index_n;
                     }
                 }
@@ -104,8 +112,8 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
         for (uint32 i = insert_dst; i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
         }
-        indexes[parent_i] = temp;
-        indexes[nest_i].clear();
+        indexes[iParent] = temp;
+        indexes[iNest].clear();
     }
 }
 
@@ -243,19 +251,20 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
                     break;
                 }
             }
-            type_mqo_face face;
-            face.material = INT16_MAX;
-            face.id = static_cast<uint32>(obj.face.size());
-            face.vertex.push_back(idx0);
-            face.vertex.push_back(idx1);
-            face.vertex.push_back(idx2);
-            obj.face.push_back(face);
-            face.material = INT16_MAX;
-            face.id = static_cast<uint32>(obj.face.size());
-            face.vertex.push_back(idx0);
-            face.vertex.push_back(idx2);
-            face.vertex.push_back(idx3);
-            obj.face.push_back(face);
+            type_mqo_face faceA;
+            faceA.material = INT16_MAX;
+            faceA.id = static_cast<uint32>(obj.face.size());
+            faceA.vertex.push_back(idx0);
+            faceA.vertex.push_back(idx1);
+            faceA.vertex.push_back(idx2);
+            obj.face.push_back(faceA);
+            type_mqo_face faceB;
+            faceB.material = INT16_MAX;
+            faceB.id = static_cast<uint32>(obj.face.size());
+            faceB.vertex.push_back(idx0);
+            faceB.vertex.push_back(idx2);
+            faceB.vertex.push_back(idx3);
+            obj.face.push_back(faceB);
         }
     }
     obj.error = 0;
