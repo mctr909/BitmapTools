@@ -68,6 +68,9 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
         if (0 == nest.depth % 2) {
             continue;
         }
+        if (iNest == nest.parent) {
+            continue;
+        }
         /*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
         /*** 互いに最も近い点をマージ開始位置に設定する ***/
         uint32 insert_dst = 0, insert_src = 0;
@@ -90,7 +93,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
         }
         /*** マージ ***/
         vector<uint32> temp;
-        for (uint32 i = 0; i <= insert_dst; i++) {
+        for (uint32 i = 0; i <= insert_dst && i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
         }
         auto inner_size = index_c.size();

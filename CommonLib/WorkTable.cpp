@@ -322,16 +322,14 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& bmp) {
 double
 worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surface>* pSurf_list, int32 order) {
     const auto index_size = static_cast<uint32>(index.size());
+    type_worktable_vert_info* p_vert_info = (type_worktable_vert_info*)calloc(index_size, sizeof(type_worktable_vert_info));
     double area = 0.0;
     /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
-    vector<type_worktable_vert_info> vert_info;
     for (uint32 i = 0; i < index_size; i++) {
         auto x = static_cast<int64>(vert[index[i]].x) - INT32_MIN;
         auto y = static_cast<int64>(vert[index[i]].y) - INT32_MIN;
-        type_worktable_vert_info info;
-        info.distance = sqrt(x * x + y * y);
-        info.deleted = false;
-        vert_info.push_back(info);
+        p_vert_info[i].distance = sqrt(x * x + y * y);
+        p_vert_info[i].deleted = false;
     }
     uint32 reverse_count = 0;
     uint32 vert_count = 0;
@@ -341,7 +339,7 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
         double dist_max = 0.0;
         vert_count = 0;
         for (uint32 i = 0; i < index_size; i++) {
-            auto info = vert_info[i];
+            auto info = p_vert_info[i];
             if (info.deleted) {
                 continue;
             }
@@ -358,7 +356,7 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
             point va; uint32 ia;
             ia = (io + index_size - 1) % index_size;
             for (uint32 i = 0; i < index_size; i++) {
-                if (vert_info[ia].deleted) {
+                if (p_vert_info[ia].deleted) {
                     ia = (ia + index_size - 1) % index_size;
                 } else {
                     break;
@@ -369,7 +367,7 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
             point vb; uint32 ib;
             ib = (io + 1) % index_size;
             for (uint32 i = 0; i < index_size; i++) {
-                if (vert_info[ib].deleted) {
+                if (p_vert_info[ib].deleted) {
                     ib = (ib + 1) % index_size;
                 } else {
                     break;
@@ -389,14 +387,14 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
                 if (index_size < reverse_count) {
                     /*** 表になる三角形(va vo vb)がない場合 ***/
                     /*** 頂点(vo)を検索対象から削除 ***/
-                    vert_info[io].deleted = true;
+                    p_vert_info[io].deleted = true;
                     /*** 次の最も遠くにある頂点(vo)を取得 ***/
                     break;
                 }
                 /*** 頂点(vo)を隣に移動 ***/
                 io = (io + index_size + order) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
-                    if (vert_info[io].deleted) {
+                    if (p_vert_info[io].deleted) {
                         io = (io + index_size + order) % index_size;
                     } else {
                         break;
@@ -408,7 +406,7 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
             /*** 三角形(va vo vb)の内側にva vo vb以外の頂点がないか確認 ***/
             bool point_in_triangle = false;
             for (uint32 i = 0; i < index_size; i++) {
-                if (i == ia || i == io || i == ib || vert_info[i].deleted) {
+                if (i == ia || i == io || i == ib || p_vert_info[i].deleted) {
                     continue;
                 }
                 auto p = vert[index[i]];
@@ -422,7 +420,7 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
                 /*** 頂点(vo)を隣に移動 ***/
                 io = (io + index_size + order) % index_size;
                 for (uint32 i = 0; i < index_size; i++) {
-                    if (vert_info[io].deleted) {
+                    if (p_vert_info[io].deleted) {
                         io = (io + index_size + order) % index_size;
                     } else {
                         break;
@@ -440,12 +438,13 @@ worktable_create_polygon(vector<point>& vert, vector<uint32>& index, vector<surf
                 /*** 三角形の面積を加算 ***/
                 area += abs(normal_aob) / 2.0;
                 /*** 頂点(vo)を検索対象から削除 ***/
-                vert_info[io].deleted = true;
+                p_vert_info[io].deleted = true;
                 /*** 次の最も遠くにある頂点(vo)を取得 ***/
                 break;
             }
         } // 頂点(vo)の移動ループ
     } while (3 < vert_count); // 最も遠くにある頂点(vo)の取得ループ
+    free(p_vert_info);
     return area;
 }
 
