@@ -76,10 +76,12 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
 }
 
 double
-worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
+worktable_create(type_worktable* pTable, Bitmap& bmp, double lum_max) {
+    const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
+    point pos;
     /*** パレットから最暗色と最明色を取得 ***/
-    double most_dark = 10.0;
-    double most_light = light;
+    double most_dark = 1.0;
+    double most_light = 0.0;
     for (uint32 i = 0; i < 256; i++) {
         auto color = bmp.pPalette[i];
         auto lum = bitmap_get_lum(color.r, color.g, color.b);
@@ -92,32 +94,30 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
             pTable->color_white = i;
         }
     }
-
-    /*** ピクセルから最暗色(塗り部)と最明色(塗っていない部分)を取得 ***/
-    const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
-    point pos;
-    most_light = light;
+    /*** ピクセルから塗っていない部分を取得 ***/
+    double lum_off = 0.0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
             auto pix = bmp.pPix[index];
             auto color = bmp.pPalette[pix];
             auto lum = bitmap_get_lum(color.r, color.g, color.b);
-            if (most_light < lum) {
-                most_light = lum;
+            if (lum <= lum_max && lum_off < lum) {
+                lum_off = lum;
                 pTable->color_off = pix;
             }
         }
     }
-    auto second_light = light;
+    /*** ピクセルから塗部を取得 ***/
+    double lum_on = 0.0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
             auto pix = bmp.pPix[index];
             auto color = bmp.pPalette[pix];
             auto lum = bitmap_get_lum(color.r, color.g, color.b);
-            if (lum < most_light && second_light < lum) {
-                second_light = lum;
+            if (lum < lum_off && lum_on < lum) {
+                lum_on = lum;
                 pTable->color_on = pix;
             }
         }
@@ -141,13 +141,13 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
-
-            /*** ピクセル情報の初期化 ***/
             auto pix = bmp.pPalette[bmp.pPix[index]];
             auto lum = bitmap_get_lum(pix.r, pix.g, pix.b);
+
+            /*** ピクセル情報の初期化 ***/
             type_workcell cell = {
-                lum <= second_light && lum < most_light,
-                false, // traced: false
+                lum < lum_off, // enable: lum < lum_off
+                false,         // traced: false
                 pos,
                 {
                     UINT32_MAX, UINT32_MAX, UINT32_MAX,
@@ -194,7 +194,7 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
         }
     }
 
-    return second_light;
+    return lum_on;
 }
 
 void

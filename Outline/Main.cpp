@@ -77,8 +77,8 @@ int main(int argc, char* argv[]) {
         bmp_file = argv[fcount + 2];
         cout << "BMP FILE : " << bmp_file << endl;
 
-        double layer_lum = 0.0;
-        double new_lum = 0.0;
+        double layer_lum = 1.0;
+        double new_lum = 1.0;
         for (int layer = 1; ; layer++) {
             // get bitmap data
             auto pBmp = new Bitmap(bmp_file);
@@ -113,11 +113,14 @@ int main(int argc, char* argv[]) {
             // save
             stringstream ss;
             ss << bmp_file.substr(0, bmp_file.size() - 4);
+            ss << "_layer" << layer;
             if (1 < thickness) {
-                ss << "_layer" << layer << "_thickness" << thickness << ".bmp";
+                ss << "_thickness" << thickness;
             } else {
-                ss << "_layer" << layer << "_outline.bmp";
+                ss << "_outline";
             }
+            ss << ".bmp";
+
             pBmp->Save(ss.str());
             if (pBmp->error != 0) {
                 cout << "bmp writing error..." << endl;
