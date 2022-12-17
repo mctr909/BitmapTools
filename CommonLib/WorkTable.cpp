@@ -75,11 +75,11 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
     pPolyline->push_back(pos_a);
 }
 
-void
-worktable_create(type_worktable* pTable, Bitmap& bmp) {
+double
+worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
     /*** パレットから最暗色と最明色を取得 ***/
     double most_dark = 10.0;
-    double most_light = 0.0;
+    double most_light = light;
     for (uint32 i = 0; i < 256; i++) {
         auto color = bmp.pPalette[i];
         auto lum = bitmap_get_lum(color.r, color.g, color.b);
@@ -97,7 +97,7 @@ worktable_create(type_worktable* pTable, Bitmap& bmp) {
     const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
     point pos;
     most_dark = 10.0;
-    most_light = 0.0;
+    most_light = light;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
@@ -183,6 +183,8 @@ worktable_create(type_worktable* pTable, Bitmap& bmp) {
             pTable->pCells[index] = cell;
         }
     }
+
+    return most_light;
 }
 
 void

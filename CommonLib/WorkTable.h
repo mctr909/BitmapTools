@@ -44,8 +44,8 @@ struct type_nest_info {
 	uint32 depth;
 };
 
-void
-worktable_create(type_worktable*, Bitmap&);
+double
+worktable_create(type_worktable*, Bitmap&, double);
 
 void
 worktable_write_outline(type_worktable&, Bitmap*);

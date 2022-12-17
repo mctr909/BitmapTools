@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.2.32526.322
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.2017
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Outline", "Outline\Outline.vcxproj", "{2C0C3A10-0FD6-48BF-9F6A-164F54BE82A7}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -92,6 +92,18 @@ Global
 		{17CE72FB-3E06-4C60-87B4-9221F727CC65}.Release|x64.Build.0 = Release|Any CPU
 		{17CE72FB-3E06-4C60-87B4-9221F727CC65}.Release|x86.ActiveCfg = Release|Any CPU
 		{17CE72FB-3E06-4C60-87B4-9221F727CC65}.Release|x86.Build.0 = Release|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Debug|x64.Build.0 = Debug|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Debug|x86.Build.0 = Debug|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Release|x64.ActiveCfg = Release|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Release|x64.Build.0 = Release|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Release|x86.ActiveCfg = Release|Any CPU
+		{05D38FFB-8711-49E5-9D3C-B655A890E7C5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

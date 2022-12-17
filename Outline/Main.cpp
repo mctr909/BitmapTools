@@ -20,7 +20,7 @@ write_outline(Bitmap* pBmp, int32 weight) {
         return;
     }
 
-    worktable_create(&table, *pBmp);
+    worktable_create(&table, *pBmp, 0.0);
     if (table.error != 0) {
         pBmp->error = -1;
         return;
