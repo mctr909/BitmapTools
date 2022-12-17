@@ -28,18 +28,18 @@ declease_rgb2hsl(Bitmap::pix24* pPix) {
     const byte h_range = DEFINE_HUE_RANGE;
     const byte s_range = DEFINE_SATURATION_RANGE;
     const byte l_range = DEFINE_LIGHTNESS_RANGE;
-    auto bmax = max(pPix->r, max(pPix->g, pPix->b));
-    auto bmin = min(pPix->r, min(pPix->g, pPix->b));
+    auto bmax = fmax(pPix->r, fmax(pPix->g, pPix->b));
+    auto bmin = fmin(pPix->r, fmin(pPix->g, pPix->b));
     auto range = bmax - bmin;
     auto h_offset = h_range * range / 3;
     if (0 == range) {
         h = 0;
     } else if (pPix->r == bmax) {
-        h = ((pPix->g - pPix->b) * h_range + h_offset) / (range * 6);
+        h = static_cast<int32>(((pPix->g - pPix->b) * h_range + h_offset) / (range * 6.0));
     } else if (pPix->g == bmax) {
-        h = ((pPix->b - pPix->r) * h_range + h_offset) / (range * 6) + h_range / 3;
+        h = static_cast<int32>(((pPix->b - pPix->r) * h_range + h_offset) / (range * 6.0) + h_range / 3.0);
     } else if (pPix->b == bmax) {
-        h = ((pPix->r - pPix->g) * h_range + h_offset) / (range * 6) + 2 * h_range / 3;
+        h = static_cast<int32>(((pPix->r - pPix->g) * h_range + h_offset) / (range * 6.0) + 2 * h_range / 3.0);
     } else {
         h = 0;
     }
@@ -47,11 +47,11 @@ declease_rgb2hsl(Bitmap::pix24* pPix) {
     if (0 == range || 0 == cnt) {
         s = 0;
     } else if (cnt <= 127) {
-        s = ((cnt - bmin) * s_range + s_range) / cnt;
+        s = static_cast<int32>(((cnt - bmin) * s_range + s_range) / cnt);
     } else {
-        s = ((bmax - cnt) * s_range + s_range) / (255 - cnt);
+        s = static_cast<int32>(((bmax - cnt) * s_range + s_range) / (255 - cnt));
     }
-    l = ((bmax + bmin) * l_range + l_range) / 510;
+    l = static_cast<int32>(((bmax + bmin) * l_range + l_range) / 510);
     if (h < 0) {
         h += h_range;
     }
