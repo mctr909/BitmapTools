@@ -123,7 +123,7 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
         pbmp->error = -1;
         return (obj);
     }
-    worktable_create(&table, *pbmp);
+    worktable_create(&table, *pbmp, 0.0);
     if (table.error != 0) {
         return (obj);
     }

@@ -10,20 +10,20 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
-void
-write_outline(Bitmap* pBmp, int32 weight) {
+double
+write_outline(Bitmap* pBmp, int32 weight, double light) {
     const auto size_max = pBmp->size_max;
     type_worktable table;
     table.pCells = reinterpret_cast<type_workcell*>(calloc(size_max, sizeof(type_workcell)));
     if (NULL == table.pCells) {
         pBmp->error = -1;
-        return;
+        return light;
     }
 
-    worktable_create(&table, *pBmp, 0.0);
+    auto ret_light = worktable_create(&table, *pBmp, light);
     if (table.error != 0) {
         pBmp->error = -1;
-        return;
+        return light;
     }
 
     worktable_write_outline(table, pBmp);
@@ -34,7 +34,7 @@ write_outline(Bitmap* pBmp, int32 weight) {
     auto pTempPix = reinterpret_cast<byte*>(malloc(size_max * sizeof(byte)));
     if (NULL == pTempPix) {
         pBmp->error = -1;
-        return;
+        return light;
     }
     memset(pTempPix, table.color_white, size_max);
     for (uint32 i = 0; i < size_max; i++) {
@@ -58,6 +58,8 @@ write_outline(Bitmap* pBmp, int32 weight) {
     free(pTempPix);
 
     free(table.pCells);
+
+    return ret_light;
 }
 
 int main(int argc, char* argv[]) {
@@ -75,46 +77,54 @@ int main(int argc, char* argv[]) {
         bmp_file = argv[fcount + 2];
         cout << "BMP FILE : " << bmp_file << endl;
 
-        // get bitmap data
-        auto pBmp = new Bitmap(bmp_file);
-        if (pBmp->error != 0) {
-            cout << "bmp reading error... (" << pBmp->error << ")" << endl;
-            delete pBmp;
-            continue;
-        } else {
-            pBmp->PrintHeader();
-        }
+        double layer_lum = 0.0;
+        double new_lum = 0.0;
+        for (int layer = 1; ; layer++) {
+            // get bitmap data
+            auto pBmp = new Bitmap(bmp_file);
+            if (pBmp->error != 0) {
+                cout << "bmp reading error... (" << pBmp->error << ")" << endl;
+                delete pBmp;
+                break;
+            } else {
+                pBmp->PrintHeader();
+            }
 
-        // palette chck
-        if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
-            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
-            delete pBmp;
-            continue;
-        }
+            // palette chck
+            if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
+                cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
+                delete pBmp;
+                break;
+            }
 
-        write_outline(pBmp, thickness);
-        if (pBmp->error != 0) {
-            cout << "bmp convert error... (" << pBmp->error << ")" << endl;
-            delete pBmp;
-            continue;
-        }
+            // write outline
+            layer_lum = new_lum;
+            new_lum = write_outline(pBmp, thickness, layer_lum);
+            if (pBmp->error != 0) {
+                cout << "bmp convert error... (" << pBmp->error << ")" << endl;
+                delete pBmp;
+                break;
+            }
+            if (layer_lum == new_lum) {
+                delete pBmp;
+                break;
+            }
 
-        // save
-        stringstream ss;
-        ss << bmp_file.substr(0, bmp_file.size() - 4);
-        if (1 < thickness) {
-            ss << "_thickness" << thickness << ".bmp";
-        } else {
-            ss << "_outline.bmp";
+            // save
+            stringstream ss;
+            ss << bmp_file.substr(0, bmp_file.size() - 4);
+            if (1 < thickness) {
+                ss << "_layer" << layer << "_thickness" << thickness << ".bmp";
+            } else {
+                ss << "_layer" << layer << "_outline.bmp";
+            }
+            pBmp->Save(ss.str());
+            if (pBmp->error != 0) {
+                cout << "bmp writing error..." << endl;
+                delete pBmp;
+                break;
+            }
         }
-        pBmp->Save(ss.str());
-        if (pBmp->error != 0) {
-            cout << "bmp writing error..." << endl;
-            delete pBmp;
-            continue;
-        }
-
-        delete pBmp;
     }
 
     return (EXIT_SUCCESS);

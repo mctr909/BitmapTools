@@ -96,7 +96,6 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
     /*** ピクセルから最暗色(塗り部)と最明色(塗っていない部分)を取得 ***/
     const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
     point pos;
-    most_dark = 10.0;
     most_light = light;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
@@ -104,13 +103,22 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
             auto pix = bmp.pPix[index];
             auto color = bmp.pPalette[pix];
             auto lum = bitmap_get_lum(color.r, color.g, color.b);
-            if (lum < most_dark) {
-                most_dark = lum;
-                pTable->color_on = pix;
-            }
             if (most_light < lum) {
                 most_light = lum;
                 pTable->color_off = pix;
+            }
+        }
+    }
+    auto second_light = light;
+    for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
+        for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
+            auto index = bitmap_get_index(bmp, pos);
+            auto pix = bmp.pPix[index];
+            auto color = bmp.pPalette[pix];
+            auto lum = bitmap_get_lum(color.r, color.g, color.b);
+            if (lum < most_light && second_light < lum) {
+                second_light = lum;
+                pTable->color_on = pix;
             }
         }
     }
@@ -135,8 +143,10 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
             auto index = bitmap_get_index(bmp, pos);
 
             /*** ピクセル情報の初期化 ***/
+            auto pix = bmp.pPalette[bmp.pPix[index]];
+            auto lum = bitmap_get_lum(pix.r, pix.g, pix.b);
             type_workcell cell = {
-                pTable->color_on == bmp.pPix[index],
+                lum <= second_light && lum < most_light,
                 false, // traced: false
                 pos,
                 {
@@ -184,7 +194,7 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double light) {
         }
     }
 
-    return most_light;
+    return second_light;
 }
 
 void
