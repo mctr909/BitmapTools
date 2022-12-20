@@ -45,38 +45,41 @@ __declease_histogram(type_declease_histogram* pHistogram, Bitmap* pBmp) {
     const int32 h_weight = DEFINE_AVG_WEIGHT_HUE;
     const int32 s_weight = DEFINE_AVG_WEIGHT_SATURATION;
     const int32 l_weight = DEFINE_AVG_WEIGHT_LIGHTNESS;
-    const auto size_max = pBmp->size_max;
     Bitmap::pix24 avg_hsl;
     point pos;
     uint32 origin_count = 0;
     uint32 avg_count = 0;
     auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->pPix);
-    for (uint32 i = 0; i < size_max; i++) {
-        auto hsl = pPix[i];
-        bitmap_get_pos(*pBmp, &pos, i);
-        auto hist_weight = declease_avghsl(pBmp, &avg_hsl, pos);
-        auto sh = (hsl.r - avg_hsl.r) * h_weight / h_range;
-        auto ss = (hsl.g - avg_hsl.g) * s_weight / s_range;
-        auto sl = (hsl.b - avg_hsl.b) * l_weight / l_range;
-        auto dist = sqrt(sh * sh + ss * ss + sl * sl);
-        if (dist <= 1) {
-            hsl.r = avg_hsl.r;
-            hsl.g = avg_hsl.g;
-            hsl.b = avg_hsl.b;
-            hist_weight = 1;
-            avg_count++;
-        } else {
-            origin_count++;
+    for (pos.y = 0; pos.y < pBmp->info_h.height; pos.y++) {
+        for (pos.x = 0; pos.x < pBmp->info_h.width; pos.x++) {
+            auto index = bitmap_get_index(*pBmp, pos);
+            if (UINT32_MAX != index) {
+                auto hsl = pPix[index];
+                auto hist_weight = declease_avghsl(pBmp, &avg_hsl, pos);
+                auto sh = (hsl.r - avg_hsl.r) * h_weight / h_range;
+                auto ss = (hsl.g - avg_hsl.g) * s_weight / s_range;
+                auto sl = (hsl.b - avg_hsl.b) * l_weight / l_range;
+                auto dist = sqrt(sh * sh + ss * ss + sl * sl);
+                if (dist <= 1) {
+                    hsl.r = avg_hsl.r;
+                    hsl.g = avg_hsl.g;
+                    hsl.b = avg_hsl.b;
+                    hist_weight = 1;
+                    avg_count++;
+                } else {
+                    origin_count++;
+                }
+                auto hist_index
+                    = hsl.r * s_range * l_range
+                    + hsl.g * l_range
+                    + hsl.b;
+                auto hist = &pHistogram[hist_index];
+                hist->src_h = hsl.r;
+                hist->src_s = hsl.g;
+                hist->src_l = hsl.b;
+                hist->count += hist_weight;
+            }
         }
-        auto hist_index
-            = hsl.r * s_range * l_range
-            + hsl.g * l_range
-            + hsl.b;
-        auto hist = &pHistogram[hist_index];
-        hist->src_h = hsl.r;
-        hist->src_s = hsl.g;
-        hist->src_l = hsl.b;
-        hist->count += hist_weight;
     }
     return static_cast<double>(origin_count) / avg_count;
 }
@@ -154,7 +157,6 @@ __declease_color_top256(type_declease_histogram* pHistogram, Bitmap::pix32* pPal
 
 void
 declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
-    const auto size_max = pInBmp24->size_max;
     const int32 h_range = DEFINE_HUE_RANGE;
     const int32 s_range = DEFINE_SATURATION_RANGE;
     const int32 l_range = DEFINE_LIGHTNESS_RANGE;
@@ -165,19 +167,30 @@ declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
         return;
     }
     auto pInPix = reinterpret_cast<Bitmap::pix24*>(pInBmp24->pPix);
-    for (uint32 i = 0; i < size_max; i++) {
-        declease_rgb2hsl(&pInPix[i]);
+    point pos;
+    for (pos.y = 0; pos.y < pInBmp24->info_h.height; pos.y++) {
+        for (pos.x = 0; pos.x < pInBmp24->info_h.width; pos.x++) {
+            auto index = bitmap_get_index(*pInBmp24, pos);
+            if (UINT32_MAX != index) {
+                declease_rgb2hsl(&pInPix[index]);
+            }
+        }
     }
     __declease_histogram(pHist, pInBmp24);
     __declease_color_top256(pHist, pOutBmp8->pPalette);
-    for (uint32 i = 0; i < size_max; i++) {
-        auto pHsl = &pInPix[i];
-        auto hist_index
-            = pHsl->r * s_range * l_range
-            + pHsl->g * l_range
-            + pHsl->b;
-        auto hist = pHist[hist_index];
-        pOutBmp8->pPix[i] = hist.palette;
+    for (pos.y = 0; pos.y < pInBmp24->info_h.height; pos.y++) {
+        for (pos.x = 0; pos.x < pInBmp24->info_h.width; pos.x++) {
+            auto index = bitmap_get_index(*pInBmp24, pos);
+            if (UINT32_MAX != index) {
+                auto pHsl = &pInPix[index];
+                auto hist_index
+                    = pHsl->r * s_range * l_range
+                    + pHsl->g * l_range
+                    + pHsl->b;
+                auto hist = pHist[hist_index];
+                pOutBmp8->pPix[index] = hist.palette;
+            }
+        }
     }
     free(pHist);
     pInBmp24->error = 0;
