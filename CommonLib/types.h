@@ -10,10 +10,11 @@ typedef short int16;
 typedef int   int32;
 typedef long  int64;
 
-#pragma pack(push, 8)
+#pragma pack(push, 4)
 struct point {
     int32 x;
     int32 y;
+    int32 dir;
 };
 #pragma pack(pop)
 

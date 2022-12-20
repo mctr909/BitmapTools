@@ -12,6 +12,10 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
+#define DEBUG
+
+string bmp_file_path;
+
 void
 create_vertex(const point pos, type_mqo_object* pobj, double y) {
     auto id = static_cast<uint32>((*pobj).vertex.size());
@@ -130,6 +134,53 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
 
     /*** アウトラインを取得 ***/
     auto outlines = worktable_create_polyline(&table, *pbmp);
+
+#ifdef DEBUG
+    string ssdebug = bmp_file_path.substr(0, bmp_file_path.size() - 4) + "_debug.tsv";
+    FILE *fp_tsv = nullptr;
+    fopen_s(&fp_tsv, ssdebug.c_str(), "w");
+    if (nullptr != fp_tsv) {
+        fprintf_s(fp_tsv, "outline index\tx\ty\tdir\tdr\n");
+        for (uint32 i = 0; i < outlines.size(); i++) {
+            auto outline = outlines[i];
+            int bx = 0;
+            int by = 0;
+            for (uint32 j = 0; j < outline.size(); j++) {
+                auto p = outline[j];
+                auto index = bitmap_get_index(*pbmp, p);
+                if (UINT32_MAX != index) {
+                    string dir;
+                    switch (p.dir) {
+                    case 0:
+                        dir = "→"; break;
+                    case 1:
+                        dir = "／~"; break;
+                    case 2:
+                        dir = "↑"; break;
+                    case 3:
+                        dir = "~＼"; break;
+                    case 4:
+                        dir = "←"; break;
+                    case 5:
+                        dir = ".／"; break;
+                    case 6:
+                        dir = "↓"; break;
+                    case 7:
+                        dir = "＼."; break;
+                    default:
+                        break;
+                    }
+                    auto dx = p.x - bx;
+                    auto dy = p.y - by;
+                    fprintf_s(fp_tsv, "%d\t%d\t%d\t%s\t%f\n", i, p.x, p.y, dir.c_str(), sqrt(dx * dx + dy * dy));
+                    bx = p.x;
+                    by = p.y;
+                }
+            }
+        }
+        fclose(fp_tsv);
+    }
+#endif
 
     /*** アウトラインから頂点とインデックスを取得 ***/
     vector<vector<uint32>> indexes_bottom, indexes_top;
@@ -269,13 +320,12 @@ int main(int argc, char* argv[]) {
     const auto thickness = atof(argv[1]);
     const auto y_offset = atof(argv[2]);
 
-    string bmp_file;
     for (int32 fcount = 0; fcount < argc - 3; fcount++) {
-        bmp_file = argv[fcount + 3];
-        cout << "BMP FILE : " << bmp_file << endl;
+        bmp_file_path = argv[fcount + 3];
+        cout << "BMP FILE : " << bmp_file_path << endl;
 
         // get bitmap data
-        auto pBmp = new Bitmap(bmp_file);
+        auto pBmp = new Bitmap(bmp_file_path);
         if (pBmp->error != 0) {
             cout << "bmp reading error... (" << pBmp->error << ")" << endl;
             delete pBmp;
@@ -301,7 +351,7 @@ int main(int argc, char* argv[]) {
 
         // save
         stringstream ss;
-        ss << bmp_file.substr(0, bmp_file.size() - 4) << ".mqo";
+        ss << bmp_file_path.substr(0, bmp_file_path.size() - 4) << ".mqo";
         if (fn_mqo_write(&mqo, ss.str())) {
             cout << "bmp writing error..." << endl;
             delete pBmp;

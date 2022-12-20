@@ -311,6 +311,7 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& bmp) {
                     if (pCell->enable && !pCell->traced) { // 点を発見、ポリラインの点として追加
                         pCell->traced = true;
                         curr_pos = pCell->pos;
+                        curr_pos.dir = curr_dir;
                         prev_dir = curr_dir;
                         polyline.push_back(curr_pos);
                         point_found = true;
