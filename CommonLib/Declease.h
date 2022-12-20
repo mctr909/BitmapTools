@@ -1,7 +1,7 @@
 #ifndef __DECLEASE_H__
 #define __DECLEASE_H__
 
-#include "../CommonLib/Bitmap.h"
+#include "Bitmap.h"
 
 #define DEFINE_HUE_RANGE        (12)
 #define DEFINE_SATURATION_RANGE (5)

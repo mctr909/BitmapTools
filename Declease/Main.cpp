@@ -6,7 +6,7 @@
 using namespace std;
 
 #include "../CommonLib/Bitmap.h"
-#include "Declease.h"
+#include "../CommonLib/Declease.h"
 
 #pragma comment (lib, "CommonLib.lib")
 
