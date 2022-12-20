@@ -10,56 +10,58 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
-double
-write_outline(Bitmap* pBmp, int32 weight, double light) {
+bool
+write_outline(Bitmap* pBmp, int32 weight, double* layer_lum) {
     const auto size_max = pBmp->size_max;
     type_worktable table;
     table.pCells = reinterpret_cast<type_workcell*>(calloc(size_max, sizeof(type_workcell)));
     if (NULL == table.pCells) {
         pBmp->error = -1;
-        return light;
+        return false;
     }
 
-    auto ret_light = worktable_create(&table, *pBmp, light);
+    *layer_lum = worktable_create(&table, *pBmp, *layer_lum);
     if (table.error != 0) {
         pBmp->error = -1;
-        return light;
+        return false;
     }
 
     worktable_write_outline(table, pBmp);
 
-    pBmp->error = 0;
-
-    const auto radius = weight / 2;
     auto pTempPix = reinterpret_cast<byte*>(malloc(size_max * sizeof(byte)));
     if (NULL == pTempPix) {
         pBmp->error = -1;
-        return light;
+        return false;
     }
     memset(pTempPix, table.color_white, size_max);
+
+    const auto fill_radius = weight / 2;
+    bool has_outline = false;
     for (uint32 i = 0; i < size_max; i++) {
         if (table.color_on != pBmp->pPix[i]) {
             continue;
         }
         auto pos = table.pCells[i].pos;
-        for (int32 dy = -radius; dy <= radius; dy++) {
-            for (int32 dx = -radius; dx <= radius; dx++) {
+        for (int32 dy = -fill_radius; dy <= fill_radius; dy++) {
+            for (int32 dx = -fill_radius; dx <= fill_radius; dx++) {
                 auto r = sqrt(dx * dx + dy * dy);
                 if (r <= weight / 2.0) {
                     auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
                     if (ULONG_MAX != arownd) {
                         pTempPix[arownd] = table.color_black;
+                        has_outline = true;
                     }
                 }
             }
         }
     }
     memcpy_s(pBmp->pPix, size_max, pTempPix, size_max);
-    free(pTempPix);
 
+    free(pTempPix);
     free(table.pCells);
 
-    return ret_light;
+    pBmp->error = 0;
+    return has_outline;
 }
 
 int main(int argc, char* argv[]) {
@@ -78,7 +80,6 @@ int main(int argc, char* argv[]) {
         cout << "BMP FILE : " << bmp_file << endl;
 
         double layer_lum = 1.0;
-        double new_lum = 1.0;
         for (int layer = 1; ; layer++) {
             // get bitmap data
             auto pBmp = new Bitmap(bmp_file);
@@ -98,14 +99,13 @@ int main(int argc, char* argv[]) {
             }
 
             // write outline
-            layer_lum = new_lum;
-            new_lum = write_outline(pBmp, thickness, layer_lum);
+            auto has_outline = write_outline(pBmp, thickness, &layer_lum);
             if (pBmp->error != 0) {
                 cout << "bmp convert error... (" << pBmp->error << ")" << endl;
                 delete pBmp;
                 break;
             }
-            if (layer_lum == new_lum) {
+            if (!has_outline) {
                 delete pBmp;
                 break;
             }
@@ -125,6 +125,12 @@ int main(int argc, char* argv[]) {
             if (pBmp->error != 0) {
                 cout << "bmp writing error..." << endl;
                 delete pBmp;
+                break;
+            }
+
+            delete pBmp;
+
+            if (0.0 == layer_lum) {
                 break;
             }
         }
