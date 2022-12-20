@@ -4,7 +4,7 @@ set thickness=3
 set source_file=%folder_path%\*.bmp
 set thickened_file=%folder_path%\*_thickness*.bmp
 set delete_file=%folder_path%\*_thickness%thickness%.bmp
-set rename_src_name=_thickness%thickness%_layer1_outline
+set rename_src_name=_thickness%thickness%_layer1
 set rename_dst_name=
 
 for %%a in (%source_file%) do (

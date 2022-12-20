@@ -116,8 +116,6 @@ int main(int argc, char* argv[]) {
             ss << "_layer" << layer;
             if (1 < thickness) {
                 ss << "_thickness" << thickness;
-            } else {
-                ss << "_outline";
             }
             ss << ".bmp";
 
