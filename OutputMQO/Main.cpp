@@ -12,7 +12,7 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
-#define DEBUG
+//#define DEBUG
 
 string bmp_file_path;
 
@@ -136,11 +136,44 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
     auto outlines = worktable_create_polyline(&table, *pbmp);
 
 #ifdef DEBUG
+    auto p = &pbmp->pPalette[0];
+    p->r = 191;
+    p->g = 191;
+    p->b = 191;
+    p = &pbmp->pPalette[1];
+    p->r = 255;
+    p->g = 0;
+    p->b = 0;
+    p = &pbmp->pPalette[2];
+    p->r = 0;
+    p->g = 191;
+    p->b = 0;
+    p = &pbmp->pPalette[3];
+    p->r = 0;
+    p->g = 191;
+    p->b = 255;
+    p = &pbmp->pPalette[4];
+    p->r = 0;
+    p->g = 0;
+    p->b = 255;
+    byte color = 0;
+    for (uint32 i = 0; i < outlines.size(); i++) {
+        auto outline = outlines[i];
+        for (uint32 j = 0; j < outline.size(); j++) {
+            auto p = outline[j];
+            auto index = bitmap_get_index(*pbmp, p);
+            if (UINT32_MAX != index) {
+                pbmp->pPix[index] = color + 1;
+            }
+        }
+        color = (color + 1) % 4;
+    }
+
     string ssdebug = bmp_file_path.substr(0, bmp_file_path.size() - 4) + "_debug.tsv";
     FILE *fp_tsv = nullptr;
     fopen_s(&fp_tsv, ssdebug.c_str(), "w");
     if (nullptr != fp_tsv) {
-        fprintf_s(fp_tsv, "outline index\tx\ty\tdir\tdr\n");
+        fprintf_s(fp_tsv, "outline\tx\ty\tr\tƒÆ\n");
         for (uint32 i = 0; i < outlines.size(); i++) {
             auto outline = outlines[i];
             int bx = 0;
@@ -149,32 +182,20 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
                 auto p = outline[j];
                 auto index = bitmap_get_index(*pbmp, p);
                 if (UINT32_MAX != index) {
-                    string dir;
-                    switch (p.dir) {
-                    case 0:
-                        dir = "¨"; break;
-                    case 1:
-                        dir = "^~"; break;
-                    case 2:
-                        dir = "ª"; break;
-                    case 3:
-                        dir = "~_"; break;
-                    case 4:
-                        dir = "©"; break;
-                    case 5:
-                        dir = ".^"; break;
-                    case 6:
-                        dir = "«"; break;
-                    case 7:
-                        dir = "_."; break;
-                    default:
-                        break;
-                    }
-                    auto dx = p.x - bx;
-                    auto dy = p.y - by;
-                    fprintf_s(fp_tsv, "%d\t%d\t%d\t%s\t%f\n", i, p.x, p.y, dir.c_str(), sqrt(dx * dx + dy * dy));
+                    double dx = p.x - bx;
+                    double dy = p.y - by;
                     bx = p.x;
                     by = p.y;
+                    auto dr = sqrt(dx * dx + dy * dy);
+                    if (0.0 < dr) {
+                        dx /= dr;
+                        dy /= dr;
+                    }
+                    auto dtheta = atan2(dy, dx) * 180 / 3.141592;
+                    if (dtheta < 0.0) {
+                        dtheta += 360;
+                    }
+                    fprintf_s(fp_tsv, "%d\t%4d\t%4d\t%4.1f\t%3.0f\n", i, p.x, p.y, dr, dtheta);
                 }
             }
         }
@@ -357,6 +378,12 @@ int main(int argc, char* argv[]) {
             delete pBmp;
             return (EXIT_SUCCESS);
         }
+
+#ifdef DEBUG
+        stringstream ssdebug;
+        ssdebug << bmp_file_path.substr(0, bmp_file_path.size() - 4) << "_debug.bmp";
+        pBmp->Save(ssdebug.str());
+#endif
 
         delete pBmp;
     }
