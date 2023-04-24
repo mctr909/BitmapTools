@@ -53,7 +53,7 @@ __declease_histogram(type_declease_histogram* pHistogram, Bitmap* pBmp) {
     for (pos.y = 0; pos.y < pBmp->info_h.height; pos.y++) {
         for (pos.x = 0; pos.x < pBmp->info_h.width; pos.x++) {
             auto index = bitmap_get_index(*pBmp, pos);
-            if (UINT32_MAX != index) {
+            if (INVALID_INDEX != index) {
                 auto hsl = pPix[index];
                 auto hist_weight = declease_avghsl(pBmp, &avg_hsl, pos);
                 auto sh = (hsl.r - avg_hsl.r) * h_weight / h_range;
@@ -171,7 +171,7 @@ declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
     for (pos.y = 0; pos.y < pInBmp24->info_h.height; pos.y++) {
         for (pos.x = 0; pos.x < pInBmp24->info_h.width; pos.x++) {
             auto index = bitmap_get_index(*pInBmp24, pos);
-            if (UINT32_MAX != index) {
+            if (INVALID_INDEX != index) {
                 declease_rgb2hsl(&pInPix[index]);
             }
         }
@@ -181,7 +181,7 @@ declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
     for (pos.y = 0; pos.y < pInBmp24->info_h.height; pos.y++) {
         for (pos.x = 0; pos.x < pInBmp24->info_h.width; pos.x++) {
             auto index = bitmap_get_index(*pInBmp24, pos);
-            if (UINT32_MAX != index) {
+            if (INVALID_INDEX != index) {
                 auto pHsl = &pInPix[index];
                 auto hist_index
                     = pHsl->r * s_range * l_range

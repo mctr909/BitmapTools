@@ -55,9 +55,6 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
             vector<surface> inner_surf;
             auto outer_area = worktable_create_polygon(verts, indexes[iOut], &outer_surf, order);
             auto inner_area = worktable_create_polygon(verts, indexes[iIn], &inner_surf, order);
-            if (outer_area < inner_area) {
-                continue;
-            }
             if (worktable_inner_polygon(outer_surf, inner_surf, verts)) {
                 nest_info[iIn].parent = iOut;
                 nest_info[iIn].depth++;

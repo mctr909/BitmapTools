@@ -5,6 +5,7 @@
 
 #define DEFINE_SUPPORT_COLOR_8BIT  (8)
 #define DEFINE_SUPPORT_COLOR_24BIT (24)
+#define INVALID_INDEX UINT32_MAX
 
 class Bitmap {
 public:
@@ -75,7 +76,7 @@ private:
 inline uint32
 bitmap_get_index(Bitmap const& bmp, const point pos) {
     if ((pos.x >= bmp.info_h.width) || (pos.y >= bmp.info_h.height)) {
-        return UINT32_MAX;
+        return INVALID_INDEX;
     }
     return ((pos.x + (bmp.stride * pos.y)));
 }
@@ -85,7 +86,7 @@ bitmap_get_index_ofs(Bitmap const& bmp, const point pos, const int32 dx, const i
     auto x = pos.x + dx;
     auto y = pos.y + dy;
     if ((x < 0) || (x >= bmp.info_h.width) || (y < 0) || (y >= bmp.info_h.height)) {
-        return UINT32_MAX;
+        return INVALID_INDEX;
     }
     return (x + (bmp.stride * y));
 }

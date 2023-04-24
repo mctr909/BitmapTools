@@ -4,6 +4,8 @@
 #include <vector>
 #include "Bitmap.h"
 
+#define INVALID_POS INT32_MAX
+
 enum struct E_DIRECTION {
 	BOTTOM_L = 0, // ç∂â∫
 	BOTTOM,       // â∫
@@ -18,7 +20,7 @@ enum struct E_DIRECTION {
 
 #pragma pack(push, 1)
 struct type_workcell {
-	bool enable;
+	bool filled;
 	bool traced;
 	point pos;
 	uint32 index_around[9];
@@ -29,8 +31,8 @@ struct type_worktable {
 	type_workcell* pCells;
 	byte color_white;
 	byte color_black;
-	byte color_on;
-	byte color_off;
+	byte color_filled;
+	byte color_nofill;
 	int32 error;
 };
 
@@ -61,32 +63,32 @@ worktable_inner_polygon(vector<surface>&, vector<surface>&, vector<point>&);
 
 inline type_workcell
 worktable_get_data(
-    uint32      center_index,
-    E_DIRECTION direction,
-    type_worktable& table,
-    uint32 size_max
+	uint32      center_index,
+	E_DIRECTION direction,
+	type_worktable& table,
+	uint32 size_max
 ) {
-    type_workcell ret = {
-        false,
+	static const type_workcell DEFAULT_CELL = {
 		false,
-        { INT32_MAX, INT32_MAX },
-        {
-            UINT32_MAX, UINT32_MAX, UINT32_MAX,
-            UINT32_MAX, UINT32_MAX, UINT32_MAX,
-            UINT32_MAX, UINT32_MAX, UINT32_MAX
-        }
-    };
+		false,
+		{ INVALID_POS, INVALID_POS },
+		{
+			INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
+			INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
+			INVALID_INDEX, INVALID_INDEX, INVALID_INDEX
+		}
+	};
 
-    if (center_index >= size_max) {
-        return (ret);
-    }
+	if (center_index >= size_max) {
+		return DEFAULT_CELL;
+	}
 
-    auto index = table.pCells[center_index].index_around[static_cast<uint32>(direction)];
-    if (index < size_max) {
-        ret = table.pCells[index];
-    }
+	auto index = table.pCells[center_index].index_around[static_cast<uint32>(direction)];
+	if (INVALID_INDEX == index) {
+		return DEFAULT_CELL;
+	}
 
-    return (ret);
+	return table.pCells[index];
 }
 
 inline bool

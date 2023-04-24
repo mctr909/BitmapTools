@@ -142,7 +142,7 @@ declease_avghsl(Bitmap* pBmp, Bitmap::pix24* pHsl, point pos) {
                 continue;
             }
             auto index = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
-            if (UINT32_MAX != index) {
+            if (INVALID_INDEX != index) {
                 auto hsl = pPix[index];
                 avg_h += hsl.r;
                 avg_s += hsl.g;

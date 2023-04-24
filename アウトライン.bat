@@ -1,5 +1,5 @@
 set folder_path=sample_folder
-set thickness=3
+set thickness=2
 
 set source_file=%folder_path%\*.bmp
 set thickened_file=%folder_path%\*_thickness%thickness%.bmp

@@ -35,18 +35,18 @@ write_outline(Bitmap* pBmp, int32 weight, double* layer_lum) {
     }
     memset(pTempPix, table.color_white, size_max);
 
-    const auto fill_radius = weight / 2;
+    double fill_radius = weight / 2.0;
     bool has_outline = false;
     for (uint32 i = 0; i < size_max; i++) {
-        if (table.color_on != pBmp->pPix[i]) {
+        if (table.color_filled != pBmp->pPix[i]) {
             continue;
         }
         auto pos = table.pCells[i].pos;
-        for (int32 dy = -fill_radius; dy <= fill_radius; dy++) {
-            for (int32 dx = -fill_radius; dx <= fill_radius; dx++) {
+        for (double dy = -fill_radius; dy <= fill_radius; dy++) {
+            for (double dx = -fill_radius; dx <= fill_radius; dx++) {
                 auto r = sqrt(dx * dx + dy * dy);
-                if (r <= weight / 2.0) {
-                    auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
+                if (r <= weight) {
+                    auto arownd = bitmap_get_index_ofs(*pBmp, pos, static_cast<int32>(dx), static_cast<int32>(dy));
                     if (ULONG_MAX != arownd) {
                         pTempPix[arownd] = table.color_black;
                         has_outline = true;

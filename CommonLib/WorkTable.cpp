@@ -5,6 +5,42 @@ using namespace std;
 
 #include "WorkTable.h"
 
+#define TRACE_RADIUS 3
+#define TRACE_DIRS   8
+static const sbyte PREFER_DIR[TRACE_DIRS] = {
+    0, -1, 1, -2, 2, -3, 3, 4
+};
+static const point TRACE_DIR[TRACE_RADIUS][TRACE_DIRS] = {
+    {
+        {  1,  0 },
+        {  1,  1 },
+        {  0,  1 },
+        { -1,  1 },
+        { -1,  0 },
+        { -1, -1 },
+        {  0, -1 },
+        {  1, -1 }
+    }, {
+        {  2,  1 },
+        {  1,  2 },
+        { -1,  2 },
+        { -2,  1 },
+        { -2, -1 },
+        { -1, -2 },
+        {  1, -2 },
+        {  2, -1 }
+    }, {
+        {  2,  0 },
+        {  2,  2 },
+        {  0,  2 },
+        { -2,  2 },
+        { -2,  0 },
+        { -2, -2 },
+        {  0, -2 },
+        {  2, -2 }
+    }
+};
+
 /**
 ポリラインから直線上の点を除く
 */
@@ -95,135 +131,118 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double lum_max) {
         }
     }
     /*** ピクセルから塗っていない部分を取得 ***/
-    double lum_off = 0.0;
+    double lum_nofill = 0.0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
             auto pix = bmp.pPix[index];
             auto color = bmp.pPalette[pix];
             auto lum = bitmap_get_lum(color.r, color.g, color.b);
-            if (lum <= lum_max && lum_off < lum) {
-                lum_off = lum;
-                pTable->color_off = pix;
+            if (lum <= lum_max && lum_nofill < lum) {
+                lum_nofill = lum;
+                pTable->color_nofill = pix;
             }
         }
     }
     /*** ピクセルから塗部を取得 ***/
-    double lum_on = 0.0;
+    double lum_filled = 0.0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
             auto pix = bmp.pPix[index];
             auto color = bmp.pPalette[pix];
             auto lum = bitmap_get_lum(color.r, color.g, color.b);
-            if (lum < lum_off && lum_on < lum) {
-                lum_on = lum;
-                pTable->color_on = pix;
+            if (lum < lum_nofill && lum_filled < lum) {
+                lum_filled = lum;
+                pTable->color_filled = pix;
             }
         }
     }
 
     sbyte delta_pos[9][3] = {
-        /* DIRECTION     f   x   y */
-        /* BOTTOM_L */ { 1, -1, -1},
-        /* BOTTOM   */ { 1,  0, -1},
-        /* BOTTOM_R */ { 1,  1, -1},
-        /* LEFT     */ { 1, -1,  0},
-        /* CENTER   */ { 1,  0,  0},
-        /* RIGHT    */ { 1,  1,  0},
-        /* TOP_L    */ { 1, -1,  1},
-        /* TOP      */ { 1,  0,  1},
-        /* TOP_R    */ { 1,  1,  1}
+        /* 方向            dx  dy  enable */
+        /* 0:BOTTOM_L */ { -1, -1, false },
+        /* 1:BOTTOM   */ {  0, -1, false },
+        /* 2:BOTTOM_R */ {  1, -1, false },
+        /* 3:LEFT     */ { -1,  0, false },
+        /* 4:CENTER   */ {  0,  0, false },
+        /* 5:RIGHT    */ {  1,  0, false },
+        /* 6:TOP_L    */ { -1,  1, false },
+        /* 7:TOP      */ {  0,  1, false },
+        /* 8:TOP_R    */ {  1,  1, false }
     };
-    
+
     /*** ワークテーブルの初期化 ***/
     pTable->error = 0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto index = bitmap_get_index(bmp, pos);
-            auto pix = bmp.pPalette[bmp.pPix[index]];
-            auto lum = bitmap_get_lum(pix.r, pix.g, pix.b);
+            auto color = bmp.pPalette[bmp.pPix[index]];
+            auto lum = bitmap_get_lum(color.r, color.g, color.b);
 
-            /*** ピクセル情報の初期化 ***/
-            type_workcell cell = {
-                lum < lum_off, // enable: lum < lum_off
-                false,         // traced: false
+            /*** ピクセル情報をセット***/
+            pTable->pCells[index] = {
+                lum < lum_nofill, // filled
+                false,            // traced
                 pos,
                 {
-                    UINT32_MAX, UINT32_MAX, UINT32_MAX,
-                    UINT32_MAX, UINT32_MAX, UINT32_MAX,
-                    UINT32_MAX, UINT32_MAX, UINT32_MAX
+                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
+                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
+                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX
                 }
             };
 
             /* 左下, 左, 左上 */
             if (0 == pos.x) {
-                delta_pos[0][0] = delta_pos[3][0] = delta_pos[6][0] = 0; /* 無効 */
+                delta_pos[0][2] = delta_pos[3][2] = delta_pos[6][2] = false;
             } else {
-                delta_pos[0][0] = delta_pos[3][0] = delta_pos[6][0] = 1; /* 有効 */
+                delta_pos[0][2] = delta_pos[3][2] = delta_pos[6][2] = true;
             }
             /* 左下, 下, 右下 */
             if (0 == pos.y) {
-                delta_pos[0][0] = delta_pos[1][0] = delta_pos[2][0] = 0; /* 無効 */
+                delta_pos[0][2] = delta_pos[1][2] = delta_pos[2][2] = false;
             } else {
-                delta_pos[0][0] = delta_pos[1][0] = delta_pos[2][0] = 1; /* 有効 */
+                delta_pos[0][2] = delta_pos[1][2] = delta_pos[2][2] = true;
             }
             /* 右下, 右, 右上 */
             if (1 == (bmp_size.x - pos.x)) {
-                delta_pos[2][0] = delta_pos[5][0] = delta_pos[8][0] = 0; /* 無効 */
+                delta_pos[2][2] = delta_pos[5][2] = delta_pos[8][2] = false;
             } else {
-                delta_pos[2][0] = delta_pos[5][0] = delta_pos[8][0] = 1; /* 有効 */
+                delta_pos[2][2] = delta_pos[5][2] = delta_pos[8][2] = true;
             }
             /* 左上, 上, 右上 */
             if (1 == (bmp_size.y - pos.y)) {
-                delta_pos[6][0] = delta_pos[7][0] = delta_pos[8][0] = 0; /* 無効 */
+                delta_pos[6][2] = delta_pos[7][2] = delta_pos[8][2] = false;
             } else {
-                delta_pos[6][0] = delta_pos[7][0] = delta_pos[8][0] = 1; /* 有効 */
+                delta_pos[6][2] = delta_pos[7][2] = delta_pos[8][2] = true;
             }
 
             /*** 周囲ピクセルのインデックスを取得してセット ***/
             for (uint32 i = 0; i < 9; i++) {
-                if (delta_pos[i][0] != 0) {
-                    point pos_around = { (pos.x + delta_pos[i][1]), (pos.y + delta_pos[i][2]) };
-                    cell.index_around[i] = bitmap_get_index(bmp, pos_around);
+                if (delta_pos[i][2]) {
+                    point pos_around = { (pos.x + delta_pos[i][0]), (pos.y + delta_pos[i][1]) };
+                    pTable->pCells[index].index_around[i] = bitmap_get_index(bmp, pos_around);
                 }
             }
-
-            /*** ピクセル情報をワークテーブルにセット ***/
-            pTable->pCells[index] = cell;
         }
     }
 
-    return lum_on;
+    return lum_filled;
 }
 
 void
 worktable_write_outline(type_worktable& table, Bitmap* pBmp) {
     const auto size_max = pBmp->size_max;
     for (uint32 i = 0; i < size_max; i++) {
-        if (table.pCells[i].enable) {
-            type_workcell tmp;
-            bool flg = false;
-            tmp = worktable_get_data(i, E_DIRECTION::BOTTOM, table, size_max);
-            if (!flg && !tmp.enable) {
-                flg = true;
-            }
-            tmp = worktable_get_data(i, E_DIRECTION::RIGHT, table, size_max);
-            if (!flg && !tmp.enable) {
-                flg = true;
-            }
-            tmp = worktable_get_data(i, E_DIRECTION::LEFT, table, size_max);
-            if (!flg && !tmp.enable) {
-                flg = true;
-            }
-            tmp = worktable_get_data(i, E_DIRECTION::TOP, table, size_max);
-            if (!flg && !tmp.enable) {
-                flg = true;
-            }
-            if (flg) {
-                pBmp->pPix[i] = table.color_on;
+        if (table.pCells[i].filled) {
+            bool nofill_bottom = !worktable_get_data(i, E_DIRECTION::BOTTOM, table, size_max).filled;
+            bool nofill_right = !worktable_get_data(i, E_DIRECTION::RIGHT, table, size_max).filled;
+            bool nofill_left = !worktable_get_data(i, E_DIRECTION::LEFT, table, size_max).filled;
+            bool nofill_top = !worktable_get_data(i, E_DIRECTION::TOP, table, size_max).filled;
+            if (nofill_bottom || nofill_right || nofill_left || nofill_top) {
+                pBmp->pPix[i] = table.color_filled;
             } else {
-                pBmp->pPix[i] = table.color_off;
+                pBmp->pPix[i] = table.color_nofill;
             }
         }
     }
@@ -232,88 +251,58 @@ worktable_write_outline(type_worktable& table, Bitmap* pBmp) {
 vector<vector<point>>
 worktable_create_polyline(type_worktable* pTable, Bitmap& bmp) {
     const auto table_size = bmp.size_max;
-    const auto on = pTable->color_on;
-    const auto off = pTable->color_off;
-    const int32 search_radius = 3;
-    const sbyte prefer_dir[] = {
-        0, -1, 1, -2, 2, -3, 3, 4
-    };
-    const point trace_dir[search_radius][8] = {
-        {
-            {  1,  0 },
-            {  1,  1 },
-            {  0,  1 },
-            { -1,  1 },
-            { -1,  0 },
-            { -1, -1 },
-            {  0, -1 },
-            {  1, -1 }
-        }, {
-            {  2,  1 },
-            {  1,  2 },
-            { -1,  2 },
-            { -2,  1 },
-            { -2, -1 },
-            { -1, -2 },
-            {  1, -2 },
-            {  2, -1 }
-        }, {
-            {  2,  0 },
-            {  2,  2 },
-            {  0,  2 },
-            { -2,  2 },
-            { -2,  0 },
-            { -2, -2 },
-            {  0, -2 },
-            {  2, -2 }
-        }
-    };
-    const auto trace_dirs = static_cast<int32>(sizeof(trace_dir[0]) / sizeof(point));
-
     vector<vector<point>> polyline_list;
-    uint32 index_ofs = 0;
-    while (true) { // ポリライン検索ループ
-        /*** ポリラインの始点を検索 ***/
+    uint32 start_index = 0;
+    while (true) { // ポリライン取得ループ
+        vector<point> point_list; // 点リスト
+        point current_pos;        // 現在の位置
+        int32 current_dir = 0;    // 現在の進行方向
+        /*** ポリライン始点を検索 ***/
         bool polyline_found = false;
-        point curr_pos;
-        vector<point> polyline;
-        for (uint32 i = index_ofs; i < table_size; i++) {
+        for (uint32 i = start_index; i < table_size; i++) {
             auto pCell = &pTable->pCells[i];
-            if (pCell->enable && !pCell->traced) { // 点を発見、ポリラインの始点として追加
-                pCell->traced = true;
-                curr_pos = pCell->pos;
-                polyline.push_back(pCell->pos);
+            if (pCell->filled && !pCell->traced) {
+                // ポリライン始点を発見
                 polyline_found = true;
-                index_ofs = i;
+                pCell->traced = true;
+                // ポリラインの始点として点リストに追加
+                current_pos = pCell->pos;
+                point_list.push_back(current_pos);
+                // 次のポリライン始点の検索開始インデックスをセット
+                start_index = i;
+                // ポリライン始点の検索終了
                 break;
             }
         }
         if (!polyline_found) { // 残っているポリラインなし
             break;
         }
-        int32 prev_dir = 0;
-        while (true) { // 点検索ループ
-            /*** トレースの進行方向を優先して検索半径を広げながら周囲の点を検索 ***/
-            /*** あればポリラインの点として追加 ***/
+        while (true) { // 点トレースループ
+            /*** 現在の進行方向を優先して半径を広げながら周囲の点を検索 ***/
+            /*** あればポリラインの点として点リストに追加 ***/
             bool point_found = false;
-            for (int32 r = 0; r < search_radius; r++) {
-                for (int32 d = 0; d < sizeof(prefer_dir); d++) {
-                    auto curr_dir = (prefer_dir[d] + prev_dir + trace_dirs) % trace_dirs;
+            for (int32 r = 0; r < TRACE_RADIUS; r++) {
+                for (int32 d = 0; d < TRACE_DIRS; d++) {
+                    auto trace_dir = (current_dir + PREFER_DIR[d] + TRACE_DIRS) % TRACE_DIRS;
                     auto index = bitmap_get_index_ofs(bmp,
-                        curr_pos, 
-                        trace_dir[r][curr_dir].x, 
-                        trace_dir[r][curr_dir].y
+                        current_pos,
+                        TRACE_DIR[r][trace_dir].x,
+                        TRACE_DIR[r][trace_dir].y
                     );
-                    if (UINT32_MAX == index) {
+                    if (INVALID_INDEX == index) {
                         continue;
                     }
                     auto pCell = &pTable->pCells[index];
-                    if (pCell->enable && !pCell->traced) { // 点を発見、ポリラインの点として追加
-                        pCell->traced = true;
-                        curr_pos = pCell->pos;
-                        prev_dir = curr_dir;
-                        polyline.push_back(curr_pos);
+                    if (pCell->filled && !pCell->traced) {
+                        // 点を発見
                         point_found = true;
+                        pCell->traced = true;
+                        // トレース方向を現在の進行方向とする
+                        current_dir = trace_dir;
+                        // ポリラインの点として点リストに追加
+                        current_pos = pCell->pos;
+                        point_list.push_back(current_pos);
+                        // 次の点を検索
                         break;
                     }
                 }
@@ -321,9 +310,11 @@ worktable_create_polyline(type_worktable* pTable, Bitmap& bmp) {
                     break;
                 }
             }
-            if (!point_found) { // ポリラインの終端、ポリラインをリストに追加
-                __worktable_eliminate_points_on_straightline(&polyline);
-                polyline_list.push_back(polyline);
+            if (!point_found) { // ポリラインの終端
+                // 直線上にある点を点リストから除外する
+                __worktable_eliminate_points_on_straightline(&point_list);
+                // 点リストをポリラインリストに追加
+                polyline_list.push_back(point_list);
                 break;
             }
         }
