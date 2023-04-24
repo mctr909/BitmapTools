@@ -112,7 +112,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
 }
 
 type_mqo_object
-output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
+output_mqo(Bitmap* pbmp, double height, double y_offset) {
     type_mqo_object obj;
     obj.error = -1;
 
@@ -228,7 +228,7 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
             pos.y = pbmp->info_h.height - pos.y - 1;
             verts.push_back(pos);
             index_top.push_back(index_ofs + point_count - j - 1);
-            create_vertex(pos, &obj, y_offset + thickness);
+            create_vertex(pos, &obj, y_offset + height);
         }
         indexes_top.push_back(index_top);
         index_ofs += point_count;
@@ -329,60 +329,66 @@ output_mqo(Bitmap* pbmp, double thickness, double y_offset) {
 
 int main(int argc, char* argv[]) {
     // check parameter
-    if (argc < 4) {
+    if (argc < 5) {
         cout << "format error..." << endl;
-        cout << "[format] OutputMQO.exe <thickness> <y offset> <BMP FILE1> <BMP FILE2> ..." << endl;
-        return (EXIT_SUCCESS);
+        cout << "[format] OutputMQO.exe <height> <y offset> <obj name> <bitmap file path>" << endl;
+        return (EXIT_FAILURE);
     }
 
-    const auto thickness = atof(argv[1]);
+    const auto height = atof(argv[1]);
     const auto y_offset = atof(argv[2]);
+    const auto obj_name = string(argv[3]);
+    string marge_from;
+    if (argc < 6) {
+        marge_from = "";
+    } else {
+        marge_from = string(argv[5]);
+    }
 
-    for (int32 fcount = 0; fcount < argc - 3; fcount++) {
-        bmp_file_path = argv[fcount + 3];
-        cout << "BMP FILE : " << bmp_file_path << endl;
+    bmp_file_path = argv[4];
+    cout << "BMP FILE : " << bmp_file_path << endl;
 
-        // get bitmap data
-        auto pBmp = new Bitmap(bmp_file_path);
-        if (pBmp->error != 0) {
-            cout << "bmp reading error... (" << pBmp->error << ")" << endl;
-            delete pBmp;
-            return (EXIT_SUCCESS);
-        } else {
-            pBmp->PrintHeader();
-        }
+    // get bitmap data
+    auto pBmp = new Bitmap(bmp_file_path);
+    if (pBmp->error != 0) {
+        cout << "bmp reading error... (" << pBmp->error << ")" << endl;
+        delete pBmp;
+        return (EXIT_FAILURE);
+    } else {
+        pBmp->PrintHeader();
+    }
 
-        // palette chck
-        if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
-            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
-            delete pBmp;
-            return (EXIT_SUCCESS);
-        }
+    // palette chck
+    if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
+        cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
+        delete pBmp;
+        return (EXIT_FAILURE);
+    }
 
-        type_mqo mqo = fn_mqo_create_default_parameter();
-        mqo.object = output_mqo(pBmp, thickness, y_offset);
-        if (mqo.object.error != 0) {
-            cout << "bmp convert error... (" << pBmp->error << ")" << endl;
-            delete pBmp;
-            return (EXIT_SUCCESS);
-        }
+    type_mqo mqo = fn_mqo_create_default_parameter();
+    mqo.object = output_mqo(pBmp, height, y_offset);
+    if (mqo.object.error != 0) {
+        cout << "bmp convert error... (" << pBmp->error << ")" << endl;
+        delete pBmp;
+        return (EXIT_FAILURE);
+    }
+    mqo.object.name = obj_name;
 
-        // save
-        stringstream ss;
-        ss << bmp_file_path.substr(0, bmp_file_path.size() - 4) << ".mqo";
-        if (fn_mqo_write(&mqo, ss.str())) {
-            cout << "bmp writing error..." << endl;
-            delete pBmp;
-            return (EXIT_SUCCESS);
-        }
+    // save
+    stringstream ss;
+    ss << bmp_file_path.substr(0, bmp_file_path.size() - 4) << ".mqo";
+    if (fn_mqo_write(&mqo, ss.str(), marge_from)) {
+        cout << "bmp writing error..." << endl;
+        delete pBmp;
+        return (EXIT_FAILURE);
+    }
 
 #ifdef DEBUG
-        stringstream ssdebug;
-        ssdebug << bmp_file_path.substr(0, bmp_file_path.size() - 4) << "_debug.bmp";
-        pBmp->Save(ssdebug.str());
+    stringstream ssdebug;
+    ssdebug << bmp_file_path.substr(0, bmp_file_path.size() - 4) << "_debug.bmp";
+    pBmp->Save(ssdebug.str());
 #endif
 
-        delete pBmp;
-    }
+    delete pBmp;
     return (EXIT_SUCCESS);
 }

@@ -141,19 +141,32 @@ string fn_mqo_support_object_text(const type_mqo_object* pobject) {
     return ss.str();
 }
 
-int32 fn_mqo_write(const type_mqo* pmqo, const string name) {
-    // èëçû
-    ofstream fout(name, ios::out);
-    if (!fout) {
-        return (-1);
+int32 fn_mqo_write(const type_mqo* pmqo, const string file_path, const string marge_from) {
+    if (0 == marge_from.size()) {
+        // èëçû
+        ofstream fout(file_path, ios::out);
+        if (!fout) {
+            return (-1);
+        }
+        fout << fn_mqo_support_header_text(&((*pmqo).header));
+        fout << fn_mqo_support_scene_text(&((*pmqo).scene));
+        fout << fn_mqo_support_object_text(&((*pmqo).object));
+        fout.close();
+    } else {
+        // í«ãL
+        string marge_from_path;
+        if (0 == marge_from.find_first_of('*')) {
+            string marge_from_regix = marge_from.substr(1, marge_from.size());
+            auto copy_len = file_path.size() - marge_from_regix.size();
+            marge_from_path = file_path.substr(0, copy_len);
+            marge_from_path.insert(copy_len, marge_from.substr(1, marge_from_regix.size()));
+        } else {
+            marge_from_path = marge_from;
+        }
+        ofstream fout(marge_from_path, ios::app);
+        fout << fn_mqo_support_object_text(&((*pmqo).object));
+        fout.close();
     }
-
-    fout << fn_mqo_support_header_text(&((*pmqo).header));
-    fout << fn_mqo_support_scene_text(&((*pmqo).scene));
-    fout << fn_mqo_support_object_text(&((*pmqo).object));
-
-    fout.close();
-
     return (0);
 }
 
