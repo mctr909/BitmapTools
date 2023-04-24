@@ -20,6 +20,17 @@ for %%a in (%layer3_file%) do (
   OutputMQO.exe %height_3% %offset_3% "layer3" %%a *_layer1.mqo
 )
 
-del  %layer1_file%
-del  %layer2_file%
-del  %layer3_file%
+del %layer1_file%
+del %layer2_file%
+del %layer3_file%
+
+set rename_src_name=_layer1.mqo
+set rename_dst_name=.mqo
+cd %~dp0\%folder_path%
+for %%F in ( * ) do call :sub "%%F"
+exit /b
+:sub
+  set FILE_NAME=%1
+  call set FILE_NAME=%%FILE_NAME:%rename_src_name%=%rename_dst_name%%%
+  ren %1 %FILE_NAME%
+  goto :EOF
