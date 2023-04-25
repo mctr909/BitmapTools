@@ -68,71 +68,66 @@ int main(int argc, char* argv[]) {
     // check parameter
     if (argc < 3) {
         cout << "parameter format error..." << endl;
-        cout << "[example] Outline.exe <thickness> <BMP FILE1> <BMP FILE2> ..." << endl;
+        cout << "[example] Outline.exe <line weight> <bitmap file path>" << endl;
         return (EXIT_SUCCESS);
     }
 
-    const auto thickness = atoi(argv[1]);
+    const auto line_weight = atoi(argv[1]);
+    string bmp_file = argv[2];
+    cout << "BMP FILE : " << bmp_file << endl;
 
-    string bmp_file;
-    for (int32 fcount = 0; fcount < argc - 2; fcount++) {
-        bmp_file = argv[fcount + 2];
-        cout << "BMP FILE : " << bmp_file << endl;
-
-        double layer_lum = 1.0;
-        for (int layer = 1; ; layer++) {
-            // get bitmap data
-            auto pBmp = new Bitmap(bmp_file);
-            if (pBmp->error != 0) {
-                cout << "bmp reading error... (" << pBmp->error << ")" << endl;
-                delete pBmp;
-                break;
-            } else {
-                pBmp->PrintHeader();
-            }
-
-            // palette chck
-            if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
-                cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
-                delete pBmp;
-                break;
-            }
-
-            // write outline
-            auto has_outline = write_outline(pBmp, thickness, &layer_lum);
-            if (pBmp->error != 0) {
-                cout << "bmp convert error... (" << pBmp->error << ")" << endl;
-                delete pBmp;
-                break;
-            }
-            if (!has_outline) {
-                delete pBmp;
-                break;
-            }
-
-            // save
-            stringstream ss;
-            ss << bmp_file.substr(0, bmp_file.size() - 4);
-            ss << "_layer" << layer;
-            if (1 < thickness) {
-                ss << "_thickness" << thickness;
-            }
-            ss << ".bmp";
-
-            pBmp->Save(ss.str());
-            if (pBmp->error != 0) {
-                cout << "bmp writing error..." << endl;
-                delete pBmp;
-                break;
-            }
-
+    double layer_lum = 1.0;
+    for (int layer = 1; ; layer++) {
+        // get bitmap data
+        auto pBmp = new Bitmap(bmp_file);
+        if (pBmp->error != 0) {
+            cout << "bmp reading error... (" << pBmp->error << ")" << endl;
             delete pBmp;
+            break;
+        } else {
+            pBmp->PrintHeader();
+        }
 
-            if (0.0 == layer_lum) {
-                break;
-            }
+        // palette chck
+        if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
+            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
+            delete pBmp;
+            break;
+        }
+
+        // write outline
+        auto has_outline = write_outline(pBmp, line_weight, &layer_lum);
+        if (pBmp->error != 0) {
+            cout << "bmp convert error... (" << pBmp->error << ")" << endl;
+            delete pBmp;
+            break;
+        }
+        if (!has_outline) {
+            delete pBmp;
+            break;
+        }
+
+        // save
+        stringstream ss;
+        ss << bmp_file.substr(0, bmp_file.size() - 4);
+        ss << "_layer" << layer;
+        if (1 < line_weight) {
+            ss << "_thickness" << line_weight;
+        }
+        ss << ".bmp";
+
+        pBmp->Save(ss.str());
+        if (pBmp->error != 0) {
+            cout << "bmp writing error..." << endl;
+            delete pBmp;
+            break;
+        }
+
+        delete pBmp;
+
+        if (layer_lum <= 1.0 / 255.0) {
+            break;
         }
     }
-
     return (EXIT_SUCCESS);
 }
