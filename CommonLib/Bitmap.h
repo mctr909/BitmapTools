@@ -59,12 +59,12 @@ public:
     void Save(const string);
     void PrintHeader();
     void Backup();
+    void Rollback();
 
 public:
     infohead info_h;
     pix32    *pPalette = NULL;
     byte     *pPixWork = NULL;
-    byte     *pPixBackup = NULL;
     int32    stride;
     int32    error;
     uint32   pixel_count;
@@ -73,6 +73,7 @@ private:
     string   name;
     filehead file_h;
     uint32   palette_size;
+    byte     *pPixBackup = NULL;
 };
 
 inline uint32

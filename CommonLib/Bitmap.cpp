@@ -154,3 +154,10 @@ Bitmap::Backup() {
     }
     memcpy_s(pPixBackup, info_h.imagesize, pPixWork, info_h.imagesize);
 }
+
+void
+Bitmap::Rollback() {
+    if (NULL != pPixBackup) {
+        memcpy_s(pPixWork, info_h.imagesize, pPixBackup, info_h.imagesize);
+    }
+}

@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         }
 
         // set input data from backup
-        memcpy_s(pBmp->pPixWork, pBmp->pixel_count, pBmp->pPixBackup, pBmp->pixel_count);
+        pBmp->Rollback();
     }
 
     if (NULL != pBmp) {
