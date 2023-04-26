@@ -80,10 +80,10 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double lum_max) {
     const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
     point pos;
     /*** パレットから最暗色と最明色を取得 ***/
-    double most_dark = 1.0;
-    double most_light = 0.0;
     pTable->color_black = 0;
     pTable->color_white = 0;
+    double most_dark = 1.0;
+    double most_light = 0.0;
     for (uint32 i = 0; i < 256; i++) {
         auto color = bmp.pPalette[i];
         auto lum = bitmap_get_lum(color.r, color.g, color.b);
@@ -96,8 +96,7 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double lum_max) {
             pTable->color_white = i;
         }
     }
-
-    /*** ピクセルから塗っていない部分を取得 ***/
+    /*** ピクセルから塗っていない部分の輝度を取得 ***/
     double lum_nofill = 0.0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
@@ -110,7 +109,7 @@ worktable_create(type_worktable* pTable, Bitmap& bmp, double lum_max) {
             }
         }
     }
-    /*** ピクセルから塗部を取得 ***/
+    /*** ピクセルから塗部の輝度を取得 ***/
     double lum_filled = 0.0;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
@@ -204,18 +203,18 @@ worktable_write_outline(type_worktable& table, Bitmap* pBmp, int32 weight) {
         if (!table.pCells[i].filled) {
             continue;
         }
-        auto pos = table.pCells[i].pos;
         bool nofill_bottom = !worktable_get_data(i, E_DIRECTION::BOTTOM, table, PIXEL_COUNT).filled;
         bool nofill_right = !worktable_get_data(i, E_DIRECTION::RIGHT, table, PIXEL_COUNT).filled;
         bool nofill_left = !worktable_get_data(i, E_DIRECTION::LEFT, table, PIXEL_COUNT).filled;
         bool nofill_top = !worktable_get_data(i, E_DIRECTION::TOP, table, PIXEL_COUNT).filled;
         if (nofill_bottom || nofill_right || nofill_left || nofill_top) {
+            auto pos = table.pCells[i].pos;
             for (int32 dy = -FILL_RADIUS; dy <= FILL_RADIUS; dy++) {
                 for (int32 dx = -FILL_RADIUS; dx <= FILL_RADIUS; dx++) {
                     auto r = sqrt(dx * dx + dy * dy);
                     if (r <= FILL_RADIUS) {
                         auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
-                        if (ULONG_MAX != arownd) {
+                        if (INVALID_INDEX != arownd) {
                             pBmp->pPixWork[arownd] = table.color_black;
                         }
                     }
