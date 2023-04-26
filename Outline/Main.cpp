@@ -42,8 +42,8 @@ int main(int argc, char* argv[]) {
     // backup input data
     pBmp->Backup();
 
-    type_worktable table;
-    table.pCells = reinterpret_cast<type_workcell*>(malloc(sizeof(type_workcell) * pBmp->pixel_count));
+    TYPE_WORKTABLE table;
+    table.pCells = reinterpret_cast<TYPE_WORKCELL*>(malloc(sizeof(TYPE_WORKCELL) * pBmp->pixel_count));
     if (NULL == table.pCells) {
         delete pBmp;
         return (EXIT_FAILURE);

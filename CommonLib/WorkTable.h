@@ -19,7 +19,7 @@ enum struct E_DIRECTION {
 };
 
 #pragma pack(push, 1)
-struct type_workcell {
+struct TYPE_WORKCELL {
 	bool filled;
 	bool traced;
 	point pos;
@@ -27,31 +27,21 @@ struct type_workcell {
 };
 #pragma pack(pop)
 
-struct type_worktable {
-	type_workcell* pCells;
+struct TYPE_WORKTABLE {
+	TYPE_WORKCELL* pCells;
 	byte color_white;
 	byte color_black;
 	int32 error;
 };
 
-struct type_worktable_vert_info {
-	double distance;
-	bool deleted;
-};
-
-struct type_nest_info {
-	uint32 parent;
-	uint32 depth;
-};
-
 double
-worktable_create(type_worktable*, Bitmap&, double);
+worktable_create(TYPE_WORKTABLE*, Bitmap&, double);
 
 void
-worktable_write_outline(type_worktable&, Bitmap*, int32);
+worktable_write_outline(TYPE_WORKTABLE&, Bitmap*, int32);
 
 vector<vector<point>>
-worktable_create_polyline(type_worktable*, Bitmap&);
+worktable_create_polyline(TYPE_WORKTABLE*, Bitmap&);
 
 double
 worktable_create_polygon(vector<point>&, vector<uint32>&, vector<surface>*, int32 order);
@@ -59,14 +49,14 @@ worktable_create_polygon(vector<point>&, vector<uint32>&, vector<surface>*, int3
 bool
 worktable_inner_polygon(vector<surface>&, vector<surface>&, vector<point>&);
 
-inline type_workcell
+inline TYPE_WORKCELL
 worktable_get_data(
 	uint32      center_index,
 	E_DIRECTION direction,
-	type_worktable& table,
+	TYPE_WORKTABLE& table,
 	uint32 size_max
 ) {
-	static const type_workcell DEFAULT_CELL = {
+	static const TYPE_WORKCELL DEFAULT_CELL = {
 		false,
 		false,
 		{ INVALID_POS, INVALID_POS },

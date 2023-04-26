@@ -30,6 +30,10 @@ create_vertex(const point pos, type_mqo_object* pobj, double y) {
 
 void
 marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 order) {
+    struct type_nest_info {
+        uint32 parent;
+        uint32 depth;
+    };
     vector<type_nest_info> nest_info;
     for (uint32 i = 0; i < indexes.size(); i++) {
         type_nest_info nest;
@@ -118,8 +122,8 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
 
     /*** ワークテーブル作成 ***/
     const auto table_size = pbmp->pixel_count;
-    type_worktable table;
-    table.pCells = static_cast<type_workcell*>(calloc(table_size, sizeof(type_workcell)));
+    TYPE_WORKTABLE table;
+    table.pCells = static_cast<TYPE_WORKCELL*>(calloc(table_size, sizeof(TYPE_WORKCELL)));
     if (NULL == table.pCells) {
         pbmp->error = -1;
         return (obj);
