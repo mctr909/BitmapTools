@@ -58,14 +58,16 @@ public:
     ~Bitmap();
     void Save(const string);
     void PrintHeader();
+    void Backup();
 
 public:
-    uint32   size_max;
     infohead info_h;
-    byte     *pPix;
-    pix32    *pPalette;
+    pix32    *pPalette = NULL;
+    byte     *pPixWork = NULL;
+    byte     *pPixBackup = NULL;
     int32    stride;
     int32    error;
+    uint32   pixel_count;
 
 private:
     string   name;

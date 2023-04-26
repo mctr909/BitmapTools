@@ -117,7 +117,7 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
     obj.error = -1;
 
     /*** ワークテーブル作成 ***/
-    const auto table_size = pbmp->size_max;
+    const auto table_size = pbmp->pixel_count;
     type_worktable table;
     table.pCells = static_cast<type_workcell*>(calloc(table_size, sizeof(type_workcell)));
     if (NULL == table.pCells) {

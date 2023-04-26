@@ -20,7 +20,7 @@ Bitmap::Bitmap(const string path) {
     fin.read(reinterpret_cast<char*>(&info_h), sizeof(info_h));
 
     stride = ((info_h.width + 3) >> 2) << 2;
-    size_max = stride * info_h.height;
+    pixel_count = stride * info_h.height;
 
     switch (info_h.bits) {
     case DEFINE_SUPPORT_COLOR_8BIT:
@@ -38,15 +38,15 @@ Bitmap::Bitmap(const string path) {
         break;
     }
 
-    pPix = reinterpret_cast<byte*>(calloc(size_max * info_h.bits >> 3, 1));
-    if (NULL == pPix) {
+    pPixWork = reinterpret_cast<byte*>(calloc(info_h.imagesize, 1));
+    if (NULL == pPixWork) {
         free(pPalette);
         error = -2;
         return;
     }
 
     fin.seekg(file_h.offset, ios::beg);
-    fin.read(reinterpret_cast<char*>(pPix), size_max * info_h.bits >> 3);
+    fin.read(reinterpret_cast<char*>(pPixWork), info_h.imagesize);
     fin.seekg(current_pos);
     fin.close();
 
@@ -56,7 +56,7 @@ Bitmap::Bitmap(const string path) {
 
 Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     stride = ((width + 3) >> 2) << 2;
-    size_max = stride * height;
+    pixel_count = stride * height;
 
     info_h.headsize = sizeof(info_h);
     info_h.width = width;
@@ -64,7 +64,7 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     info_h.plane = 1;
     info_h.bits = bits;
     info_h.compression = 0;
-    info_h.imagesize = size_max * bits >> 3;
+    info_h.imagesize = pixel_count * bits >> 3;
     info_h.h_resolution = 0;
     info_h.v_resolution = 0;
     info_h.color_id = 0;
@@ -77,8 +77,8 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     file_h.offset = (sizeof(file_h) + sizeof(info_h)) + palette_size;
     file_h.size = file_h.offset + info_h.imagesize;
 
-    pPix = reinterpret_cast<byte*>(calloc(1, info_h.imagesize));
-    if (NULL == pPix) {
+    pPixWork = reinterpret_cast<byte*>(calloc(1, info_h.imagesize));
+    if (NULL == pPixWork) {
         error = -2;
         return;
     }
@@ -87,7 +87,7 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     case DEFINE_SUPPORT_COLOR_8BIT:
         pPalette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
         if (NULL == pPalette) {
-            free(pPix);
+            free(pPixWork);
             error = -2;
             return;
         }
@@ -102,8 +102,9 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
 }
 
 Bitmap::~Bitmap() {
-    free(pPix);
     free(pPalette);
+    free(pPixWork);
+    free(pPixBackup);
 }
 
 void
@@ -118,8 +119,8 @@ Bitmap::Save(const string path) {
     if (NULL != pPalette) {
         fout.write(reinterpret_cast<char*>(pPalette), palette_size);
     }
-    if (NULL != pPix) {
-        fout.write(reinterpret_cast<char*>(pPix), info_h.imagesize);
+    if (NULL != pPixWork) {
+        fout.write(reinterpret_cast<char*>(pPixWork), info_h.imagesize);
     }
     fout.close();
 }
@@ -144,4 +145,12 @@ Bitmap::PrintHeader() {
     cout << "Color Index      : " << info_h.color_id << endl;
     cout << "Important Index  : " << info_h.important_id << endl;
     cout << endl;
+}
+
+void
+Bitmap::Backup() {
+    if (NULL == pPixBackup) {
+        pPixBackup = reinterpret_cast<byte*>(malloc(info_h.imagesize));
+    }
+    memcpy_s(pPixBackup, info_h.imagesize, pPixWork, info_h.imagesize);
 }

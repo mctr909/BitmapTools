@@ -31,8 +31,6 @@ struct type_worktable {
 	type_workcell* pCells;
 	byte color_white;
 	byte color_black;
-	byte color_filled;
-	byte color_nofill;
 	int32 error;
 };
 
@@ -50,7 +48,7 @@ double
 worktable_create(type_worktable*, Bitmap&, double);
 
 void
-worktable_write_outline(type_worktable&, Bitmap*);
+worktable_write_outline(type_worktable&, Bitmap*, int32);
 
 vector<vector<point>>
 worktable_create_polyline(type_worktable*, Bitmap&);
