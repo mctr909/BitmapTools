@@ -4,6 +4,7 @@
 using namespace std;
 
 #include "WorkTable.h"
+#include "Bitmap.h"
 
 /**
 ポリラインから直線上の点を除く
@@ -142,14 +143,17 @@ worktable_create(TYPE_WORKTABLE* pTable, Bitmap& bmp, double lum_max) {
     };
 
     /*** ワークテーブルの初期化 ***/
-    pTable->error = 0;
+    pTable->width = bmp.info_h.width;
+    pTable->height = bmp.info_h.height;
+    pTable->pixel_count = pTable->width * pTable->height;
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
-            auto index = bitmap_get_index(bmp, pos);
-            auto color = bmp.pPalette[bmp.pPixWork[index]];
+            auto p_index = bitmap_get_index(bmp, pos);
+            auto color = bmp.pPalette[bmp.pPixWork[p_index]];
             auto lum = bitmap_get_lum(color.r, color.g, color.b);
 
             /*** ピクセル情報をセット***/
+            auto index = worktable_get_index(*pTable, pos);
             pTable->pCells[index] = {
                 lum < lum_nofill, // filled
                 false,            // traced
@@ -189,29 +193,30 @@ worktable_create(TYPE_WORKTABLE* pTable, Bitmap& bmp, double lum_max) {
             /*** 周囲ピクセルのインデックスを取得してセット ***/
             for (uint32 i = 0; i < 9; i++) {
                 if (delta_pos[i].enable) {
-                    point pos_around = { (pos.x + delta_pos[i].x), (pos.y + delta_pos[i].y) };
-                    pTable->pCells[index].index_around[i] = bitmap_get_index(bmp, pos_around);
+                    pTable->pCells[index].index_around[i] = worktable_get_index_ofs(
+                        *pTable, pos,
+                        delta_pos[i].x, delta_pos[i].y
+                    );
                 }
             }
         }
     }
-
     return lum_filled;
 }
 
 void
 worktable_write_outline(TYPE_WORKTABLE& table, Bitmap* pBmp, int32 weight) {
     const auto FILL_RADIUS = weight / 2;
-    const auto PIXEL_COUNT = pBmp->pixel_count;
-    memset(pBmp->pPixWork, table.color_white, PIXEL_COUNT);
+    const auto PIXEL_COUNT = table.pixel_count;
+    memset(pBmp->pPixWork, table.color_white, pBmp->pixel_count);
     for (uint32 i = 0; i < PIXEL_COUNT; i++) {
         if (!table.pCells[i].filled) {
             continue;
         }
-        bool nofill_bottom = !worktable_get_data(i, E_DIRECTION::BOTTOM, table, PIXEL_COUNT).filled;
-        bool nofill_right = !worktable_get_data(i, E_DIRECTION::RIGHT, table, PIXEL_COUNT).filled;
-        bool nofill_left = !worktable_get_data(i, E_DIRECTION::LEFT, table, PIXEL_COUNT).filled;
-        bool nofill_top = !worktable_get_data(i, E_DIRECTION::TOP, table, PIXEL_COUNT).filled;
+        bool nofill_bottom = !worktable_get_data(table, i, E_DIRECTION::BOTTOM).filled;
+        bool nofill_right = !worktable_get_data(table, i, E_DIRECTION::RIGHT).filled;
+        bool nofill_left = !worktable_get_data(table, i, E_DIRECTION::LEFT).filled;
+        bool nofill_top = !worktable_get_data(table, i, E_DIRECTION::TOP).filled;
         if (nofill_bottom || nofill_right || nofill_left || nofill_top) {
             auto pos = table.pCells[i].pos;
             for (int32 dy = -FILL_RADIUS; dy <= FILL_RADIUS; dy++) {
@@ -230,7 +235,7 @@ worktable_write_outline(TYPE_WORKTABLE& table, Bitmap* pBmp, int32 weight) {
 }
 
 vector<vector<point>>
-worktable_create_polyline(TYPE_WORKTABLE* pTable, Bitmap& bmp) {
+worktable_create_polyline(TYPE_WORKTABLE* pTable) {
     const int32 TRACE_RADIUS = 3;
     const int32 TRACE_DIRS = 8;
     const int32 PREFER_DIRS = 8;
@@ -268,8 +273,6 @@ worktable_create_polyline(TYPE_WORKTABLE* pTable, Bitmap& bmp) {
         }
     };
 
-    const auto PIXEL_COUNT = bmp.pixel_count;
-
     vector<vector<point>> polyline_list;
     uint32 start_index = 0;
     while (true) { // ポリライン取得ループ
@@ -278,7 +281,7 @@ worktable_create_polyline(TYPE_WORKTABLE* pTable, Bitmap& bmp) {
         int32 current_dir = 0;    // 現在の進行方向
         /*** ポリライン始点を検索 ***/
         bool polyline_found = false;
-        for (uint32 i = start_index; i < PIXEL_COUNT; i++) {
+        for (uint32 i = start_index; i < pTable->pixel_count; i++) {
             auto pCell = &pTable->pCells[i];
             if (pCell->filled && !pCell->traced) {
                 // ポリライン始点を発見
@@ -303,7 +306,8 @@ worktable_create_polyline(TYPE_WORKTABLE* pTable, Bitmap& bmp) {
             for (int32 r = 0; r < TRACE_RADIUS; r++) {
                 for (int32 p = 0; p < PREFER_DIRS; p++) {
                     auto trace_dir = (current_dir + PREFER_DIR[p] + TRACE_DIRS) % TRACE_DIRS;
-                    auto index = bitmap_get_index_ofs(bmp,
+                    auto index = worktable_get_index_ofs(
+                        *pTable,
                         current_pos,
                         TRACE_DIR[r][trace_dir].x,
                         TRACE_DIR[r][trace_dir].y
@@ -339,166 +343,4 @@ worktable_create_polyline(TYPE_WORKTABLE* pTable, Bitmap& bmp) {
         }
     }
     return polyline_list;
-}
-
-double
-worktable_create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surface>* pSurf_list, int32 order) {
-    const auto INDEX_COUNT = static_cast<uint32>(index_list.size());
-    const auto INDEX_NEXT = INDEX_COUNT + order;
-    const auto INDEX_RIGHT = 1;
-    const auto INDEX_LEFT = INDEX_COUNT - 1;
-    struct type_vert_info {
-        double distance;
-        bool deleted;
-    };
-    /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
-    auto p_vert_info = (type_vert_info*)calloc(INDEX_COUNT, sizeof(type_vert_info));
-    for (uint32 i = 0; i < INDEX_COUNT; i++) {
-        auto x = static_cast<int64>(vert_list[index_list[i]].x) - INT32_MIN;
-        auto y = static_cast<int64>(vert_list[index_list[i]].y) - INT32_MIN;
-        p_vert_info[i].distance = sqrt(x * x + y * y);
-        p_vert_info[i].deleted = false;
-    }
-    double area = 0.0;
-    uint32 reverse_count = 0;
-    uint32 vert_count = 0;
-    do { // 最も遠くにある頂点(vo)の取得ループ
-        /*** 最も遠くにある頂点(vo)を取得 ***/
-        point vo; uint32 io = 0;
-        double dist_max = 0.0;
-        vert_count = 0;
-        for (uint32 i = 0; i < INDEX_COUNT; i++) {
-            auto info = p_vert_info[i];
-            if (info.deleted) {
-                continue;
-            }
-            if (dist_max < info.distance) {
-                dist_max = info.distance;
-                io = i;
-            }
-            vert_count++;
-        }
-        reverse_count = 0;
-        vo = vert_list[index_list[io]];
-        while (true) { // 頂点(vo)の移動ループ
-            /*** 頂点(vo)の左隣にある頂点(va)を取得 ***/
-            point va; uint32 ia;
-            ia = (io + INDEX_LEFT) % INDEX_COUNT;
-            for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                if (p_vert_info[ia].deleted) {
-                    ia = (ia + INDEX_LEFT) % INDEX_COUNT;
-                } else {
-                    break;
-                }
-            }
-            va = vert_list[index_list[ia]];
-            /*** 頂点(vo)の右隣にある頂点(vb)を取得 ***/
-            point vb; uint32 ib;
-            ib = (io + INDEX_RIGHT) % INDEX_COUNT;
-            for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                if (p_vert_info[ib].deleted) {
-                    ib = (ib + INDEX_RIGHT) % INDEX_COUNT;
-                } else {
-                    break;
-                }
-            }
-            vb = vert_list[index_list[ib]];
-            /*** 三角形(va vo vb)の表裏を確認 ***/
-            int32 aob_normal;
-            auto oa_x = va.x - vo.x;
-            auto oa_y = va.y - vo.y;
-            auto ob_x = vb.x - vo.x;
-            auto ob_y = vb.y - vo.y;
-            aob_normal = (oa_x * ob_y - oa_y * ob_x) * order;
-            if (aob_normal < 0) {
-                /*** 裏の場合 ***/
-                reverse_count++;
-                if (INDEX_COUNT < reverse_count) {
-                    /*** 表になる三角形(va vo vb)がない場合 ***/
-                    /*** 頂点(vo)を検索対象から削除 ***/
-                    p_vert_info[io].deleted = true;
-                    /*** 次の最も遠くにある頂点(vo)を取得 ***/
-                    break;
-                }
-                /*** 頂点(vo)を隣に移動 ***/
-                io = (io + INDEX_NEXT) % INDEX_COUNT;
-                for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                    if (p_vert_info[io].deleted) {
-                        io = (io + INDEX_NEXT) % INDEX_COUNT;
-                    } else {
-                        break;
-                    }
-                }
-                vo = vert_list[index_list[io]];
-                continue;
-            }
-            /*** 三角形(va vo vb)の内側にva vo vb以外の頂点がないか確認 ***/
-            bool point_in_triangle = false;
-            for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                if (i == ia || i == io || i == ib || p_vert_info[i].deleted) {
-                    continue;
-                }
-                auto p = vert_list[index_list[i]];
-                if (worktable_inner_triangle(va, vo, vb, p)) {
-                    point_in_triangle = true;
-                    break;
-                }
-            }
-            if (point_in_triangle) {
-                /*** 内側に他の頂点がある場合 ***/
-                /*** 頂点(vo)を隣に移動 ***/
-                io = (io + INDEX_NEXT) % INDEX_COUNT;
-                for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                    if (p_vert_info[io].deleted) {
-                        io = (io + INDEX_NEXT) % INDEX_COUNT;
-                    } else {
-                        break;
-                    }
-                }
-                vo = vert_list[index_list[io]];
-            } else {
-                /*** 内側に他の頂点がない場合 ***/
-                /*** 三角形(va vo vb)を面リストに追加 ***/
-                surface surf;
-                surf.a = index_list[ia];
-                surf.o = index_list[io];
-                surf.b = index_list[ib];
-                pSurf_list->push_back(surf);
-                /*** 三角形の面積を加算 ***/
-                area += abs(aob_normal) / 2.0;
-                /*** 頂点(vo)を検索対象から削除 ***/
-                p_vert_info[io].deleted = true;
-                /*** 次の最も遠くにある頂点(vo)を取得 ***/
-                break;
-            }
-        } // 頂点(vo)の移動ループ
-    } while (3 < vert_count); // 最も遠くにある頂点(vo)の取得ループ
-    free(p_vert_info);
-    return area;
-}
-
-bool
-worktable_inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<point>& vert) {
-    for (uint32 i = 0; i < outer_surf.size(); i++) {
-        auto outer = outer_surf[i];
-        auto outer_a = vert[outer.a];
-        auto outer_o = vert[outer.o];
-        auto outer_b = vert[outer.b];
-        for (uint32 j = 0; j < inner_surf.size(); j++) {
-            auto inner = inner_surf[j];
-            auto inner_a = vert[inner.a];
-            auto inner_o = vert[inner.o];
-            auto inner_b = vert[inner.b];
-            if (worktable_inner_triangle(outer_a, outer_o, outer_b, inner_a)) {
-                return true;
-            }
-            if (worktable_inner_triangle(outer_a, outer_o, outer_b, inner_o)) {
-                return true;
-            }
-            if (worktable_inner_triangle(outer_a, outer_o, outer_b, inner_b)) {
-                return true;
-            }
-        }
-    }
-    return false;
 }

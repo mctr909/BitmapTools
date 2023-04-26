@@ -2,9 +2,12 @@
 #define __WORK_TABLE_H__
 
 #include <vector>
-#include "Bitmap.h"
+#include "types.h"
 
-#define INVALID_POS INT32_MAX
+#define INVALID_INDEX UINT32_MAX
+#define INVALID_POS   INT32_MAX
+
+class Bitmap;
 
 enum struct E_DIRECTION {
 	BOTTOM_L = 0, // ç∂â∫
@@ -31,7 +34,9 @@ struct TYPE_WORKTABLE {
 	TYPE_WORKCELL* pCells;
 	byte color_white;
 	byte color_black;
-	int32 error;
+	int32 width;
+	int32 height;
+	uint32 pixel_count;
 };
 
 double
@@ -41,20 +46,14 @@ void
 worktable_write_outline(TYPE_WORKTABLE&, Bitmap*, int32);
 
 vector<vector<point>>
-worktable_create_polyline(TYPE_WORKTABLE*, Bitmap&);
-
-double
-worktable_create_polygon(vector<point>&, vector<uint32>&, vector<surface>*, int32 order);
-
-bool
-worktable_inner_polygon(vector<surface>&, vector<surface>&, vector<point>&);
+worktable_create_polyline(TYPE_WORKTABLE*);
 
 inline TYPE_WORKCELL
 worktable_get_data(
-	uint32      center_index,
-	E_DIRECTION direction,
 	TYPE_WORKTABLE& table,
-	uint32 size_max
+	uint32          center_index,
+	E_DIRECTION     direction
+	
 ) {
 	static const TYPE_WORKCELL DEFAULT_CELL = {
 		false,
@@ -67,7 +66,7 @@ worktable_get_data(
 		}
 	};
 
-	if (center_index >= size_max) {
+	if (center_index >= table.pixel_count) {
 		return DEFAULT_CELL;
 	}
 
@@ -79,56 +78,22 @@ worktable_get_data(
 	return table.pCells[index];
 }
 
-inline bool
-worktable_inner_triangle(point va, point vo, point vb, point p) {
-	point oq, op;
-	oq.x = va.x - vb.x;
-	oq.y = va.y - vb.y;
-	op.x = p.x - vb.x;
-	op.y = p.y - vb.y;
-	int32 normal_abp = oq.x * op.y - oq.y * op.x;
-	oq.x = vo.x - va.x;
-	oq.y = vo.y - va.y;
-	op.x = p.x - va.x;
-	op.y = p.y - va.y;
-	int32 normal_oap = oq.x * op.y - oq.y * op.x;
-	oq.x = vb.x - vo.x;
-	oq.y = vb.y - vo.y;
-	op.x = p.x - vo.x;
-	op.y = p.y - vo.y;
-	int32 normal_bop = oq.x * op.y - oq.y * op.x;
-	if (normal_abp < 0 && normal_oap < 0 && normal_bop < 0) {
-		return true;
+inline uint32
+worktable_get_index(TYPE_WORKTABLE& table, point pos) {
+	if ((pos.x >= table.width) || (pos.y >= table.height)) {
+		return INVALID_INDEX;
 	}
-	if (normal_abp > 0 && normal_oap > 0 && normal_bop > 0) {
-		return true;
-	}
-	return false;
+	return ((pos.x + (table.width * pos.y)));
 }
 
-inline bool
-worktable_has_intersection(point a, point b, point c, point d) {
-	auto ab_x = b.x - a.x;
-	auto ab_y = b.y - a.y;
-	auto cd_x = d.x - c.x;
-	auto cd_y = d.y - c.y;
-	auto denomi = ab_x * cd_y - ab_y * cd_x;
-	if (0.0 == denomi) {
-		return false;
+inline uint32
+worktable_get_index_ofs(TYPE_WORKTABLE& table, point pos, int32 dx, int32 dy) {
+	auto x = pos.x + dx;
+	auto y = pos.y + dy;
+	if ((x < 0) || (x >= table.width) || (y < 0) || (y >= table.height)) {
+		return INVALID_INDEX;
 	}
-	auto ac_x = c.x - a.x;
-	auto ac_y = c.y - a.y;
-	auto s = (ac_x * cd_y - ac_y * cd_x) / denomi;
-	if (s < 0.0 || 1.0 < s) {
-		return false;
-	}
-	auto ca_x = a.x - c.x;
-	auto ca_y = a.y - c.y;
-	auto t = (ab_x * ca_y - ab_y * ca_x) / denomi;
-	if (t < 0.0 || 1.0 < t) {
-		return false;
-	}
-	return true;
+	return (x + (table.width * y));
 }
 
 #endif //__WORK_TABLE_H__
