@@ -134,7 +134,7 @@ declease_avghsl(Bitmap* pBmp, Bitmap::pix24* pHsl, point pos) {
     const int32 calc_dist = DEFINE_AVG_CALC_DIST;
     double avg_h = 0.0, avg_s = 0.0, avg_l = 0.0;
     int32 calc_count = 0;
-    auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->pPixWork);
+    auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->mp_pix);
     for (int32 dy = -calc_dist; dy <= calc_dist; dy++) {
         for (int32 dx = -calc_dist; dx <= calc_dist; dx++) {
             auto dr = sqrt(dx * dx + dy * dy);

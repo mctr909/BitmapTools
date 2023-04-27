@@ -33,18 +33,14 @@ int main(int argc, char* argv[]) {
     }
 
     // check format(8bit palette only)
-    if (BITMAP_COLOR_8BIT != pBmp->info_h.bits) {
+    if (BITMAP_COLOR_8BIT != pBmp->m_info.bits) {
         cout << "bitmap not support... (8bit palette only)" << endl;
         delete pBmp;
         return (EXIT_FAILURE);
     }
 
     // allocate worktable
-    TYPE_WORKTABLE table;
-    if (!worktable_alloc(&table, pBmp->info_h.width, pBmp->info_h.height)) {
-        delete pBmp;
-        return (EXIT_FAILURE);
-    }
+    auto pTable = new WorkTable(pBmp->m_info.width, pBmp->m_info.height);
 
     // backup input data
     pBmp->Backup();
@@ -52,8 +48,8 @@ int main(int argc, char* argv[]) {
     double layer_lum = 1.0;
     for (int layer = 1; ; layer++) {
         // write outline
-        layer_lum = worktable_setup(&table, *pBmp, layer_lum);
-        worktable_write_outline(table, pBmp, line_weight);
+        layer_lum = pTable->Setup(*pBmp, layer_lum);
+        pTable->WriteOutline(pBmp, line_weight);
 
         // save file
         stringstream ss;
@@ -80,7 +76,9 @@ int main(int argc, char* argv[]) {
     if (NULL != pBmp) {
         delete pBmp;
     }
-    worktable_free(&table);
+    if (NULL != pTable) {
+        delete pTable;
+    }
 
     return (EXIT_SUCCESS);
 }

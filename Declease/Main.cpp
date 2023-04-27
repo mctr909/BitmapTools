@@ -36,13 +36,13 @@ int main(int argc, char* argv[]) {
         }
 
         // bit chck
-        if (bmp24->info_h.bits != BITMAP_COLOR_24BIT) {
+        if (bmp24->m_info.bits != BITMAP_COLOR_24BIT) {
             cout << "bmp not support... (only " << BITMAP_COLOR_24BIT << "bit colors)" << endl;
             delete bmp24;
             continue;
         }
 
-        auto bmp8 = new Bitmap(bmp24->info_h.width, bmp24->info_h.height, 8);
+        auto bmp8 = new Bitmap(bmp24->m_info.width, bmp24->m_info.height, 8);
         declease_exec(bmp24, bmp8);
         if (bmp24->error != 0) {
             cout << "bmp convert error... (" << bmp24->error << ")" << endl;

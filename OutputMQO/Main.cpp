@@ -310,35 +310,32 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
     obj.error = -1;
 
     /*** ワークテーブル作成 ***/
-    const auto table_size = pbmp->pixel_count;
-    TYPE_WORKTABLE table;
-    if (!worktable_alloc(&table, pbmp->info_h.width, pbmp->info_h.height)) {
-        pbmp->error = -1;
-        return (obj);
-    }
-    worktable_setup(&table, *pbmp, 1.0);
+    auto pTable = new WorkTable(pbmp->m_info.width, pbmp->m_info.height);
+    pTable->Setup(*pbmp, 1.0);
 
     /*** アウトラインを取得 ***/
-    auto outlines = worktable_create_polyline(&table);
+    auto outlines = pTable->CreatePolyline();
+
+    delete pTable;
 
 #ifdef DEBUG
-    auto p = &pbmp->pPalette[0];
+    auto p = &pbmp->mp_palette[0];
     p->r = 191;
     p->g = 191;
     p->b = 191;
-    p = &pbmp->pPalette[1];
+    p = &pbmp->mp_palette[1];
     p->r = 255;
     p->g = 0;
     p->b = 0;
-    p = &pbmp->pPalette[2];
+    p = &pbmp->mp_palette[2];
     p->r = 0;
     p->g = 191;
     p->b = 0;
-    p = &pbmp->pPalette[3];
+    p = &pbmp->mp_palette[3];
     p->r = 0;
     p->g = 191;
     p->b = 255;
-    p = &pbmp->pPalette[4];
+    p = &pbmp->mp_palette[4];
     p->r = 0;
     p->g = 0;
     p->b = 255;
@@ -349,7 +346,7 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
             auto p = outline[j];
             auto index = bitmap_get_index(*pbmp, p);
             if (UINT32_MAX != index) {
-                pbmp->pPixWork[index] = color + 1;
+                pbmp->mp_pix[index] = color + 1;
             }
         }
         color = (color + 1) % 4;
@@ -403,7 +400,7 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
         vector<uint32> index_bottom;
         for (uint32 j = 0; j < point_count; j++) {
             auto pos = outline[j];
-            pos.y = pbmp->info_h.height - pos.y - 1;
+            pos.y = pbmp->m_info.height - pos.y - 1;
             verts.push_back(pos);
             index_bottom.push_back(index_ofs + j);
             create_vertex(pos, &obj, y_offset);
@@ -414,7 +411,7 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
         vector<uint32> index_top;
         for (uint32 j = 0; j < point_count; j++) {
             auto pos = outline[j];
-            pos.y = pbmp->info_h.height - pos.y - 1;
+            pos.y = pbmp->m_info.height - pos.y - 1;
             verts.push_back(pos);
             index_top.push_back(index_ofs + point_count - j - 1);
             create_vertex(pos, &obj, y_offset + height);
@@ -513,7 +510,6 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
         }
     }
     obj.error = 0;
-    worktable_free(&table);
     return (obj);
 }
 
@@ -550,7 +546,7 @@ int main(int argc, char* argv[]) {
     }
 
     // check format(8bit palette only)
-    if (BITMAP_COLOR_8BIT != pBmp->info_h.bits) {
+    if (BITMAP_COLOR_8BIT != pBmp->m_info.bits) {
         cout << "bitmap not support... (8bit palette only)" << endl;
         delete pBmp;
         return (EXIT_FAILURE);

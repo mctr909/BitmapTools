@@ -49,9 +49,9 @@ __declease_histogram(type_declease_histogram* pHistogram, Bitmap* pBmp) {
     point pos;
     uint32 origin_count = 0;
     uint32 avg_count = 0;
-    auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->pPixWork);
-    for (pos.y = 0; pos.y < pBmp->info_h.height; pos.y++) {
-        for (pos.x = 0; pos.x < pBmp->info_h.width; pos.x++) {
+    auto pPix = reinterpret_cast<Bitmap::pix24*>(pBmp->mp_pix);
+    for (pos.y = 0; pos.y < pBmp->m_info.height; pos.y++) {
+        for (pos.x = 0; pos.x < pBmp->m_info.width; pos.x++) {
             auto index = bitmap_get_index(*pBmp, pos);
             if (INVALID_INDEX != index) {
                 auto hsl = pPix[index];
@@ -166,10 +166,10 @@ declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
         pInBmp24->error = -1;
         return;
     }
-    auto pInPix = reinterpret_cast<Bitmap::pix24*>(pInBmp24->pPixWork);
+    auto pInPix = reinterpret_cast<Bitmap::pix24*>(pInBmp24->mp_pix);
     point pos;
-    for (pos.y = 0; pos.y < pInBmp24->info_h.height; pos.y++) {
-        for (pos.x = 0; pos.x < pInBmp24->info_h.width; pos.x++) {
+    for (pos.y = 0; pos.y < pInBmp24->m_info.height; pos.y++) {
+        for (pos.x = 0; pos.x < pInBmp24->m_info.width; pos.x++) {
             auto index = bitmap_get_index(*pInBmp24, pos);
             if (INVALID_INDEX != index) {
                 declease_rgb2hsl(&pInPix[index]);
@@ -177,9 +177,9 @@ declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
         }
     }
     __declease_histogram(pHist, pInBmp24);
-    __declease_color_top256(pHist, pOutBmp8->pPalette);
-    for (pos.y = 0; pos.y < pInBmp24->info_h.height; pos.y++) {
-        for (pos.x = 0; pos.x < pInBmp24->info_h.width; pos.x++) {
+    __declease_color_top256(pHist, pOutBmp8->mp_palette);
+    for (pos.y = 0; pos.y < pInBmp24->m_info.height; pos.y++) {
+        for (pos.x = 0; pos.x < pInBmp24->m_info.width; pos.x++) {
             auto index = bitmap_get_index(*pInBmp24, pos);
             if (INVALID_INDEX != index) {
                 auto pHsl = &pInPix[index];
@@ -188,7 +188,7 @@ declease_exec(Bitmap* pInBmp24, Bitmap* pOutBmp8) {
                     + pHsl->g * l_range
                     + pHsl->b;
                 auto hist = pHist[hist_index];
-                pOutBmp8->pPixWork[index] = hist.palette;
+                pOutBmp8->mp_pix[index] = hist.palette;
             }
         }
     }

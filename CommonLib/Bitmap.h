@@ -9,7 +9,7 @@
 class Bitmap {
 public:
 #pragma pack(push, 2)
-    struct filehead {
+    struct FileHead {
         char   type[2];
         uint32 size;
         uint16 reserve1;
@@ -19,7 +19,7 @@ public:
 #pragma pack(pop)
 
 #pragma pack(push, 4)
-    struct infohead {
+    struct Info {
         uint32 headsize;
         int32 width;
         int32 height;
@@ -52,51 +52,52 @@ public:
 #pragma pack(pop)
 
 public:
-    Bitmap(const string);
-    Bitmap(int32, int32, int32);
+    Info     m_info = { 0 };
+    int32    m_stride = 0;
+    pix32*   mp_palette = NULL;
+    byte*    mp_pix = NULL;
+    int32    error = 0;
+
+private:
+    FileHead m_header = { 0 };
+    uint32   m_palette_size = 0;
+    string   m_name = "";
+    byte*    mp_pix_backup = NULL;
+
+public:
+    Bitmap(const string path);
+    Bitmap(int32 width, int32 height, int32 bits);
     ~Bitmap();
-    void Save(const string);
+
+public:
+    void Save(const string path);
     void PrintHeader();
     void Backup();
     void Rollback();
-
-public:
-    infohead info_h;
-    pix32    *pPalette = NULL;
-    byte     *pPixWork = NULL;
-    int32    stride;
-    int32    error;
-    uint32   pixel_count;
-
-private:
-    string   name;
-    filehead file_h;
-    uint32   palette_size;
-    byte     *pPixBackup = NULL;
 };
 
 inline uint32
 bitmap_get_index(Bitmap const& bmp, const point pos) {
-    if ((pos.x >= bmp.info_h.width) || (pos.y >= bmp.info_h.height)) {
+    if ((pos.x >= bmp.m_info.width) || (pos.y >= bmp.m_info.height)) {
         return INVALID_INDEX;
     }
-    return ((pos.x + (bmp.stride * pos.y)));
+    return ((pos.x + (bmp.m_stride * pos.y)));
 }
 
 inline uint32
 bitmap_get_index_ofs(Bitmap const& bmp, const point pos, const int32 dx, const int32 dy) {
     auto x = pos.x + dx;
     auto y = pos.y + dy;
-    if ((x < 0) || (x >= bmp.info_h.width) || (y < 0) || (y >= bmp.info_h.height)) {
+    if ((x < 0) || (x >= bmp.m_info.width) || (y < 0) || (y >= bmp.m_info.height)) {
         return INVALID_INDEX;
     }
-    return (x + (bmp.stride * y));
+    return (x + (bmp.m_stride * y));
 }
 
 inline void
 bitmap_get_pos(Bitmap const& bmp, point* pos, const uint32 index) {
-    pos->x = index % bmp.stride;
-    pos->y = index / bmp.stride;
+    pos->x = index % bmp.m_stride;
+    pos->y = index / bmp.m_stride;
 }
 
 inline double
