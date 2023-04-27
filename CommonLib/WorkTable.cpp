@@ -6,9 +6,6 @@ using namespace std;
 #include "WorkTable.h"
 #include "Bitmap.h"
 
-/**
-ポリラインから直線上の点を除く
-*/
 void
 __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
     if (pPolyline->size() < 3) {
@@ -76,8 +73,97 @@ __worktable_eliminate_points_on_straightline(vector<point>* pPolyline) {
     pPolyline->push_back(pos_a);
 }
 
+void
+worktable_free(TYPE_WORKTABLE* pTable) {
+    free(pTable->pCells);
+    pTable->pCells = NULL;
+}
+
+bool
+worktable_alloc(TYPE_WORKTABLE* pTable, int32 width, int32 height) {
+    pTable->width = width;
+    pTable->height = height;
+    pTable->pixel_count = width * height;
+    pTable->pCells = reinterpret_cast<TYPE_WORKCELL*>(malloc(sizeof(TYPE_WORKCELL) * pTable->pixel_count));
+    if (NULL == pTable->pCells) {
+        return false;
+    }
+
+    struct type_delta {
+        int32 x;
+        int32 y;
+        bool enable;
+    };
+    type_delta delta_pos[9] = {
+        /* 方向             x   y  enable */
+        /* 0:BOTTOM_L */ { -1, -1, false },
+        /* 1:BOTTOM   */ {  0, -1, false },
+        /* 2:BOTTOM_R */ {  1, -1, false },
+        /* 3:LEFT     */ { -1,  0, false },
+        /* 4:CENTER   */ {  0,  0, false },
+        /* 5:RIGHT    */ {  1,  0, false },
+        /* 6:TOP_L    */ { -1,  1, false },
+        /* 7:TOP      */ {  0,  1, false },
+        /* 8:TOP_R    */ {  1,  1, false }
+    };
+
+    /*** ワークテーブルの初期化 ***/
+    point pos;
+    for (pos.y = 0; pos.y < height; pos.y++) {
+        for (pos.x = 0; pos.x < width; pos.x++) {
+            /*** ピクセル情報をセット***/
+            auto index = worktable_get_index(*pTable, pos);
+            pTable->pCells[index] = {
+                false, // filled
+                false, // traced
+                pos,
+                {
+                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
+                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
+                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX
+                }
+            };
+
+            /* 左下, 左, 左上 */
+            if (0 == pos.x) {
+                delta_pos[0].enable = delta_pos[3].enable = delta_pos[6].enable = false;
+            } else {
+                delta_pos[0].enable = delta_pos[3].enable = delta_pos[6].enable = true;
+            }
+            /* 左下, 下, 右下 */
+            if (0 == pos.y) {
+                delta_pos[0].enable = delta_pos[1].enable = delta_pos[2].enable = false;
+            } else {
+                delta_pos[0].enable = delta_pos[1].enable = delta_pos[2].enable = true;
+            }
+            /* 右下, 右, 右上 */
+            if (1 == (width - pos.x)) {
+                delta_pos[2].enable = delta_pos[5].enable = delta_pos[8].enable = false;
+            } else {
+                delta_pos[2].enable = delta_pos[5].enable = delta_pos[8].enable = true;
+            }
+            /* 左上, 上, 右上 */
+            if (1 == (height - pos.y)) {
+                delta_pos[6].enable = delta_pos[7].enable = delta_pos[8].enable = false;
+            } else {
+                delta_pos[6].enable = delta_pos[7].enable = delta_pos[8].enable = true;
+            }
+            /*** 周囲ピクセルのインデックスを取得してセット ***/
+            for (uint32 i = 0; i < 9; i++) {
+                if (delta_pos[i].enable) {
+                    pTable->pCells[index].index_around[i] = worktable_get_index_ofs(
+                        *pTable, pos,
+                        delta_pos[i].x, delta_pos[i].y
+                    );
+                }
+            }
+        }
+    }
+    return true;
+}
+
 double
-worktable_create(TYPE_WORKTABLE* pTable, Bitmap& bmp, double lum_max) {
+worktable_setup(TYPE_WORKTABLE* pTable, Bitmap& bmp, double lum_limit) {
     const point bmp_size = { bmp.info_h.width, bmp.info_h.height };
     point pos;
     /*** パレットから最暗色と最明色を取得 ***/
@@ -105,7 +191,7 @@ worktable_create(TYPE_WORKTABLE* pTable, Bitmap& bmp, double lum_max) {
             auto pix = bmp.pPixWork[index];
             auto color = bmp.pPalette[pix];
             auto lum = bitmap_get_lum(color.r, color.g, color.b);
-            if (lum <= lum_max && lum_nofill < lum) {
+            if (lum <= lum_limit && lum_nofill < lum) {
                 lum_nofill = lum;
             }
         }
@@ -123,100 +209,33 @@ worktable_create(TYPE_WORKTABLE* pTable, Bitmap& bmp, double lum_max) {
             }
         }
     }
-
-    struct type_delta {
-        int32 x;
-        int32 y;
-        bool enable;
-    };
-    type_delta delta_pos[9] = {
-        /* 方向             x   y  enable */
-        /* 0:BOTTOM_L */ { -1, -1, false },
-        /* 1:BOTTOM   */ {  0, -1, false },
-        /* 2:BOTTOM_R */ {  1, -1, false },
-        /* 3:LEFT     */ { -1,  0, false },
-        /* 4:CENTER   */ {  0,  0, false },
-        /* 5:RIGHT    */ {  1,  0, false },
-        /* 6:TOP_L    */ { -1,  1, false },
-        /* 7:TOP      */ {  0,  1, false },
-        /* 8:TOP_R    */ {  1,  1, false }
-    };
-
-    /*** ワークテーブルの初期化 ***/
-    pTable->width = bmp.info_h.width;
-    pTable->height = bmp.info_h.height;
-    pTable->pixel_count = pTable->width * pTable->height;
+    /*** 塗部であるかをセット/トレース状態のクリア ***/
     for (pos.y = 0; pos.y < bmp_size.y; pos.y++) {
         for (pos.x = 0; pos.x < bmp_size.x; pos.x++) {
             auto p_index = bitmap_get_index(bmp, pos);
             auto color = bmp.pPalette[bmp.pPixWork[p_index]];
             auto lum = bitmap_get_lum(color.r, color.g, color.b);
-
-            /*** ピクセル情報をセット***/
             auto index = worktable_get_index(*pTable, pos);
-            pTable->pCells[index] = {
-                lum < lum_nofill, // filled
-                false,            // traced
-                pos,
-                {
-                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-                    INVALID_INDEX, INVALID_INDEX, INVALID_INDEX
-                }
-            };
-
-            /* 左下, 左, 左上 */
-            if (0 == pos.x) {
-                delta_pos[0].enable = delta_pos[3].enable = delta_pos[6].enable = false;
-            } else {
-                delta_pos[0].enable = delta_pos[3].enable = delta_pos[6].enable = true;
-            }
-            /* 左下, 下, 右下 */
-            if (0 == pos.y) {
-                delta_pos[0].enable = delta_pos[1].enable = delta_pos[2].enable = false;
-            } else {
-                delta_pos[0].enable = delta_pos[1].enable = delta_pos[2].enable = true;
-            }
-            /* 右下, 右, 右上 */
-            if (1 == (bmp_size.x - pos.x)) {
-                delta_pos[2].enable = delta_pos[5].enable = delta_pos[8].enable = false;
-            } else {
-                delta_pos[2].enable = delta_pos[5].enable = delta_pos[8].enable = true;
-            }
-            /* 左上, 上, 右上 */
-            if (1 == (bmp_size.y - pos.y)) {
-                delta_pos[6].enable = delta_pos[7].enable = delta_pos[8].enable = false;
-            } else {
-                delta_pos[6].enable = delta_pos[7].enable = delta_pos[8].enable = true;
-            }
-
-            /*** 周囲ピクセルのインデックスを取得してセット ***/
-            for (uint32 i = 0; i < 9; i++) {
-                if (delta_pos[i].enable) {
-                    pTable->pCells[index].index_around[i] = worktable_get_index_ofs(
-                        *pTable, pos,
-                        delta_pos[i].x, delta_pos[i].y
-                    );
-                }
-            }
+            pTable->pCells[index].filled = lum < lum_nofill;
+            pTable->pCells[index].traced = false;
         }
     }
     return lum_filled;
 }
 
 void
-worktable_write_outline(TYPE_WORKTABLE& table, Bitmap* pBmp, int32 weight) {
-    const auto FILL_RADIUS = weight / 2;
+worktable_write_outline(TYPE_WORKTABLE& table, Bitmap* pBmp, int32 line_weight) {
+    const auto FILL_RADIUS = line_weight / 2;
     const auto PIXEL_COUNT = table.pixel_count;
     memset(pBmp->pPixWork, table.color_white, pBmp->pixel_count);
     for (uint32 i = 0; i < PIXEL_COUNT; i++) {
         if (!table.pCells[i].filled) {
             continue;
         }
-        bool nofill_bottom = !worktable_get_data(table, i, E_DIRECTION::BOTTOM).filled;
-        bool nofill_right = !worktable_get_data(table, i, E_DIRECTION::RIGHT).filled;
-        bool nofill_left = !worktable_get_data(table, i, E_DIRECTION::LEFT).filled;
-        bool nofill_top = !worktable_get_data(table, i, E_DIRECTION::TOP).filled;
+        bool nofill_bottom = !worktable_get_cell(table, i, E_DIRECTION::BOTTOM).filled;
+        bool nofill_right = !worktable_get_cell(table, i, E_DIRECTION::RIGHT).filled;
+        bool nofill_left = !worktable_get_cell(table, i, E_DIRECTION::LEFT).filled;
+        bool nofill_top = !worktable_get_cell(table, i, E_DIRECTION::TOP).filled;
         if (nofill_bottom || nofill_right || nofill_left || nofill_top) {
             auto pos = table.pCells[i].pos;
             for (int32 dy = -FILL_RADIUS; dy <= FILL_RADIUS; dy++) {

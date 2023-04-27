@@ -312,12 +312,11 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
     /*** ワークテーブル作成 ***/
     const auto table_size = pbmp->pixel_count;
     TYPE_WORKTABLE table;
-    table.pCells = static_cast<TYPE_WORKCELL*>(calloc(table_size, sizeof(TYPE_WORKCELL)));
-    if (NULL == table.pCells) {
+    if (!worktable_alloc(&table, pbmp->info_h.width, pbmp->info_h.height)) {
         pbmp->error = -1;
         return (obj);
     }
-    worktable_create(&table, *pbmp, 1.0);
+    worktable_setup(&table, *pbmp, 1.0);
 
     /*** アウトラインを取得 ***/
     auto outlines = worktable_create_polyline(&table);
@@ -350,7 +349,7 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
             auto p = outline[j];
             auto index = bitmap_get_index(*pbmp, p);
             if (UINT32_MAX != index) {
-                pbmp->pPix[index] = color + 1;
+                pbmp->pPixWork[index] = color + 1;
             }
         }
         color = (color + 1) % 4;
@@ -514,6 +513,7 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
         }
     }
     obj.error = 0;
+    worktable_free(&table);
     return (obj);
 }
 
@@ -528,6 +528,10 @@ int main(int argc, char* argv[]) {
     const auto height = atof(argv[1]);
     const auto y_offset = atof(argv[2]);
     const auto obj_name = string(argv[3]);
+
+    bmp_file_path = argv[4];
+    cout << "BMP FILE : " << bmp_file_path << endl;
+
     string marge_from;
     if (argc < 6) {
         marge_from = "";
@@ -535,22 +539,19 @@ int main(int argc, char* argv[]) {
         marge_from = string(argv[5]);
     }
 
-    bmp_file_path = argv[4];
-    cout << "BMP FILE : " << bmp_file_path << endl;
-
     // get bitmap data
     auto pBmp = new Bitmap(bmp_file_path);
     if (pBmp->error != 0) {
-        cout << "bmp reading error... (" << pBmp->error << ")" << endl;
+        cout << "bitmap reading error... (" << pBmp->error << ")" << endl;
         delete pBmp;
         return (EXIT_FAILURE);
     } else {
         pBmp->PrintHeader();
     }
 
-    // palette chck
-    if (pBmp->info_h.bits != DEFINE_SUPPORT_COLOR_8BIT) {
-        cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_8BIT << "bit colors)" << endl;
+    // check format(8bit palette only)
+    if (BITMAP_COLOR_8BIT != pBmp->info_h.bits) {
+        cout << "bitmap not support... (8bit palette only)" << endl;
         delete pBmp;
         return (EXIT_FAILURE);
     }
@@ -558,17 +559,17 @@ int main(int argc, char* argv[]) {
     type_mqo mqo = fn_mqo_create_default_parameter();
     mqo.object = output_mqo(pBmp, height, y_offset);
     if (mqo.object.error != 0) {
-        cout << "bmp convert error... (" << pBmp->error << ")" << endl;
+        cout << "bitmap convert error... (" << pBmp->error << ")" << endl;
         delete pBmp;
         return (EXIT_FAILURE);
     }
     mqo.object.name = obj_name;
 
-    // save
+    // save file
     stringstream ss;
     ss << bmp_file_path.substr(0, bmp_file_path.size() - 4) << ".mqo";
     if (fn_mqo_write(&mqo, ss.str(), marge_from)) {
-        cout << "bmp writing error..." << endl;
+        cout << "bitmap writing error..." << endl;
         delete pBmp;
         return (EXIT_FAILURE);
     }

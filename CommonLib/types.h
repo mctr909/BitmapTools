@@ -1,6 +1,9 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
+#define INVALID_INDEX 0xffffffffui32
+#define INVALID_POS   0x7fffffffi32
+
 typedef unsigned char  byte;
 typedef unsigned short uint16;
 typedef unsigned int   uint32;

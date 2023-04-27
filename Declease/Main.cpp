@@ -36,8 +36,8 @@ int main(int argc, char* argv[]) {
         }
 
         // bit chck
-        if (bmp24->info_h.bits != DEFINE_SUPPORT_COLOR_24BIT) {
-            cout << "bmp not support... (only " << DEFINE_SUPPORT_COLOR_24BIT << "bit colors)" << endl;
+        if (bmp24->info_h.bits != BITMAP_COLOR_24BIT) {
+            cout << "bmp not support... (only " << BITMAP_COLOR_24BIT << "bit colors)" << endl;
             delete bmp24;
             continue;
         }

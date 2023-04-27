@@ -4,9 +4,6 @@
 #include <vector>
 #include "types.h"
 
-#define INVALID_INDEX UINT32_MAX
-#define INVALID_POS   INT32_MAX
-
 class Bitmap;
 
 enum struct E_DIRECTION {
@@ -39,21 +36,26 @@ struct TYPE_WORKTABLE {
 	uint32 pixel_count;
 };
 
+void
+worktable_free(TYPE_WORKTABLE* pTable);
+
+bool
+worktable_alloc(TYPE_WORKTABLE* pTable, int32 width, int32 height);
+
 double
-worktable_create(TYPE_WORKTABLE*, Bitmap&, double);
+worktable_setup(TYPE_WORKTABLE* pTable, Bitmap& bmp, double lum_limit);
 
 void
-worktable_write_outline(TYPE_WORKTABLE&, Bitmap*, int32);
+worktable_write_outline(TYPE_WORKTABLE& table, Bitmap* pBmp, int32 line_weight);
 
 vector<vector<point>>
-worktable_create_polyline(TYPE_WORKTABLE*);
+worktable_create_polyline(TYPE_WORKTABLE* pTable);
 
 inline TYPE_WORKCELL
-worktable_get_data(
+worktable_get_cell(
 	TYPE_WORKTABLE& table,
 	uint32          center_index,
 	E_DIRECTION     direction
-	
 ) {
 	static const TYPE_WORKCELL DEFAULT_CELL = {
 		false,
@@ -65,16 +67,13 @@ worktable_get_data(
 			INVALID_INDEX, INVALID_INDEX, INVALID_INDEX
 		}
 	};
-
 	if (center_index >= table.pixel_count) {
 		return DEFAULT_CELL;
 	}
-
 	auto index = table.pCells[center_index].index_around[static_cast<uint32>(direction)];
 	if (INVALID_INDEX == index) {
 		return DEFAULT_CELL;
 	}
-
 	return table.pCells[index];
 }
 

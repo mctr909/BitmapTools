@@ -23,7 +23,7 @@ Bitmap::Bitmap(const string path) {
     pixel_count = stride * info_h.height;
 
     switch (info_h.bits) {
-    case DEFINE_SUPPORT_COLOR_8BIT:
+    case BITMAP_COLOR_8BIT:
         pPalette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
         if (NULL == pPalette) {
             error = -2;
@@ -84,7 +84,7 @@ Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
     }
 
     switch (bits) {
-    case DEFINE_SUPPORT_COLOR_8BIT:
+    case BITMAP_COLOR_8BIT:
         pPalette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
         if (NULL == pPalette) {
             free(pPixWork);

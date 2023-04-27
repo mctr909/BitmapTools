@@ -3,9 +3,8 @@
 
 #include "types.h"
 
-#define DEFINE_SUPPORT_COLOR_8BIT  (8)
-#define DEFINE_SUPPORT_COLOR_24BIT (24)
-#define INVALID_INDEX UINT32_MAX
+#define BITMAP_COLOR_8BIT  (8)
+#define BITMAP_COLOR_24BIT (24)
 
 class Bitmap {
 public:

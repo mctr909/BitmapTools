@@ -2,9 +2,10 @@ set folder_path=sample_folder
 set height_1=10
 set height_2=10
 set height_3=17
-set offset_1=0
-set offset_2=10
-set offset_3=20
+
+set /a offset_1 = 0
+set /a offset_2 = offset_1 + height_1
+set /a offset_3 = offset_2 + height_2
 
 set layer1_file=%folder_path%\*_layer1.bmp
 set layer2_file=%folder_path%\*_layer2.bmp
