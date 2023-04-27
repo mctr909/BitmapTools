@@ -6,6 +6,55 @@ using namespace std;
 #include "WorkTable.h"
 #include "Bitmap.h"
 
+const sbyte
+WorkTable::PREFER_DIR[PREFER_DIRS] = {
+    0, -1, 1, -2, 2, -3, 3, 4
+};
+
+const point_b
+WorkTable::TRACE_DIR[TRACE_RADIUS][TRACE_DIRS] = {
+    {
+        {  1,  0 },
+        {  1,  1 },
+        {  0,  1 },
+        { -1,  1 },
+        { -1,  0 },
+        { -1, -1 },
+        {  0, -1 },
+        {  1, -1 }
+    }, {
+        {  2,  1 },
+        {  1,  2 },
+        { -1,  2 },
+        { -2,  1 },
+        { -2, -1 },
+        { -1, -2 },
+        {  1, -2 },
+        {  2, -1 }
+    }, {
+        {  2,  0 },
+        {  2,  2 },
+        {  0,  2 },
+        { -2,  2 },
+        { -2,  0 },
+        { -2, -2 },
+        {  0, -2 },
+        {  2, -2 }
+    }
+};
+
+const WorkTable::Cell
+WorkTable::DEFAULT_CELL = {
+    false,
+    false,
+    { INVALID_POS, INVALID_POS },
+    {
+        INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
+        INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
+        INVALID_INDEX, INVALID_INDEX, INVALID_INDEX
+    }
+};
+
 WorkTable::WorkTable(int32 width, int32 height) {
     m_color_black = 0;
     m_color_white = 0;
@@ -19,8 +68,8 @@ WorkTable::WorkTable(int32 width, int32 height) {
     }
 
     struct type_delta {
-        int32 x;
-        int32 y;
+        sbyte x;
+        sbyte y;
         bool enable;
     };
     type_delta delta_pos[9] = {
@@ -186,43 +235,6 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
 
 vector<vector<point>>
 WorkTable::CreatePolyline() {
-    const int32 TRACE_RADIUS = 3;
-    const int32 TRACE_DIRS = 8;
-    const int32 PREFER_DIRS = 8;
-    const sbyte PREFER_DIR[PREFER_DIRS] = {
-        0, -1, 1, -2, 2, -3, 3, 4
-    };
-    const point TRACE_DIR[TRACE_RADIUS][TRACE_DIRS] = {
-        {
-            {  1,  0 },
-            {  1,  1 },
-            {  0,  1 },
-            { -1,  1 },
-            { -1,  0 },
-            { -1, -1 },
-            {  0, -1 },
-            {  1, -1 }
-        }, {
-            {  2,  1 },
-            {  1,  2 },
-            { -1,  2 },
-            { -2,  1 },
-            { -2, -1 },
-            { -1, -2 },
-            {  1, -2 },
-            {  2, -1 }
-        }, {
-            {  2,  0 },
-            {  2,  2 },
-            {  0,  2 },
-            { -2,  2 },
-            { -2,  0 },
-            { -2, -2 },
-            {  0, -2 },
-            {  2, -2 }
-        }
-    };
-
     vector<vector<point>> polyline_list;
     uint32 start_index = 0;
     while (true) { // ポリライン取得ループ

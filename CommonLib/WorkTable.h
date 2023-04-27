@@ -29,6 +29,12 @@ private:
 		TOP,
 		TOP_R
 	};
+	static const int32 TRACE_RADIUS = 3;
+	static const int32 TRACE_DIRS = 8;
+	static const int32 PREFER_DIRS = 8;
+	static const sbyte PREFER_DIR[PREFER_DIRS];
+	static const point_b TRACE_DIR[TRACE_RADIUS][TRACE_DIRS];
+	static const Cell DEFAULT_CELL;
 
 private:
 	byte m_color_white;
@@ -51,20 +57,7 @@ private:
 	void eliminatePointsOnStraightLine(vector<point>* pPolyline);
 
 private:
-	inline Cell get_cell(
-		uint32 center_index,
-		WorkTable::E_DIRECTION direction
-	) {
-		static const Cell DEFAULT_CELL = {
-			false,
-			false,
-			{ INVALID_POS, INVALID_POS },
-			{
-				INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-				INVALID_INDEX, INVALID_INDEX, INVALID_INDEX,
-				INVALID_INDEX, INVALID_INDEX, INVALID_INDEX
-			}
-		};
+	inline Cell get_cell(uint32 center_index, E_DIRECTION direction) {
 		if (center_index >= m_pixel_count) {
 			return DEFAULT_CELL;
 		}

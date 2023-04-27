@@ -27,7 +27,14 @@ struct point_d {
 };
 #pragma pack(pop)
 
-#pragma pack(push, 8)
+#pragma pack(push, 2)
+struct point_b {
+    sbyte x;
+    sbyte y;
+};
+#pragma pack(pop)
+
+#pragma pack(push, 4)
 struct surface {
     uint32 a;
     uint32 o;
