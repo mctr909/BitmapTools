@@ -164,23 +164,45 @@ int32 fn_mqo_write(const type_mqo* pmqo, const string file_path, const string ma
             marge_from_path = marge_from;
         }
         ofstream fout(marge_from_path, ios::app);
+        if (!fout) {
+            return (-1);
+        }
         fout << fn_mqo_support_object_text(&((*pmqo).object));
         fout.close();
     }
     return (0);
 }
 
-int32 fn_stl_write(const type_mqo* pmqo, const string name) {
+int32 fn_stl_write(const type_mqo* pmqo, const string file_path, const string marge_from) {
     auto vert = pmqo->object.vertex;
     auto faces = pmqo->object.face;
 
-    // èëçû
-    ofstream fout(name, ios::out);
-    if (!fout) {
-        return (-1);
+    ofstream fout;
+    if (0 == marge_from.size()) {
+        // èëçû
+        fout = ofstream(file_path, ios::out);
+        if (!fout) {
+            return (-1);
+        }
+    } else {
+        // í«ãL
+        string marge_from_path;
+        if (0 == marge_from.find_first_of('*')) {
+            string marge_from_regix = marge_from.substr(1, marge_from.size());
+            auto copy_len = file_path.size() - marge_from_regix.size();
+            marge_from_path = file_path.substr(0, copy_len);
+            marge_from_path.insert(copy_len, marge_from.substr(1, marge_from_regix.size()));
+        } else {
+            marge_from_path = marge_from;
+        }
+        fout = ofstream(marge_from_path, ios::app);
+        if (!fout) {
+            return (-1);
+        }
     }
 
-    fout << "solid notitle\n";
+    fout << "solid " << pmqo->object.name << "\n";
+
     for (uint32 i = 0; i < faces.size(); i++) {
         auto face = faces[i];
         auto ia = face.vertex[0];
@@ -191,21 +213,19 @@ int32 fn_stl_write(const type_mqo* pmqo, const string name) {
         auto vb = vert[ib];
         char str[128];
 
-        fout << "facet normal 1 1 1\n";
-
-        fout << "outer loop\n";
-        sprintf_s(str, sizeof(str), "vertex %f %f %f\n", vb.x, vb.y, vb.z);
+        fout << "\tfacet\n";
+        fout << "\touter loop\n";
+        sprintf_s(str, sizeof(str), "\t\tvertex %f %f %f\n", vb.x, vb.z, vb.y);
         fout << str;
-        sprintf_s(str, sizeof(str), "vertex %f %f %f\n", vo.x, vo.y, vo.z);
+        sprintf_s(str, sizeof(str), "\t\tvertex %f %f %f\n", vo.x, vo.z, vo.y);
         fout << str;
-        sprintf_s(str, sizeof(str), "vertex %f %f %f\n", va.x, va.y, va.z);
+        sprintf_s(str, sizeof(str), "\t\tvertex %f %f %f\n", va.x, va.z, va.y);
         fout << str;
-        fout << "endloop\n";
-
-        fout << "endfacet\n";
+        fout << "\tendloop\n";
+        fout << "\tendfacet\n";
     }
     
-    fout << "endsolid notitle\n";
+    fout << "endsolid " << pmqo->object.name << "\n";
     fout.close();
     return (0);
 }

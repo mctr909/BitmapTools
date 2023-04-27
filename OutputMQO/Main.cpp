@@ -565,6 +565,7 @@ int main(int argc, char* argv[]) {
     stringstream ss;
     ss << bmp_file_path.substr(0, bmp_file_path.size() - 4) << ".mqo";
     if (fn_mqo_write(&mqo, ss.str(), marge_from)) {
+    //if (fn_stl_write(&mqo, ss.str(), marge_from)) {
         cout << "bitmap writing error..." << endl;
         delete pBmp;
         return (EXIT_FAILURE);
