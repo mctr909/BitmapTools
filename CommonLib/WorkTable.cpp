@@ -130,8 +130,7 @@ WorkTable::WorkTable(int32 width, int32 height) {
             for (uint32 i = 0; i < 9; i++) {
                 if (delta_pos[i].enable) {
                     mp_cells[index].index_around[i] = get_index_ofs(
-                        pos,
-                        delta_pos[i].x, delta_pos[i].y
+                        pos, delta_pos[i].x, delta_pos[i].y
                     );
                 }
             }

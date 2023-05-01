@@ -50,121 +50,132 @@
 #define DEFINE_MQO_DEF_OBJECT_COLORTYPE     (0)
 #define DEFINE_MQO_DEF_OBJECT_NAME          ("no name")
 
-// ヘッダ構造体
-struct type_mqo_header {
-	string format = DEFINE_MQO_DEF_HEADER_FORMAT;
-	float  version = DEFINE_MQO_DEF_HEADER_VERSION;
-	string codepage = DEFINE_MQO_DEF_HEADER_CODEPAGE;
-};
-
-// 方向構造体
-struct type_mqo_direction {
-	float x;
-	float y;
-	float z;
-};
-
-// 色構造体
-struct type_mqo_color {
-	float r;
-	float g;
-	float b;
-};
-
-// 照明構造体
-struct type_mqo_light {
-	string             name;
-	type_mqo_direction direction;
-	type_mqo_color     color;
-};
-
-// シーン構造体
-struct type_mqo_scene {
-	float pos[3] = {
-		DEFINE_MQO_DEF_SCENE_POS_X,
-		DEFINE_MQO_DEF_SCENE_POS_Y,
-		DEFINE_MQO_DEF_SCENE_POS_Z
+class MQO {
+public:
+	/* 頂点構造体 */
+	struct type_vertex {
+		double x;
+		double y;
+		double z;
+		uint32 id;
 	};
-	int32 lookat[3] = {
-		DEFINE_MQO_DEF_SCENE_LOOKAT_X,
-		DEFINE_MQO_DEF_SCENE_LOOKAT_Y,
-		DEFINE_MQO_DEF_SCENE_LOOKAT_Z
-	};
-	float  head = DEFINE_MQO_DEF_SCENE_HEAD;
-	float  pich = DEFINE_MQO_DEF_SCENE_PICH;
-	float  bank = DEFINE_MQO_DEF_SCENE_BANK;
-	int32  ortho = DEFINE_MQO_DEF_SCENE_ORTHO;
-	float  zoom2 = DEFINE_MQO_DEF_SCENE_ZOOM2;
-	float  amb[3] = {
-		DEFINE_MQO_DEF_SCENE_AMB_X,
-		DEFINE_MQO_DEF_SCENE_AMB_Y,
-		DEFINE_MQO_DEF_SCENE_AMB_Z
-	};
-	double frontclip = DEFINE_MQO_DEF_SCENE_FRONTCLIP;
-	double backclip = DEFINE_MQO_DEF_SCENE_BACKCLIP;
-	vector<type_mqo_light> dirlights;
-};
 
-// 頂点構造体
-struct type_mqo_vertex {
-	double x;
-	double y;
-	double z;
-	uint32 id;
-};
-
-// 平面構造体
-struct type_mqo_face {
-	vector<uint32> vertex;
-	int32          material;
-	uint32         id;
-};
-
-// MQOオブジェクト構造体
-struct type_mqo_object {
-	int    depth = DEFINE_MQO_DEF_OBJECT_DEPTH;
-	int    folding = DEFINE_MQO_DEF_OBJECT_FOLDING;
-	int    scale[3] = {
-		DEFINE_MQO_DEF_OBJECT_SCALE_X,
-		DEFINE_MQO_DEF_OBJECT_SCALE_Y,
-		DEFINE_MQO_DEF_OBJECT_SCALE_Z
+	/* 平面構造体 */
+	struct type_face {
+		vector<uint32> vertex;
+		int32          material;
+		uint32         id;
 	};
-	int    rotation[3] = {
-		DEFINE_MQO_DEF_OBJECT_ROTATION_X,
-		DEFINE_MQO_DEF_OBJECT_ROTATION_Y,
-		DEFINE_MQO_DEF_OBJECT_ROTATION_Z
-	};
-	int    translation[3] = {
-		DEFINE_MQO_DEF_OBJECT_TRANSLATION_X,
-		DEFINE_MQO_DEF_OBJECT_TRANSLATION_Y,
-		DEFINE_MQO_DEF_OBJECT_TRANSLATION_Z
-	};
-	int    visible = DEFINE_MQO_DEF_OBJECT_VISIBLE;
-	int    locking = DEFINE_MQO_DEF_OBJECT_LOCKING;
-	int    shading = DEFINE_MQO_DEF_OBJECT_SHADING;
-	double facet = DEFINE_MQO_DEF_OBJECT_FACET;
-	int    normal_weight = DEFINE_MQO_DEF_OBJECT_NORMALWEIGHT;
-	double color[3] = {
-		DEFINE_MQO_DEF_OBJECT_COLOR_R,
-		DEFINE_MQO_DEF_OBJECT_COLOR_G,
-		DEFINE_MQO_DEF_OBJECT_COLOR_B
-	};
-	int    color_type = DEFINE_MQO_DEF_OBJECT_COLORTYPE;
-	string                  name = DEFINE_MQO_DEF_OBJECT_NAME;
-	vector<type_mqo_vertex> vertex;
-	vector<type_mqo_face>   face;
-	int                     error;
-};
 
-// MQO構造体
-struct type_mqo {
-	type_mqo_header header;
-	type_mqo_scene  scene;
-	type_mqo_object object;
-};
+	/* MQOオブジェクト構造体 */
+	struct type_object {
+		int depth = DEFINE_MQO_DEF_OBJECT_DEPTH;
+		int folding = DEFINE_MQO_DEF_OBJECT_FOLDING;
+		int scale[3] = {
+			DEFINE_MQO_DEF_OBJECT_SCALE_X,
+			DEFINE_MQO_DEF_OBJECT_SCALE_Y,
+			DEFINE_MQO_DEF_OBJECT_SCALE_Z
+		};
+		int rotation[3] = {
+			DEFINE_MQO_DEF_OBJECT_ROTATION_X,
+			DEFINE_MQO_DEF_OBJECT_ROTATION_Y,
+			DEFINE_MQO_DEF_OBJECT_ROTATION_Z
+		};
+		int translation[3] = {
+			DEFINE_MQO_DEF_OBJECT_TRANSLATION_X,
+			DEFINE_MQO_DEF_OBJECT_TRANSLATION_Y,
+			DEFINE_MQO_DEF_OBJECT_TRANSLATION_Z
+		};
+		int visible = DEFINE_MQO_DEF_OBJECT_VISIBLE;
+		int locking = DEFINE_MQO_DEF_OBJECT_LOCKING;
+		int shading = DEFINE_MQO_DEF_OBJECT_SHADING;
+		double facet = DEFINE_MQO_DEF_OBJECT_FACET;
+		int    normal_weight = DEFINE_MQO_DEF_OBJECT_NORMALWEIGHT;
+		double color[3] = {
+			DEFINE_MQO_DEF_OBJECT_COLOR_R,
+			DEFINE_MQO_DEF_OBJECT_COLOR_G,
+			DEFINE_MQO_DEF_OBJECT_COLOR_B
+		};
+		int                 color_type = DEFINE_MQO_DEF_OBJECT_COLORTYPE;
+		string              name = DEFINE_MQO_DEF_OBJECT_NAME;
+		vector<type_vertex> vertex;
+		vector<type_face>   face;
+	};
 
-int32 fn_mqo_write(const type_mqo*, const string, const string);
-int32 fn_stl_write(const type_mqo*, const string, const string);
-type_mqo fn_mqo_create_default_parameter(void);
+private:
+	/* ヘッダ構造体 */
+	struct type_header {
+		string format = DEFINE_MQO_DEF_HEADER_FORMAT;
+		float  version = DEFINE_MQO_DEF_HEADER_VERSION;
+		string codepage = DEFINE_MQO_DEF_HEADER_CODEPAGE;
+	};
+
+	/* 方向構造体 */
+	struct type_direction {
+		float x;
+		float y;
+		float z;
+	};
+
+	/* 色構造体 */
+	struct type_color {
+		float r;
+		float g;
+		float b;
+	};
+
+	/* 照明構造体 */
+	struct type_light {
+		string         name;
+		type_direction direction;
+		type_color     color;
+	};
+
+	/* シーン構造体 */
+	struct type_scene {
+		float pos[3] = {
+			DEFINE_MQO_DEF_SCENE_POS_X,
+			DEFINE_MQO_DEF_SCENE_POS_Y,
+			DEFINE_MQO_DEF_SCENE_POS_Z
+		};
+		int32 lookat[3] = {
+			DEFINE_MQO_DEF_SCENE_LOOKAT_X,
+			DEFINE_MQO_DEF_SCENE_LOOKAT_Y,
+			DEFINE_MQO_DEF_SCENE_LOOKAT_Z
+		};
+		float head = DEFINE_MQO_DEF_SCENE_HEAD;
+		float pich = DEFINE_MQO_DEF_SCENE_PICH;
+		float bank = DEFINE_MQO_DEF_SCENE_BANK;
+		int32 ortho = DEFINE_MQO_DEF_SCENE_ORTHO;
+		float zoom2 = DEFINE_MQO_DEF_SCENE_ZOOM2;
+		float amb[3] = {
+			DEFINE_MQO_DEF_SCENE_AMB_X,
+			DEFINE_MQO_DEF_SCENE_AMB_Y,
+			DEFINE_MQO_DEF_SCENE_AMB_Z
+		};
+		double frontclip = DEFINE_MQO_DEF_SCENE_FRONTCLIP;
+		double backclip = DEFINE_MQO_DEF_SCENE_BACKCLIP;
+		vector<type_light> dirlights;
+	};
+
+public:
+	type_object object;
+
+private:
+	type_header header;
+	type_scene  scene;
+
+public:
+	MQO();
+
+public:
+	void Write(const string file_path, const string marge_from);
+	void WriteStl(const string file_path, const string marge_from);
+
+private:
+	void writeHeader(ofstream* p_fout);
+	void writeScene(ofstream* p_fout);
+	void writeObject(ofstream* p_fout);
+};
 
 #endif //__MQO_H__

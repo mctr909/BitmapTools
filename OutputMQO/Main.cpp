@@ -70,15 +70,15 @@ inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<p
 }
 
 void
-create_vertex(const point pos, type_mqo_object* pobj, double y) {
-    auto id = static_cast<uint32>((*pobj).vertex.size());
-    type_mqo_vertex vertex = {
+create_vertex(const point pos, MQO::type_object* p_obj, double y) {
+    auto id = static_cast<uint32>(p_obj->vertex.size());
+    MQO::type_vertex vertex = {
         static_cast<double>(pos.x),
         y,
         static_cast<double>(pos.y),
         id
     };
-    (*pobj).vertex.push_back(vertex);
+    p_obj->vertex.push_back(vertex);
 }
 
 double
@@ -304,10 +304,9 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
     }
 }
 
-type_mqo_object
-output_mqo(Bitmap* pbmp, double height, double y_offset) {
-    type_mqo_object obj;
-    obj.error = -1;
+MQO::type_object
+create_object(Bitmap* pbmp, double height, double y_offset) {
+    MQO::type_object obj;
 
     /*** ワークテーブル作成 ***/
     auto pTable = new WorkTable(pbmp->m_info.width, pbmp->m_info.height);
@@ -433,7 +432,7 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
         vector<surface> surf;
         create_polygon(verts, index, &surf, 1);
         for (uint32 j = 0; j < surf.size(); j++) {
-            type_mqo_face face;
+            MQO::type_face face;
             face.material = INT16_MAX;
             face.id = static_cast<uint32>(obj.face.size());
             auto idx = surf[j];
@@ -452,7 +451,7 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
         vector<surface> surf;
         create_polygon(verts, index, &surf, -1);
         for (uint32 j = 0; j < surf.size(); j++) {
-            type_mqo_face face;
+            MQO::type_face face;
             face.material = INT16_MAX;
             face.id = static_cast<uint32>(obj.face.size());
             auto idx = surf[j];
@@ -493,14 +492,14 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
                     break;
                 }
             }
-            type_mqo_face faceA;
+            MQO::type_face faceA;
             faceA.material = INT16_MAX;
             faceA.id = static_cast<uint32>(obj.face.size());
             faceA.vertex.push_back(idx0);
             faceA.vertex.push_back(idx1);
             faceA.vertex.push_back(idx2);
             obj.face.push_back(faceA);
-            type_mqo_face faceB;
+            MQO::type_face faceB;
             faceB.material = INT16_MAX;
             faceB.id = static_cast<uint32>(obj.face.size());
             faceB.vertex.push_back(idx0);
@@ -509,7 +508,6 @@ output_mqo(Bitmap* pbmp, double height, double y_offset) {
             obj.face.push_back(faceB);
         }
     }
-    obj.error = 0;
     return (obj);
 }
 
@@ -552,24 +550,15 @@ int main(int argc, char* argv[]) {
         return (EXIT_FAILURE);
     }
 
-    type_mqo mqo = fn_mqo_create_default_parameter();
-    mqo.object = output_mqo(pBmp, height, y_offset);
-    if (mqo.object.error != 0) {
-        cout << "bitmap convert error... (" << pBmp->error << ")" << endl;
-        delete pBmp;
-        return (EXIT_FAILURE);
-    }
-    mqo.object.name = obj_name;
+    auto pMqo = new MQO();
+    pMqo->object = create_object(pBmp, height, y_offset);
+    pMqo->object.name = obj_name;
 
     // save file
     stringstream ss;
     ss << bmp_file_path.substr(0, bmp_file_path.size() - 4) << ".mqo";
-    if (fn_mqo_write(&mqo, ss.str(), marge_from)) {
-    //if (fn_stl_write(&mqo, ss.str(), marge_from)) {
-        cout << "bitmap writing error..." << endl;
-        delete pBmp;
-        return (EXIT_FAILURE);
-    }
+    pMqo->Write(ss.str(), marge_from);
+    //pMqo->WriteStl(ss.str(), marge_from);
 
 #ifdef DEBUG
     stringstream ssdebug;
@@ -578,5 +567,6 @@ int main(int argc, char* argv[]) {
 #endif
 
     delete pBmp;
+    delete pMqo;
     return (EXIT_SUCCESS);
 }
