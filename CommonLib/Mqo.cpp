@@ -53,7 +53,7 @@ MQO::MQO() {
         DEFINE_MQO_DEF_SCENE_LIGHT_COLOR_B
     };
     type_light light = { "light", d, c };
-    scene.dirlights.push_back(light);
+    m_scene.dirlights.push_back(light);
 }
 
 void
@@ -89,8 +89,8 @@ MQO::Write(const string file_path, const string marge_from) {
 
 void
 MQO::WriteStl(const string file_path, const string marge_from) {
-    auto vert = object.vertex;
-    auto faces = object.face;
+    auto vert = m_object.vertex;
+    auto faces = m_object.face;
     ofstream fout;
     if (0 == marge_from.size()) {
         // èëçû
@@ -115,7 +115,7 @@ MQO::WriteStl(const string file_path, const string marge_from) {
         }
     }
 
-    fout << "solid " << object.name << "\n";
+    fout << "solid " << m_object.name << "\n";
     for (uint32 i = 0; i < faces.size(); i++) {
         auto face = faces[i];
         auto ia = face.vertex[0];
@@ -137,42 +137,42 @@ MQO::WriteStl(const string file_path, const string marge_from) {
         fout << "\tendloop\n";
         fout << "\tendfacet\n";
     }
-    fout << "endsolid " << object.name << "\n";
+    fout << "endsolid " << m_object.name << "\n";
     fout.close();
 }
 
 void
 MQO::writeHeader(ofstream* p_fout) {
     *p_fout << DEFINE_MQO_TAG_HEADER_DOCUMENT << endl;
-    *p_fout << DEFINE_MQO_TAG_HEADER_FORMAT << " " << header.format << " ";
-    *p_fout << DEFINE_MQO_TAG_HEADER_VERSION << " " << header.version << endl;
-    *p_fout << DEFINE_MQO_TAG_HEADER_CODEPAGE << " " << header.codepage << endl;
+    *p_fout << DEFINE_MQO_TAG_HEADER_FORMAT << " " << m_header.format << " ";
+    *p_fout << DEFINE_MQO_TAG_HEADER_VERSION << " " << m_header.version << endl;
+    *p_fout << DEFINE_MQO_TAG_HEADER_CODEPAGE << " " << m_header.codepage << endl;
     *p_fout << endl;
 }
 
 void
 MQO::writeScene(ofstream* p_fout) {
     *p_fout << "Scene {" << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_POS << " " << scene.pos[0] << " " << scene.pos[1] << " " << scene.pos[2] << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_LOOKAT << " " << scene.lookat[0] << " " << scene.lookat[1] << " " << scene.lookat[2] << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_HEAD << " " << scene.head << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_PICH << " " << scene.pich << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_BANK << " " << scene.bank << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_ORTHO << " " << scene.ortho << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_ZOOM2 << " " << scene.zoom2 << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_AMB << " " << scene.amb[0] << " " << scene.amb[1] << " " << scene.amb[2] << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_FRONTCLIP << " " << scene.frontclip << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_BACKCLIP << " " << scene.backclip << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_POS << " " << m_scene.pos[0] << " " << m_scene.pos[1] << " " << m_scene.pos[2] << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_LOOKAT << " " << m_scene.lookat[0] << " " << m_scene.lookat[1] << " " << m_scene.lookat[2] << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_HEAD << " " << m_scene.head << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_PICH << " " << m_scene.pich << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_BANK << " " << m_scene.bank << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_ORTHO << " " << m_scene.ortho << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_ZOOM2 << " " << m_scene.zoom2 << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_AMB << " " << m_scene.amb[0] << " " << m_scene.amb[1] << " " << m_scene.amb[2] << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_FRONTCLIP << " " << m_scene.frontclip << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_BACKCLIP << " " << m_scene.backclip << endl;
 
-    size_t n = scene.dirlights.size();
+    size_t n = m_scene.dirlights.size();
     if (n > 0) {
-        *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_DIRLIGHTS << " " << scene.dirlights.size() << " {" << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_DIRLIGHTS << " " << m_scene.dirlights.size() << " {" << endl;
         for (int32 i = 0; i < static_cast<int32>(n); i++) {
-            *p_fout << "\t\t" << scene.dirlights[i].name << " {" << endl;
+            *p_fout << "\t\t" << m_scene.dirlights[i].name << " {" << endl;
             *p_fout << "\t\t\t" << DEFINE_MQO_TAG_SCENE_DIRLIGHTS_DIR << " ";
-            *p_fout << scene.dirlights[i].direction.x << " " << scene.dirlights[i].direction.y << " " << scene.dirlights[i].direction.z << endl;
+            *p_fout << m_scene.dirlights[i].direction.x << " " << m_scene.dirlights[i].direction.y << " " << m_scene.dirlights[i].direction.z << endl;
             *p_fout << "\t\t\t" << DEFINE_MQO_TAG_SCENE_DIRLIGHTS_COLOR << " ";
-            *p_fout << scene.dirlights[i].color.r << " " << scene.dirlights[i].color.g << " " << scene.dirlights[i].color.b << endl;
+            *p_fout << m_scene.dirlights[i].color.r << " " << m_scene.dirlights[i].color.g << " " << m_scene.dirlights[i].color.b << endl;
             *p_fout << "\t\t}" << endl;
         }
         *p_fout << "\t}" << endl;
@@ -184,34 +184,34 @@ MQO::writeScene(ofstream* p_fout) {
 
 void
 MQO::writeObject(ofstream* p_fout) {
-    *p_fout << "Object \"" << object.name << "\" {" << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_DEPTH << " " << object.depth << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_FOLDING << " " << object.folding << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_SCALE << " " << object.scale[0] << " " << object.scale[1] << " " << object.scale[2] << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_ROTATION << " " << object.rotation[0] << " " << object.rotation[1] << " " << object.rotation[2] << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_TRANSLATION << " " << object.translation[0] << " " << object.translation[1] << " " << object.translation[2] << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_VISIBLE << " " << object.visible << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_LOCKING << " " << object.locking << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_SHADING << " " << object.shading << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_FACET << " " << object.facet << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_NORMALWEIGHT << " " << object.normal_weight << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_COLOR << " " << object.color << " " << object.color[1] << " " << object.color[2] << endl;
-    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_COLORTYPE << " " << object.color_type << endl;
+    *p_fout << "Object \"" << m_object.name << "\" {" << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_DEPTH << " " << m_object.depth << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_FOLDING << " " << m_object.folding << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_SCALE << " " << m_object.scale[0] << " " << m_object.scale[1] << " " << m_object.scale[2] << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_ROTATION << " " << m_object.rotation[0] << " " << m_object.rotation[1] << " " << m_object.rotation[2] << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_TRANSLATION << " " << m_object.translation[0] << " " << m_object.translation[1] << " " << m_object.translation[2] << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_VISIBLE << " " << m_object.visible << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_LOCKING << " " << m_object.locking << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_SHADING << " " << m_object.shading << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_FACET << " " << m_object.facet << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_NORMALWEIGHT << " " << m_object.normal_weight << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_COLOR << " " << m_object.color << " " << m_object.color[1] << " " << m_object.color[2] << endl;
+    *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_COLORTYPE << " " << m_object.color_type << endl;
 
-    auto size_max = static_cast<uint32>(object.vertex.size());
+    auto size_max = static_cast<uint32>(m_object.vertex.size());
     *p_fout << "\tvertex " << size_max << " {" << endl;
     for (uint32 i = 0; i < size_max; i++) {
-        double x = object.vertex[i].x;
-        double y = object.vertex[i].y;
-        double z = object.vertex[i].z;
+        double x = m_object.vertex[i].x;
+        double y = m_object.vertex[i].y;
+        double z = m_object.vertex[i].z;
         *p_fout << "\t\t" << x << " " << y << " " << z << endl;
     }
     *p_fout << "\t}" << endl;
 
-    size_max = static_cast<uint32>(object.face.size());
+    size_max = static_cast<uint32>(m_object.face.size());
     *p_fout << "\tface " << size_max << " {" << endl;
     for (uint32 i = 0; i < size_max; i++) {
-        auto face = object.face[i];
+        auto face = m_object.face[i];
         const auto n = static_cast<uint32>(face.vertex.size());
         *p_fout << "\t\t" << n << " V( ";
         for (uint32 j = 0; j < face.vertex.size(); j++) {

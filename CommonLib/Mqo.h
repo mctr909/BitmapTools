@@ -159,11 +159,11 @@ private:
 	};
 
 public:
-	type_object object;
+	type_object m_object;
 
 private:
-	type_header header;
-	type_scene  scene;
+	type_header m_header;
+	type_scene  m_scene;
 
 public:
 	MQO();

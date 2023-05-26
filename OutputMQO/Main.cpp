@@ -551,8 +551,8 @@ int main(int argc, char* argv[]) {
     }
 
     auto pMqo = new MQO();
-    pMqo->object = create_object(pBmp, height, y_offset);
-    pMqo->object.name = obj_name;
+    pMqo->m_object = create_object(pBmp, height, y_offset);
+    pMqo->m_object.name = obj_name;
 
     // save file
     stringstream ss;
