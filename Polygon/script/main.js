@@ -8,8 +8,8 @@ let gDragIndex = -1;
 
 /** @type{vec[]} */
 let gVertList = new Array();
-for (let i=0; i<7; i++) {
-	let th = 2*Math.PI*i/7;
+for (let i=0; i<5; i++) {
+	let th = 2*Math.PI*i/5;
 	let x = Math.cos(th) * 0.9 * HEIGHT / 2 + HEIGHT;
 	let y = Math.sin(th) * 0.9 * HEIGHT / 2 - HEIGHT;
 	gVertList.push(new vec(x, y, 0));
@@ -116,9 +116,9 @@ function draw_polygon(order, max_step) {
         }
 
         if (max_step < ++step) {
-			break;
-		}
-		while (true) { // 頂点(vo)の移動ループ
+            break;
+        }
+        while (true) { // 頂点(vo)の移動ループ
             /*** 頂点(vo)の左隣にある頂点(va)を取得 ***/
             let ia = (io + INDEX_LEFT) % INDEX_COUNT;
             for (let i = 0; i < INDEX_COUNT; i++) {
@@ -139,10 +139,8 @@ function draw_polygon(order, max_step) {
                 }
             }
             let vb = gVertList[ib];
-            if (io == tri_move.io) {
-                tri_move.ia = ia;
-                tri_move.ib = ib;
-            }
+            tri_move.ia = ia;
+            tri_move.ib = ib;
             /*** 三角形(va vo vb)の表裏を確認 ***/
             let aob_normal = 0;
             let oa_x = va.X - vo.X;
@@ -170,7 +168,7 @@ function draw_polygon(order, max_step) {
                     }
                 }
                 vo = gVertList[io];
-				reverse_list.push(vo);
+                reverse_list.push(vo);
                 continue;
             }
             /*** 三角形(va vo vb)の内側にva vo vb以外の頂点がないか確認 ***/
@@ -197,7 +195,29 @@ function draw_polygon(order, max_step) {
                     }
                 }
                 vo = gVertList[io];
-                tri_move.io = io;
+                {
+                    /*** 頂点(vo)の左隣にある頂点(va)を取得 ***/
+                    ia = (io + INDEX_LEFT) % INDEX_COUNT;
+                    for (let i = 0; i < INDEX_COUNT; i++) {
+                        if (gVertInfo[ia].deleted) {
+                            ia = (ia + INDEX_LEFT) % INDEX_COUNT;
+                        } else {
+                            break;
+                        }
+                    }
+                    /*** 頂点(vo)の右隣にある頂点(vb)を取得 ***/
+                    ib = (io + INDEX_RIGHT) % INDEX_COUNT;
+                    for (let i = 0; i < INDEX_COUNT; i++) {
+                        if (gVertInfo[ib].deleted) {
+                            ib = (ib + INDEX_RIGHT) % INDEX_COUNT;
+                        } else {
+                            break;
+                        }
+                    }
+                    tri_move.ia = ia;
+                    tri_move.ib = ib;
+                    tri_move.io = io;
+                }
                 if (max_step < ++step) {
                     break;
                 }
@@ -205,12 +225,12 @@ function draw_polygon(order, max_step) {
                 /*** 内側に他の頂点がない場合 ***/
                 /*** 三角形(va vo vb)を面リストに追加 ***/
                 let surf = [
-                	gVertList[ia],
-                	gVertList[io],
-                	gVertList[ib],
-					gVertList[ia]
-				];
-				surf_list.push(surf);
+                    gVertList[ia],
+                    gVertList[io],
+                    gVertList[ib],
+                    gVertList[ia]
+                ];
+                surf_list.push(surf);
                 /*** 頂点(vo)を検索対象から削除 ***/
                 gVertInfo[io].deleted = true;
                 /*** 次の最も遠くにある頂点(vo)を取得 ***/
@@ -222,32 +242,34 @@ function draw_polygon(order, max_step) {
         }
     } while (3 < vert_count); // 最も遠くにある頂点(vo)の取得ループ
 
-	for(let i=0; i<surf_list.length; i++) {
-		gDrawer.fillPolygon(surf_list[i], new vec(), [211,211,211]);
-	}
-	for(let i=0; i<surf_list.length; i++) {
-		gDrawer.drawPolyline(surf_list[i], [0,0,255], 1);
-	}
-	for(let i=0; i<gVertList.length; i++) {
-		if (gVertInfo[i].deleted) {
-			gDrawer.fillCircle(gVertList[i], 5, [211, 211, 211]);
-			gDrawer.drawCircle(gVertList[i], 5);
-		} else {
-			gDrawer.fillCircle(gVertList[i], 9);
-		}
-	}
+    for(let i=0; i<surf_list.length; i++) {
+        gDrawer.fillPolygon(surf_list[i], new vec(), [211,211,211]);
+    }
+    for(let i=0; i<surf_list.length; i++) {
+        gDrawer.drawPolyline(surf_list[i], [0,0,255], 1);
+    }
+    for(let i=0; i<gVertList.length; i++) {
+        if (gVertInfo[i].deleted) {
+            gDrawer.fillCircle(gVertList[i], 4, [211, 211, 211]);
+            gDrawer.drawCircle(gVertList[i], 4);
+        } else {
+            gDrawer.fillCircle(gVertList[i], 9);
+        }
+    }
     for(let i=0; i<reverse_list.length; i++) {
-		gDrawer.fillCircle(reverse_list[i], 9, [255,0,0]);
-	}
+        gDrawer.fillCircle(reverse_list[i], 9, [255,0,0]);
+    }
 
     let drawMove = 0 <= tri_move.io && !gVertInfo[tri_move.io].deleted;
     if (drawMove) {
         let a = gVertList[tri_move.ia];
         let o = gVertList[tri_move.io];
         let b = gVertList[tri_move.ib];
+        gDrawer.drawLine(o, a, [0,0,0], 1, 3);
+        gDrawer.drawLine(a, b, [0,0,0], 1, 3);
+        gDrawer.drawLine(b, o, [0,0,0], 1, 3);
         gDrawer.fillCircle(o, 9, [0,255,0]);
         gDrawer.drawCircle(o, 9);
-        gDrawer.drawStringXY(o.X - 5, o.Y - 5, "O", 16);
     }
     let drawFar = !gVertInfo[tri_far.io].deleted;
     if (drawFar) {
@@ -261,7 +283,22 @@ function draw_polygon(order, max_step) {
         }
         gDrawer.fillCircle(o, 9, [231,231,0]);
         gDrawer.drawCircle(o, 9);
-        if (!drawMove) {
+        if (drawMove) {
+            a = gVertList[tri_move.ia];
+            o = gVertList[tri_move.io];
+            b = gVertList[tri_move.ib];
+            gDrawer.drawStringXY(o.X - 5, o.Y - 5, "O", 16);
+            if (tri_move.ia == tri_far.io) {
+                gDrawer.drawStringXY(a.X - 4, a.Y - 4, "a", 16);
+            } else {
+                gDrawer.drawStringXY(a.X - 4, a.Y - 4, "a", 16, [0,255,255]);
+            }
+            if (tri_move.ib == tri_far.io) {
+                gDrawer.drawStringXY(b.X - 4, b.Y - 5, "b", 16);
+            } else {
+                gDrawer.drawStringXY(b.X - 4, b.Y - 5, "b", 16, [0,255,255]);
+            }
+        } else {
             gDrawer.drawStringXY(a.X - 4, a.Y - 4, "a", 16, [0,255,255]);
             gDrawer.drawStringXY(b.X - 4, b.Y - 5, "b", 16, [0,255,255]);
             gDrawer.drawStringXY(o.X - 5, o.Y - 5, "O", 16);
