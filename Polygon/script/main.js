@@ -336,6 +336,7 @@ function draw_polygon(order, max_step) {
     const OFS_A = new vec(4.5, 5.0);
     const OFS_B = new vec(5.0, 6.0);
     const OFS_O = new vec(6.0, 6.0);
+    const OFS_N = new vec(5.0, 6.0);
 
     for(let i=0; i<surf_list.length; i++) {
         gDrawer.fillPolygon(surf_list[i], new vec(), FILL_COLOR);
@@ -350,6 +351,11 @@ function draw_polygon(order, max_step) {
         } else {
             gDrawer.fillCircle(v, VERT_SIZE);
         }
+    }
+
+    for(let i=0; i<gVertList.length && -1 == max_step; i++) {
+        let v = gVertList[i];
+        gDrawer.drawStringXY(v.X - OFS_N.X, v.Y - OFS_N.Y, i + "", FONT_SIZE, VERT_STR_COLOR);
     }
 
     if (max_step < 0) {
