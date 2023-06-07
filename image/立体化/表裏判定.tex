@@ -1,0 +1,44 @@
+\begin{align}
+	\mathbf{AO}=\begin{pmatrix}
+		\rm{O}_\it{x} - \rm{A}_\it{x}\\
+		\rm{O}_\it{y} - \rm{A}_\it{y}\\
+		0
+	\end{pmatrix},
+	\mathbf{OB}=\begin{pmatrix}
+		\rm{B}_\it{x} - \rm{O}_\it{x}\\
+		\rm{B}_\it{y} - \rm{O}_\it{y}\\
+		0
+	\end{pmatrix},
+	\mathbf{N}=\begin{pmatrix}
+		0\\
+		0\\
+		1
+	\end{pmatrix}
+	とすれば
+\end{align}
+\begin{align}\therefore
+	(\mathbf{AO} \times \mathbf{OB}) \cdot \mathbf{N}&=\begin{pmatrix}
+		\mathbf{AO}_\it{y} &\cdot &\mathbf{OB}_\it{z} &- &\mathbf{AO}_\it{z} &\cdot &\mathbf{OB}_\it{y}\\
+		\mathbf{AO}_\it{z} &\cdot &\mathbf{OB}_\it{x} &- &\mathbf{AO}_\it{x} &\cdot &\mathbf{OB}_\it{z}\\
+		\mathbf{AO}_\it{x} &\cdot &\mathbf{OB}_\it{y} &- &\mathbf{AO}_\it{y} &\cdot &\mathbf{OB}_\it{x}
+	\end{pmatrix} \cdot \begin{pmatrix}
+		\mathbf{N}_\it{x}\\
+		\mathbf{N}_\it{y}\\
+		\mathbf{N}_\it{z}
+	\end{pmatrix}\\
+	&=\begin{pmatrix}
+		\mathbf{AO}_\it{y} &\cdot &\rm{0} &- &\rm{0} &\cdot &\mathbf{OB}_\it{y}\\
+		\rm{0} &\cdot &\mathbf{OB}_\it{x} &- &\mathbf{AO}_\it{x} &\cdot &\rm{0}\\
+		\mathbf{AO}_\it{x} &\cdot &\mathbf{OB}_\it{y} &- &\mathbf{AO}_\it{y} &\cdot &\mathbf{OB}_\it{x}
+	\end{pmatrix} \cdot \begin{pmatrix}
+		0\\
+		0\\
+		1
+	\end{pmatrix}\\
+	&=\mathbf{AO}_\it{x} \cdot \mathbf{OB}_\it{y} - \mathbf{AO}_\it{y} \cdot \mathbf{OB}_\it{x}\\
+	&=:\rm{D}\\
+	&\begin{cases}
+		表,&(\rm{D} > \rm{0})\\
+		裏,&(\rm{D} < \rm{0})
+	\end{cases}
+\end{align}
