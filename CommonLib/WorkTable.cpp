@@ -211,11 +211,40 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
         if (!mp_cells[i].filled) {
             continue;
         }
-        bool nofill_bottom = !get_cell(i, E_DIRECTION::BOTTOM).filled;
-        bool nofill_right = !get_cell(i, E_DIRECTION::RIGHT).filled;
-        bool nofill_left = !get_cell(i, E_DIRECTION::LEFT).filled;
-        bool nofill_top = !get_cell(i, E_DIRECTION::TOP).filled;
-        if (nofill_bottom || nofill_right || nofill_left || nofill_top) {
+        bool nofill_b = !get_cell(i, E_DIRECTION::BOTTOM).filled;
+        bool nofill_r = !get_cell(i, E_DIRECTION::RIGHT).filled;
+        bool nofill_l = !get_cell(i, E_DIRECTION::LEFT).filled;
+        bool nofill_t = !get_cell(i, E_DIRECTION::TOP).filled;
+        int nofill_count = nofill_b ? 1 : 0;
+        nofill_count += nofill_r ? 1 : 0;
+        nofill_count += nofill_l ? 1 : 0;
+        nofill_count += nofill_t ? 1 : 0;
+        if (3 <= nofill_count) {
+            E_DIRECTION dir_a;
+            E_DIRECTION dir_b;
+            if (!nofill_b) {
+                dir_a = E_DIRECTION::BOTTOM_L;
+                dir_b = E_DIRECTION::BOTTOM_R;
+            }
+            if (!nofill_r) {
+                dir_a = E_DIRECTION::TOP_R;
+                dir_b = E_DIRECTION::BOTTOM_R;
+            }
+            if (!nofill_l) {
+                dir_a = E_DIRECTION::TOP_L;
+                dir_b = E_DIRECTION::BOTTOM_L;
+            }
+            if (!nofill_t) {
+                dir_a = E_DIRECTION::TOP_L;
+                dir_b = E_DIRECTION::TOP_R;
+            }
+            bool fill_a = get_cell(i, dir_a).filled;
+            bool fill_b = get_cell(i, dir_b).filled;
+            if (fill_a ^ fill_b) {
+                continue;
+            }
+        }
+        if (nofill_b || nofill_r || nofill_l || nofill_t) {
             auto pos = mp_cells[i].pos;
             for (int32 dy = -FILL_RADIUS; dy <= FILL_RADIUS; dy++) {
                 for (int32 dx = -FILL_RADIUS; dx <= FILL_RADIUS; dx++) {
@@ -227,6 +256,74 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
                         }
                     }
                 }
+            }
+        }
+    }
+    for (uint32 i = 0; i < m_pixel_count; i++) {
+        auto idx = i;
+        while (true) {
+            auto pos = mp_cells[idx].pos;
+            auto idx_r = bitmap_get_index_ofs(*pBmp, pos, 1, 0);
+            auto idx_t = bitmap_get_index_ofs(*pBmp, pos, 0, 1);
+            auto idx_l = bitmap_get_index_ofs(*pBmp, pos, -1, 0);
+            auto idx_b = bitmap_get_index_ofs(*pBmp, pos, 0, -1);
+            bool fill_r, fill_t, fill_l, fill_b;
+            if (INVALID_INDEX == idx_r) {
+                fill_r = false;
+            } else {
+                fill_r = pBmp->mp_pix[idx_r] == m_color_black;
+            }
+            if (INVALID_INDEX == idx_t) {
+                fill_t = false;
+            } else {
+                fill_t = pBmp->mp_pix[idx_t] == m_color_black;
+            }
+            if (INVALID_INDEX == idx_l) {
+                fill_l = false;
+            } else {
+                fill_l = pBmp->mp_pix[idx_l] == m_color_black;
+            }
+            if (INVALID_INDEX == idx_b) {
+                fill_b = false;
+            } else {
+                fill_b = pBmp->mp_pix[idx_b] == m_color_black;
+            }
+            int fill_count = fill_r ? 1 : 0;
+            fill_count += fill_t ? 1 : 0;
+            fill_count += fill_l ? 1 : 0;
+            fill_count += fill_b ? 1 : 0;
+            if (fill_count < 2) {
+                auto idx_tl = bitmap_get_index_ofs(*pBmp, pos, -1, 1);
+                auto idx_tr = bitmap_get_index_ofs(*pBmp, pos, 1, 1);
+                auto idx_bl = bitmap_get_index_ofs(*pBmp, pos, -1, -1);
+                auto idx_br = bitmap_get_index_ofs(*pBmp, pos, 1, -1);
+                if (INVALID_INDEX == idx_tl || INVALID_INDEX == idx_tr ||
+                    INVALID_INDEX == idx_bl || INVALID_INDEX == idx_br) {
+                    break;
+                }
+                if (pBmp->mp_pix[idx_tl] == m_color_black || pBmp->mp_pix[idx_tr] == m_color_black ||
+                    pBmp->mp_pix[idx_bl] == m_color_black || pBmp->mp_pix[idx_br] == m_color_black) {
+                    break;
+                }
+                pBmp->mp_pix[idx] = m_color_white;
+                idx = INVALID_INDEX;
+                if (fill_r) {
+                    idx = idx_r;
+                }
+                if (fill_t) {
+                    idx = idx_t;
+                }
+                if (fill_l) {
+                    idx = idx_l;
+                }
+                if (fill_b) {
+                    idx = idx_b;
+                }
+                if (INVALID_INDEX == idx) {
+                    break;
+                }
+            } else {
+                break;
             }
         }
     }
