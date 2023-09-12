@@ -452,17 +452,18 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
         pos_c = pos_b;
         pos_b = pos_a;
         pos_a = line_3p[i];
-        oa.x = pos_a.x - pos_o.x;
-        oa.y = pos_a.y - pos_o.y;
         og.x = (pos_b.x + pos_c.x) / 2.0 - pos_o.x;
         og.y = (pos_b.y + pos_c.y) / 2.0 - pos_o.y;
+        oa.x = pos_a.x - pos_o.x;
+        oa.y = pos_a.y - pos_o.y;
+        auto len = sqrt(og.x * og.x + og.y * og.y);
+        og.x /= len;
+        og.y /= len;
         len = sqrt(oa.x * oa.x + oa.y * oa.y);
         oa.x /= len;
         oa.y /= len;
-        len = sqrt(og.x * og.x + og.y * og.y);
-        og.x /= len;
-        og.y /= len;
-        if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
+        auto limit = 1 / (len * 6);
+        if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
             pPolyline->push_back(pos_b);
         }
     }

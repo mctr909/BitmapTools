@@ -12,7 +12,7 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
-//#define DEBUG
+#define DEBUG
 
 string bmp_file_path;
 
