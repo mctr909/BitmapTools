@@ -439,6 +439,24 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
             line_3p.push_back(pos_b);
         }
     }
+    {
+        pos_o = pos_b;
+        pos_b = pos_a;
+        pos_a = line_3p[0];
+        oa.x = pos_a.x - pos_o.x;
+        oa.y = pos_a.y - pos_o.y;
+        og.x = pos_b.x - pos_o.x;
+        og.y = pos_b.y - pos_o.y;
+        auto len = sqrt(oa.x * oa.x + oa.y * oa.y);
+        oa.x /= len;
+        oa.y /= len;
+        len = sqrt(og.x * og.x + og.y * og.y);
+        og.x /= len;
+        og.y /= len;
+        if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
+            line_3p.push_back(pos_b);
+        }
+    }
 
     /*** 4点の直線チェック ***/
     pPolyline->clear();
@@ -467,5 +485,22 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
             pPolyline->push_back(pos_b);
         }
     }
-    pPolyline->push_back(pos_a);
+    {
+        pos_o = pos_b;
+        pos_b = pos_a;
+        pos_a = (*pPolyline)[0];
+        oa.x = pos_a.x - pos_o.x;
+        oa.y = pos_a.y - pos_o.y;
+        og.x = pos_b.x - pos_o.x;
+        og.y = pos_b.y - pos_o.y;
+        auto len = sqrt(oa.x * oa.x + oa.y * oa.y);
+        oa.x /= len;
+        oa.y /= len;
+        len = sqrt(og.x * og.x + og.y * og.y);
+        og.x /= len;
+        og.y /= len;
+        if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
+            pPolyline->push_back(pos_b);
+        }
+    }
 }
