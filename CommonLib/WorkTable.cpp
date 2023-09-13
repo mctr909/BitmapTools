@@ -219,6 +219,48 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
         nofill_count += nofill_r ? 1 : 0;
         nofill_count += nofill_l ? 1 : 0;
         nofill_count += nofill_t ? 1 : 0;
+        if (0 == nofill_count) {
+            bool nofill_bl = !get_cell(i, E_DIRECTION::BOTTOM_L).filled;
+            bool nofill_br = !get_cell(i, E_DIRECTION::BOTTOM_R).filled;
+            bool nofill_tl = !get_cell(i, E_DIRECTION::TOP_L).filled;
+            bool nofill_tr = !get_cell(i, E_DIRECTION::TOP_R).filled;
+            nofill_count = nofill_bl ? 1 : 0;
+            nofill_count += nofill_br ? 1 : 0;
+            nofill_count += nofill_tl ? 1 : 0;
+            nofill_count += nofill_tr ? 1 : 0;
+            if (1 == nofill_count) {
+                int dx, dy;
+                if (nofill_bl) {
+                    dx = -2;
+                    dy = -2;
+                }
+                if (nofill_br) {
+                    dx = 2;
+                    dy = -2;
+                }
+                if (nofill_tl) {
+                    dx = -2;
+                    dy = 2;
+                }
+                if (nofill_tr) {
+                    dx = 2;
+                    dy = 2;
+                }
+                auto pos = mp_cells[i].pos;
+                auto idx_x = bitmap_get_index_ofs(*pBmp, pos, dx, 0);
+                auto idx_y = bitmap_get_index_ofs(*pBmp, pos, 0, dy);
+                if (INVALID_INDEX == idx_x) {
+                    idx_x = i;
+                }
+                if (INVALID_INDEX == idx_y) {
+                    idx_y = i;
+                }
+                if (mp_cells[idx_x].filled && mp_cells[idx_y].filled) {
+                    pBmp->mp_pix[i] = m_color_black;
+                }
+            }
+            continue;
+        }
         if (3 <= nofill_count) {
             E_DIRECTION dir_a;
             E_DIRECTION dir_b;
@@ -244,16 +286,14 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
                 continue;
             }
         }
-        if (nofill_b || nofill_r || nofill_l || nofill_t) {
-            auto pos = mp_cells[i].pos;
-            for (int32 dy = -FILL_RADIUS; dy <= FILL_RADIUS; dy++) {
-                for (int32 dx = -FILL_RADIUS; dx <= FILL_RADIUS; dx++) {
-                    auto r = sqrt(dx * dx + dy * dy);
-                    if (r <= FILL_RADIUS) {
-                        auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
-                        if (INVALID_INDEX != arownd) {
-                            pBmp->mp_pix[arownd] = m_color_black;
-                        }
+        auto pos = mp_cells[i].pos;
+        for (int32 dy = -FILL_RADIUS; dy <= FILL_RADIUS; dy++) {
+            for (int32 dx = -FILL_RADIUS; dx <= FILL_RADIUS; dx++) {
+                auto r = sqrt(dx * dx + dy * dy);
+                if (r <= FILL_RADIUS) {
+                    auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
+                    if (INVALID_INDEX != arownd) {
+                        pBmp->mp_pix[arownd] = m_color_black;
                     }
                 }
             }
