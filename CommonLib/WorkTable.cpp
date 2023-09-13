@@ -329,9 +329,9 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
     }
 }
 
-vector<vector<point>>
+vector<vector<point_d>>
 WorkTable::CreatePolyline() {
-    vector<vector<point>> polyline_list;
+    vector<vector<point_d>> polyline_list;
     uint32 start_index = 0;
     while (true) { // ポリライン取得ループ
         vector<point> point_list; // 点リスト
@@ -392,9 +392,8 @@ WorkTable::CreatePolyline() {
             }
             if (!point_found) { // ポリラインの終端
                 // 直線上にある点を点リストから除外する
-                eliminatePointsOnStraightLine(&point_list);
                 // 点リストをポリラインリストに追加
-                polyline_list.push_back(point_list);
+                polyline_list.push_back(eliminatePointsOnStraightLine(point_list));
                 break;
             }
         }
@@ -402,10 +401,10 @@ WorkTable::CreatePolyline() {
     return polyline_list;
 }
 
-void
-WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
-    if (pPolyline->size() < 3) {
-        return;
+vector<point_d>
+WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
+    if (polyline.size() < 3) {
+        return vector<point_d>();
     }
 
     point pos_a;
@@ -418,13 +417,13 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
 
     /*** 3点の直線チェック ***/
     vector<point> line_3p;
-    line_3p.push_back((*pPolyline)[0]);
-    pos_b = (*pPolyline)[0];
-    pos_a = (*pPolyline)[1];
-    for (int32 i = 2; i < pPolyline->size(); i++) {
+    line_3p.push_back(polyline[0]);
+    pos_b = polyline[0];
+    pos_a = polyline[1];
+    for (int32 i = 2; i < polyline.size(); i++) {
         pos_o = pos_b;
         pos_b = pos_a;
-        pos_a = (*pPolyline)[i];
+        pos_a = polyline[i];
         oa.x = pos_a.x - pos_o.x;
         oa.y = pos_a.y - pos_o.y;
         og.x = pos_b.x - pos_o.x;
@@ -459,9 +458,9 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
     }
 
     /*** 4点の直線チェック ***/
-    pPolyline->clear();
-    pPolyline->push_back(line_3p[0]);
-    pPolyline->push_back(line_3p[1]);
+    polyline.clear();
+    polyline.push_back(line_3p[0]);
+    polyline.push_back(line_3p[1]);
     pos_c = line_3p[0];
     pos_b = line_3p[1];
     pos_a = line_3p[2];
@@ -482,13 +481,13 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
         og.y /= len;
         auto limit = 1 / (len * 10);
         if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
-            pPolyline->push_back(pos_b);
+            polyline.push_back(pos_b);
         }
     }
     {
         pos_o = pos_b;
         pos_b = pos_a;
-        pos_a = (*pPolyline)[0];
+        pos_a = polyline[0];
         oa.x = pos_a.x - pos_o.x;
         oa.y = pos_a.y - pos_o.y;
         og.x = pos_b.x - pos_o.x;
@@ -501,7 +500,14 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
         og.y /= len;
         auto limit = 1 / (len * 10);
         if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
-            pPolyline->push_back(pos_b);
+            polyline.push_back(pos_b);
         }
     }
+
+    vector<point_d> ret;
+    for (int32 i = 0; i < polyline.size(); i++) {
+        point_d tmp = { polyline[i].x, polyline[i].y };
+        ret.push_back(tmp);
+    }
+    return ret;
 }

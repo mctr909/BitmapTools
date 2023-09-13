@@ -337,7 +337,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
     for (uint32 i = 0; i < outlines.size(); i++) {
         auto outline = outlines[i];
         for (uint32 j = 0; j < outline.size(); j++) {
-            auto p = outline[j];
+            point p = { (int)outline[j].x, (int)outline[j].y };
             auto index = bitmap_get_index(*pbmp, p);
             if (UINT32_MAX != index) {
                 pbmp->mp_pix[index] = color + 1;
@@ -356,7 +356,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
             int bx = 0;
             int by = 0;
             for (uint32 j = 0; j < outline.size(); j++) {
-                auto p = outline[j];
+                point p = { (int)outline[j].x, (int)outline[j].y };
                 auto index = bitmap_get_index(*pbmp, p);
                 if (UINT32_MAX != index) {
                     double dx = p.x - bx;
