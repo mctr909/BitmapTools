@@ -413,7 +413,6 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
     point pos_o;
     point_d oa;
     point_d og;
-    double len;
 
     /*** 3点の直線チェック ***/
     vector<point> line_3p;
@@ -428,12 +427,12 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
         oa.y = pos_a.y - pos_o.y;
         og.x = pos_b.x - pos_o.x;
         og.y = pos_b.y - pos_o.y;
-        len = sqrt(oa.x * oa.x + oa.y * oa.y);
-        oa.x /= len;
-        oa.y /= len;
-        len = sqrt(og.x * og.x + og.y * og.y);
-        og.x /= len;
-        og.y /= len;
+        auto oa_len = sqrt(oa.x * oa.x + oa.y * oa.y);
+        auto og_len = sqrt(og.x * og.x + og.y * og.y);
+        oa.x /= oa_len;
+        oa.y /= oa_len;
+        og.x /= og_len;
+        og.y /= og_len;
         if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
             line_3p.push_back(pos_b);
         }
@@ -456,43 +455,42 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
         oa.y = pos_a.y - pos_o.y;
         og.x = (pos_b.x + pos_c.x) / 2.0 - pos_o.x;
         og.y = (pos_b.y + pos_c.y) / 2.0 - pos_o.y;
-        auto len = sqrt(oa.x * oa.x + oa.y * oa.y);
-        oa.x /= len;
-        oa.y /= len;
-        len = sqrt(og.x * og.x + og.y * og.y);
-        og.x /= len;
-        og.y /= len;
-        auto limit = 1 / (len * 10);
+        auto oa_len = sqrt(oa.x * oa.x + oa.y * oa.y);
+        auto og_len = sqrt(og.x * og.x + og.y * og.y);
+        oa.x /= oa_len;
+        oa.y /= oa_len;
+        og.x /= og_len;
+        og.y /= og_len;
+        auto limit = 1 / (oa_len * 5);
         if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
             line_4p.push_back(pos_b);
         }
     }
     line_4p.push_back(line_4p[0]);
 
-    int avg_count = 1;
-    point_d avg = { line_4p[0].x, line_4p[0].y };
-    oa = avg;
+    /*** 隣り合う点の重心をリスト入れて返す ***/
     vector<point_d> ret;
+    point_d pre = { line_4p[0].x, line_4p[0].y };
+    point_d avg = pre;
+    int avg_count = 1;
     for (int32 i = 1; i < line_4p.size(); i++) {
-        og = oa;
-        pos_a = line_4p[i];
-        auto sx = pos_a.x - og.x;
-        auto sy = pos_a.y - og.y;
+        auto cur = line_4p[i];
+        auto sx = cur.x - pre.x;
+        auto sy = cur.y - pre.y;
         if ((sx * sx + sy * sy) < 4) {
-            avg.x += pos_a.x;
-            avg.y += pos_a.y;
+            avg.x += cur.x;
+            avg.y += cur.y;
             avg_count++;
-            oa.x = avg.x / avg_count;
-            oa.y = avg.y / avg_count;
+            pre.x = avg.x / avg_count;
+            pre.y = avg.y / avg_count;
         } else {
-            ret.push_back(oa);
-            oa.x = pos_a.x;
-            oa.y = pos_a.y;
-            avg.x = pos_a.x;
-            avg.y = pos_a.y;
+            ret.push_back(pre);
+            avg.x = cur.x;
+            avg.y = cur.y;
             avg_count = 1;
+            pre.x = cur.x;
+            pre.y = cur.y;
         }
     }
-
     return ret;
 }
