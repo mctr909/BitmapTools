@@ -17,23 +17,23 @@ using namespace std;
 string bmp_file_path;
 
 inline bool
-inner_triangle(point va, point vo, point vb, point p) {
-    point oq, op;
+has_inner_point(point_d va, point_d vo, point_d vb, point_d p) {
+    point_d oq, op;
     oq.x = va.x - vb.x;
     oq.y = va.y - vb.y;
     op.x = p.x - vb.x;
     op.y = p.y - vb.y;
-    int32 normal_abp = oq.x * op.y - oq.y * op.x;
+    auto normal_abp = oq.x * op.y - oq.y * op.x;
     oq.x = vo.x - va.x;
     oq.y = vo.y - va.y;
     op.x = p.x - va.x;
     op.y = p.y - va.y;
-    int32 normal_oap = oq.x * op.y - oq.y * op.x;
+    auto normal_oap = oq.x * op.y - oq.y * op.x;
     oq.x = vb.x - vo.x;
     oq.y = vb.y - vo.y;
     op.x = p.x - vo.x;
     op.y = p.y - vo.y;
-    int32 normal_bop = oq.x * op.y - oq.y * op.x;
+    auto normal_bop = oq.x * op.y - oq.y * op.x;
     if (normal_abp < 0 && normal_oap < 0 && normal_bop < 0) {
         return true;
     }
@@ -43,8 +43,8 @@ inner_triangle(point va, point vo, point vb, point p) {
     return false;
 }
 
-bool
-inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<point>& vert) {
+inline bool
+has_inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<point_d>& vert) {
     for (uint32 i = 0; i < outer_surf.size(); i++) {
         auto outer = outer_surf[i];
         auto outer_a = vert[outer.a];
@@ -55,13 +55,13 @@ inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<p
             auto inner_a = vert[inner.a];
             auto inner_o = vert[inner.o];
             auto inner_b = vert[inner.b];
-            if (inner_triangle(outer_a, outer_o, outer_b, inner_a)) {
+            if (has_inner_point(outer_a, outer_o, outer_b, inner_a)) {
                 return true;
             }
-            if (inner_triangle(outer_a, outer_o, outer_b, inner_o)) {
+            if (has_inner_point(outer_a, outer_o, outer_b, inner_o)) {
                 return true;
             }
-            if (inner_triangle(outer_a, outer_o, outer_b, inner_b)) {
+            if (has_inner_point(outer_a, outer_o, outer_b, inner_b)) {
                 return true;
             }
         }
@@ -70,19 +70,14 @@ inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<p
 }
 
 void
-create_vertex(const point pos, MQO::type_object* p_obj, double y) {
+create_vertex(const point_d pos, MQO::type_object* p_obj, double y) {
     auto id = static_cast<uint32>(p_obj->vertex.size());
-    MQO::type_vertex vertex = {
-        static_cast<double>(pos.x),
-        y,
-        static_cast<double>(pos.y),
-        id
-    };
+    MQO::type_vertex vertex = { pos.x, y, pos.y, id };
     p_obj->vertex.push_back(vertex);
 }
 
 double
-create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surface>* pSurf_list, int32 order) {
+create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<surface>* pSurf_list, int32 order) {
     const auto INDEX_COUNT = static_cast<uint32>(index_list.size());
     const auto INDEX_NEXT = INDEX_COUNT + order;
     const auto INDEX_RIGHT = 1;
@@ -94,8 +89,8 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
     /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
     auto p_vert_info = (type_vert_info*)calloc(INDEX_COUNT, sizeof(type_vert_info));
     for (uint32 i = 0; i < INDEX_COUNT; i++) {
-        auto x = static_cast<int64>(vert_list[index_list[i]].x) - INT32_MIN;
-        auto y = static_cast<int64>(vert_list[index_list[i]].y) - INT32_MIN;
+        auto x = vert_list[index_list[i]].x - INT32_MIN;
+        auto y = vert_list[index_list[i]].y - INT32_MIN;
         p_vert_info[i].distance = sqrt(x * x + y * y);
         p_vert_info[i].deleted = false;
     }
@@ -104,7 +99,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
     uint32 vert_count = 0;
     do { // 最も遠くにある頂点(vo)の取得ループ
         /*** 最も遠くにある頂点(vo)を取得 ***/
-        point vo; uint32 io = 0;
+        point_d vo; uint32 io = 0;
         double dist_max = 0.0;
         vert_count = 0;
         for (uint32 i = 0; i < INDEX_COUNT; i++) {
@@ -122,7 +117,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
         vo = vert_list[index_list[io]];
         while (true) { // 頂点(vo)の移動ループ
             /*** 頂点(vo)の左隣にある頂点(va)を取得 ***/
-            point va; uint32 ia;
+            point_d va; uint32 ia;
             ia = (io + INDEX_LEFT) % INDEX_COUNT;
             for (uint32 i = 0; i < INDEX_COUNT; i++) {
                 if (p_vert_info[ia].deleted) {
@@ -133,7 +128,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
             }
             va = vert_list[index_list[ia]];
             /*** 頂点(vo)の右隣にある頂点(vb)を取得 ***/
-            point vb; uint32 ib;
+            point_d vb; uint32 ib;
             ib = (io + INDEX_RIGHT) % INDEX_COUNT;
             for (uint32 i = 0; i < INDEX_COUNT; i++) {
                 if (p_vert_info[ib].deleted) {
@@ -144,7 +139,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
             }
             vb = vert_list[index_list[ib]];
             /*** 三角形(va vo vb)の表裏を確認 ***/
-            int32 aob_normal;
+            double aob_normal;
             auto oa_x = va.x - vo.x;
             auto oa_y = va.y - vo.y;
             auto ob_x = vb.x - vo.x;
@@ -179,7 +174,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
                     continue;
                 }
                 auto p = vert_list[index_list[i]];
-                if (inner_triangle(va, vo, vb, p)) {
+                if (has_inner_point(va, vo, vb, p)) {
                     point_in_triangle = true;
                     break;
                 }
@@ -218,7 +213,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
 }
 
 void
-marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 order) {
+marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 order) {
     struct type_nest_info {
         uint32 parent;
         uint32 depth;
@@ -248,7 +243,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
             vector<surface> inner_surf;
             auto outer_area = create_polygon(verts, indexes[iOut], &outer_surf, order);
             auto inner_area = create_polygon(verts, indexes[iIn], &inner_surf, order);
-            if (inner_polygon(outer_surf, inner_surf, verts)) {
+            if (has_inner_polygon(outer_surf, inner_surf, verts)) {
                 nest_info[iIn].parent = iOut;
                 nest_info[iIn].depth++;
             }
@@ -387,7 +382,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
 
     /*** アウトラインから頂点とインデックスを取得 ***/
     vector<vector<uint32>> indexes_bottom, indexes_top;
-    vector<point> verts;
+    vector<point_d> verts;
     uint32 index_ofs = 0;
     for (uint32 i = 0; i < outlines.size(); i++) {
         auto outline = outlines[i];
@@ -398,8 +393,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         /*** 底面 ***/
         vector<uint32> index_bottom;
         for (uint32 j = 0; j < point_count; j++) {
-            auto pos = outline[j];
-            pos.y = pbmp->m_info.height - pos.y - 1;
+            point_d pos = { outline[j].x, pbmp->m_info.height - outline[j].y - 1 };
             verts.push_back(pos);
             index_bottom.push_back(index_ofs + j);
             create_vertex(pos, &obj, y_offset);
@@ -409,8 +403,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         /*** 上面 ***/
         vector<uint32> index_top;
         for (uint32 j = 0; j < point_count; j++) {
-            auto pos = outline[j];
-            pos.y = pbmp->m_info.height - pos.y - 1;
+            point_d pos = { outline[j].x, pbmp->m_info.height - outline[j].y - 1 };
             verts.push_back(pos);
             index_top.push_back(index_ofs + point_count - j - 1);
             create_vertex(pos, &obj, y_offset + height);
