@@ -438,24 +438,7 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
             line_3p.push_back(pos_b);
         }
     }
-    {
-        pos_o = pos_b;
-        pos_b = pos_a;
-        pos_a = line_3p[0];
-        oa.x = pos_a.x - pos_o.x;
-        oa.y = pos_a.y - pos_o.y;
-        og.x = pos_b.x - pos_o.x;
-        og.y = pos_b.y - pos_o.y;
-        auto len = sqrt(oa.x * oa.x + oa.y * oa.y);
-        oa.x /= len;
-        oa.y /= len;
-        len = sqrt(og.x * og.x + og.y * og.y);
-        og.x /= len;
-        og.y /= len;
-        if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
-            line_3p.push_back(pos_b);
-        }
-    }
+    line_3p.push_back(line_3p[0]);
 
     /*** 4点の直線チェック ***/
     vector<point> line_4p;
@@ -484,27 +467,8 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
             line_4p.push_back(pos_b);
         }
     }
-    {
-        pos_o = pos_b;
-        pos_b = pos_a;
-        pos_a = line_4p[0];
-        oa.x = pos_a.x - pos_o.x;
-        oa.y = pos_a.y - pos_o.y;
-        og.x = pos_b.x - pos_o.x;
-        og.y = pos_b.y - pos_o.y;
-        auto len = sqrt(oa.x * oa.x + oa.y * oa.y);
-        oa.x /= len;
-        oa.y /= len;
-        len = sqrt(og.x * og.x + og.y * og.y);
-        og.x /= len;
-        og.y /= len;
-        auto limit = 1 / (len * 10);
-        if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
-            line_4p.push_back(pos_b);
-        }
-    }
-
     line_4p.push_back(line_4p[0]);
+
     int avg_count = 1;
     point_d avg = { line_4p[0].x, line_4p[0].y };
     oa = avg;
