@@ -345,7 +345,9 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         }
         color = (color + 1) % 4;
     }
+#endif
 
+#ifdef DEBUG_TSV
     string ssdebug = bmp_file_path.substr(0, bmp_file_path.size() - 4) + "_debug.tsv";
     FILE *fp_tsv = nullptr;
     fopen_s(&fp_tsv, ssdebug.c_str(), "w");
