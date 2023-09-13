@@ -263,7 +263,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 or
         /*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
         /*** 互いに最も近い点をマージ開始位置に設定する ***/
         uint32 insert_dst = 0, insert_src = 0;
-        uint32 most_near = UINT32_MAX;
+        double most_near = UINT32_MAX;
         auto index_p = indexes[nest.parent];
         auto index_c = indexes[iNest];
         for (uint32 c = 0; c < index_c.size(); c++) {
@@ -272,7 +272,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 or
                 auto ic = index_c[c];
                 auto sx = verts[ic].x - verts[ip].x;
                 auto sy = verts[ic].y - verts[ip].y;
-                auto dist = static_cast<uint32>(sx * sx + sy * sy);
+                auto dist = sx * sx + sy * sy;
                 if (dist < most_near) {
                     insert_dst = n;
                     insert_src = c;

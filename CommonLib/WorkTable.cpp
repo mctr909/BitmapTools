@@ -458,9 +458,9 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
     }
 
     /*** 4点の直線チェック ***/
-    polyline.clear();
-    polyline.push_back(line_3p[0]);
-    polyline.push_back(line_3p[1]);
+    vector<point> line_4p;
+    line_4p.push_back(line_3p[0]);
+    line_4p.push_back(line_3p[1]);
     pos_c = line_3p[0];
     pos_b = line_3p[1];
     pos_a = line_3p[2];
@@ -481,13 +481,13 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
         og.y /= len;
         auto limit = 1 / (len * 10);
         if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
-            polyline.push_back(pos_b);
+            line_4p.push_back(pos_b);
         }
     }
     {
         pos_o = pos_b;
         pos_b = pos_a;
-        pos_a = polyline[0];
+        pos_a = line_4p[0];
         oa.x = pos_a.x - pos_o.x;
         oa.y = pos_a.y - pos_o.y;
         og.x = pos_b.x - pos_o.x;
@@ -500,14 +500,35 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
         og.y /= len;
         auto limit = 1 / (len * 10);
         if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
-            polyline.push_back(pos_b);
+            line_4p.push_back(pos_b);
         }
     }
 
+    line_4p.push_back(line_4p[0]);
+    int avg_count = 1;
+    point_d avg = { line_4p[0].x, line_4p[0].y };
+    oa = avg;
     vector<point_d> ret;
-    for (int32 i = 0; i < polyline.size(); i++) {
-        point_d tmp = { polyline[i].x, polyline[i].y };
-        ret.push_back(tmp);
+    for (int32 i = 1; i < line_4p.size(); i++) {
+        og = oa;
+        pos_a = line_4p[i];
+        auto sx = pos_a.x - og.x;
+        auto sy = pos_a.y - og.y;
+        if ((sx * sx + sy * sy) <= 2) {
+            avg.x += pos_a.x;
+            avg.y += pos_a.y;
+            avg_count++;
+            oa.x = avg.x / avg_count;
+            oa.y = avg.y / avg_count;
+        } else {
+            ret.push_back(oa);
+            oa.x = pos_a.x;
+            oa.y = pos_a.y;
+            avg.x = pos_a.x;
+            avg.y = pos_a.y;
+            avg_count = 1;
+        }
     }
+
     return ret;
 }
