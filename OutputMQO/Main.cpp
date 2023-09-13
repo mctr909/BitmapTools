@@ -314,9 +314,9 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
 
 #ifdef DEBUG
     auto p = &pbmp->mp_palette[0];
-    p->r = 191;
-    p->g = 191;
-    p->b = 191;
+    p->r = 223;
+    p->g = 223;
+    p->b = 223;
     p = &pbmp->mp_palette[1];
     p->r = 255;
     p->g = 0;

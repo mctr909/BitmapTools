@@ -392,8 +392,11 @@ WorkTable::CreatePolyline() {
             }
             if (!point_found) { // ポリラインの終端
                 // 直線上にある点を点リストから除外する
-                // 点リストをポリラインリストに追加
-                polyline_list.push_back(eliminatePointsOnStraightLine(point_list));
+                auto polyline = eliminatePointsOnStraightLine(point_list);
+                if (3 <= polyline.size()) {
+                    // 点リストをポリラインリストに追加
+                    polyline_list.push_back(polyline);
+                }
                 break;
             }
         }
