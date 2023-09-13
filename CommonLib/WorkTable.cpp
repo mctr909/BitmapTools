@@ -514,7 +514,7 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
         pos_a = line_4p[i];
         auto sx = pos_a.x - og.x;
         auto sy = pos_a.y - og.y;
-        if ((sx * sx + sy * sy) <= 2) {
+        if ((sx * sx + sy * sy) < 4) {
             avg.x += pos_a.x;
             avg.y += pos_a.y;
             avg_count++;
