@@ -55,10 +55,19 @@ has_inner_point(point_d va, point_d vo, point_d vb, point_d p) {
     op.x = p.x - vo.x;
     op.y = p.y - vo.y;
     auto normal_bop = oq.x * op.y - oq.y * op.x;
+    if (normal_abp > 0 && normal_oap > 0 && normal_bop > 0) {
+        return true;
+    }
     if (normal_abp < 0 && normal_oap < 0 && normal_bop < 0) {
         return true;
     }
-    if (normal_abp > 0 && normal_oap > 0 && normal_bop > 0) {
+    if (normal_abp == 0 && (normal_oap > 0 && normal_bop > 0 || normal_oap < 0 && normal_bop < 0)) {
+        return true;
+    }
+    if (normal_oap == 0 && (normal_abp > 0 && normal_bop > 0 || normal_abp < 0 && normal_bop < 0)) {
+        return true;
+    }
+    if (normal_bop == 0 && (normal_abp > 0 && normal_oap > 0 || normal_abp < 0 && normal_oap < 0)) {
         return true;
     }
     return false;
@@ -295,13 +304,6 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             SURF outer_surf;
             auto outer_area = create_polygon(vert, indexes[iOut], &outer_surf, order);
             if (iOut == iIn) {
-#ifdef DEBUG
-                printf_s("index:%d\n    parent:%d\n    depth :%d\n",
-                    iIn,
-                    inner->parent,
-                    inner->depth
-                );
-#endif
                 continue;
             }
             SURF inner_surf;
@@ -344,16 +346,6 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             }
         }
         /*** ƒ}[ƒW ***/
-#ifdef DEBUG
-        printf_s("marge:\n    parent:%d\n        x :%.2f\n        y :%.2f\n    child :%d\n        x :%.2f\n        y :%.2f\n",
-            inner->parent,
-            vert[index_p[insert_dst]].x,
-            vert[index_p[insert_dst]].y,
-            iIn,
-            vert[index_c[insert_src]].x,
-            vert[index_c[insert_src]].y
-        );
-#endif
         INDEX temp;
         for (uint32 i = 0; i <= insert_dst && i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
@@ -517,6 +509,9 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
+#ifdef DEBUG
+        obj.lines.push_back(index);
+#endif
         SURF surf;
         create_polygon(verts, index, &surf, -1);
         for (uint32 j = 0; j < surf.size(); j++) {
