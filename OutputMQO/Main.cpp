@@ -269,14 +269,12 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
     struct type_nest_info {
         uint32 parent;
         uint32 depth;
-        double s;
     };
     vector<type_nest_info> nest_info;
     for (uint32 i = 0; i < indexes.size(); i++) {
         type_nest_info nest;
         nest.parent = -1;
         nest.depth = 0;
-        nest.s = 0;
         nest_info.push_back(nest);
     }
     /*** 入れ子になっているアウトラインを検索 ***/
@@ -297,7 +295,13 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             SURF outer_surf;
             auto outer_area = create_polygon(vert, indexes[iOut], &outer_surf, order);
             if (iOut == iIn) {
-                inner->s = outer_area;
+#ifdef DEBUG
+                printf_s("index:%d\n    parent:%d\n    depth :%d\n",
+                    iIn,
+                    inner->parent,
+                    inner->depth
+                );
+#endif
                 continue;
             }
             SURF inner_surf;
@@ -305,21 +309,12 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             if (inner_area < outer_area && has_inner_polygon(outer_surf, inner_surf, vert)) {
                 inner->parent = iOut;
                 inner->depth++;
-                inner->s = inner_area;
             }
         }
     }
     /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
     for (uint32 iIn = 0; iIn < nest_info.size(); iIn++) {
         auto inner = &nest_info[iIn];
-#ifdef DEBUG
-        printf_s("index:%d\n    parent:%d\n    depth :%d\n    area  :%.2f\n",
-            iIn,
-            inner->parent,
-            inner->depth,
-            (float)inner->s
-        );
-#endif
         /*** depth=0   : 一番外側 ***/
         /*** depth=偶数: 穴に該当しないアウトライン ***/
         if (0 == inner->depth % 2) {
@@ -349,6 +344,16 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             }
         }
         /*** マージ ***/
+#ifdef DEBUG
+        printf_s("marge:\n    parent:%d\n        x :%.2f\n        y :%.2f\n    child :%d\n        x :%.2f\n        y :%.2f\n",
+            inner->parent,
+            vert[index_p[insert_dst]].x,
+            vert[index_p[insert_dst]].y,
+            iIn,
+            vert[index_c[insert_src]].x,
+            vert[index_c[insert_src]].y
+        );
+#endif
         INDEX temp;
         for (uint32 i = 0; i <= insert_dst && i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
