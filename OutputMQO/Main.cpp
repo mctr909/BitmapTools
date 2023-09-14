@@ -72,6 +72,37 @@ has_inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vect
             auto inner_a = vert[inner.a];
             auto inner_o = vert[inner.o];
             auto inner_b = vert[inner.b];
+
+            if (has_intersect_line(outer_o, outer_a, inner_o, inner_a)) {
+                return true;
+            }
+            if (has_intersect_line(outer_o, outer_a, inner_o, inner_b)) {
+                return true;
+            }
+            if (has_intersect_line(outer_o, outer_a, inner_a, inner_b)) {
+                return true;
+            }
+
+            if (has_intersect_line(outer_o, outer_b, inner_o, inner_a)) {
+                return true;
+            }
+            if (has_intersect_line(outer_o, outer_b, inner_o, inner_b)) {
+                return true;
+            }
+            if (has_intersect_line(outer_o, outer_b, inner_a, inner_b)) {
+                return true;
+            }
+
+            if (has_intersect_line(outer_a, outer_b, inner_o, inner_a)) {
+                return true;
+            }
+            if (has_intersect_line(outer_a, outer_b, inner_o, inner_b)) {
+                return true;
+            }
+            if (has_intersect_line(outer_a, outer_b, inner_a, inner_b)) {
+                return true;
+            }
+
             if (has_inner_point(outer_a, outer_o, outer_b, inner_a)) {
                 return true;
             }
@@ -234,12 +265,14 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 or
     struct type_nest_info {
         uint32 parent;
         uint32 depth;
+        double s;
     };
     vector<type_nest_info> nest_info;
     for (uint32 i = 0; i < indexes.size(); i++) {
         type_nest_info nest;
         nest.parent = 0;
         nest.depth = 0;
+        nest.s = 0;
         nest_info.push_back(nest);
     }
     /*** 入れ子になっているアウトラインを検索 ***/
@@ -248,41 +281,48 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 or
             indexes[iOut].clear();
             continue;
         }
-        for (uint32 iIn = iOut + 1; iIn < indexes.size(); iIn++) {
+        for (uint32 iIn = 0; iIn < indexes.size(); iIn++) {
+            auto inner = &nest_info[iIn];
             if (indexes[iIn].size() < 3) {
                 indexes[iIn].clear();
                 continue;
             }
-            if (nest_info[iOut].depth < nest_info[iIn].depth) {
+            if (nest_info[iOut].depth < inner->depth) {
                 continue;
             }
             vector<surface> outer_surf;
-            vector<surface> inner_surf;
             auto outer_area = create_polygon(verts, indexes[iOut], &outer_surf, order);
+            if (iOut == iIn) {
+                inner->s = outer_area;
+                continue;
+            }
+            vector<surface> inner_surf;
             auto inner_area = create_polygon(verts, indexes[iIn], &inner_surf, order);
-            if (has_inner_polygon(outer_surf, inner_surf, verts)) {
-                nest_info[iIn].parent = iOut;
-                nest_info[iIn].depth++;
+            if (inner_area < outer_area && has_inner_polygon(outer_surf, inner_surf, verts)) {
+                inner->parent = iOut;
+                inner->depth++;
+                inner->s = inner_area;
             }
         }
     }
     /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
-    for (uint32 iNest = 0; iNest < nest_info.size(); iNest++) {
-        auto nest = nest_info[iNest];
+    for (uint32 iIn = 0; iIn < nest_info.size(); iIn++) {
+        auto inner = &nest_info[iIn];
+        printf_s("index:%d\n\tparent:%d\n\tdepth:%d\n\tarea:%f\n", iIn, inner->parent, inner->depth, (float)inner->s);
         /*** depth=0   : 一番外側 ***/
         /*** depth=偶数: 穴に該当しないアウトライン ***/
-        if (0 == nest.depth % 2) {
+        if (0 == inner->depth % 2) {
             continue;
         }
-        if (iNest == nest.parent) {
+        if (iIn == inner->parent) {
             continue;
         }
         /*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
         /*** 互いに最も近い点をマージ開始位置に設定する ***/
         uint32 insert_dst = 0, insert_src = 0;
         double most_near = UINT32_MAX;
-        auto index_p = indexes[nest.parent];
-        auto index_c = indexes[iNest];
+        auto index_p = indexes[inner->parent];
+        auto index_c = indexes[iIn];
         for (uint32 c = 0; c < index_c.size(); c++) {
             for (uint32 n = 0; n < index_p.size(); n++) {
                 auto ip = index_p[n];
@@ -311,9 +351,10 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 or
         for (uint32 i = insert_dst; i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
         }
-        indexes[nest.parent] = temp;
-        indexes[iNest].clear();
+        indexes[inner->parent] = temp;
+        indexes[iIn].clear();
     }
+    printf_s("\n");
 }
 
 MQO::type_object
@@ -441,6 +482,9 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
+#ifdef DEBUG
+        obj.lines.push_back(index);
+#endif
         vector<surface> surf;
         create_polygon(verts, index, &surf, 1);
         for (uint32 j = 0; j < surf.size(); j++) {

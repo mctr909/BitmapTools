@@ -84,6 +84,7 @@ MQO::Write(const string file_path, const string marge_from) {
         }
     }
     writeObject(&fout);
+    writeLines(&fout);
     fout.close();
 }
 
@@ -230,3 +231,52 @@ MQO::writeObject(ofstream* p_fout) {
     *p_fout << "}" << endl;
     *p_fout << endl;
 }
+
+void
+MQO::writeLines(ofstream* p_fout) {
+    for (uint32 il = 0; il < m_object.lines.size(); il++) {
+        *p_fout << "Object \"" << m_object.name << "_line" << il << "\" {" << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_DEPTH << " " << m_object.depth << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_FOLDING << " " << m_object.folding << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_SCALE << " " << m_object.scale[0] << " " << m_object.scale[1] << " " << m_object.scale[2] << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_ROTATION << " " << m_object.rotation[0] << " " << m_object.rotation[1] << " " << m_object.rotation[2] << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_TRANSLATION << " " << m_object.translation[0] << " " << m_object.translation[1] << " " << m_object.translation[2] << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_VISIBLE << " " << m_object.visible << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_LOCKING << " " << m_object.locking << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_SHADING << " " << m_object.shading << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_FACET << " " << m_object.facet << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_NORMALWEIGHT << " " << m_object.normal_weight << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_COLOR << " " << m_object.color << " " << m_object.color[1] << " " << m_object.color[2] << endl;
+        *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_COLORTYPE << " " << m_object.color_type << endl;
+
+        auto size_max = static_cast<uint32>(m_object.vertex.size());
+        *p_fout << "\tvertex " << size_max << " {" << endl;
+        for (uint32 i = 0; i < size_max; i++) {
+            double x = m_object.vertex[i].x;
+            double y = m_object.vertex[i].y;
+            double z = m_object.vertex[i].z;
+            *p_fout << "\t\t" << x << " " << y << " " << z << endl;
+        }
+        *p_fout << "\t}" << endl;
+
+        auto line = m_object.lines[il];
+        size_max = static_cast<uint32>(line.size());
+        *p_fout << "\tface " << size_max << " {" << endl;
+        for (uint32 i = 1; i < size_max; i++) {
+            *p_fout << "\t\t" << "2 V( ";
+            *p_fout << line[i - 1] << " " << line[i];
+            *p_fout << ")";
+            *p_fout << endl;
+        }
+        if (2 <= size_max) {
+            *p_fout << "\t\t" << "2 V( ";
+            *p_fout << line[size_max - 1] << " " << line[0];
+            *p_fout << ")";
+            *p_fout << endl;
+        }
+        *p_fout << "\t}" << endl;
+        *p_fout << "}" << endl;
+        *p_fout << endl;
+    }
+}
+
