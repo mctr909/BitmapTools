@@ -17,6 +17,23 @@ using namespace std;
 string bmp_file_path;
 
 inline bool
+has_intersect_line(point_d a, point_d b, point_d c, point_d d) {
+    point_d ab = { b.x - a.x, b.y - a.y };
+    point_d cd = { d.x - c.x, d.y - c.y };
+    auto denom = ab.x * cd.y - ab.y * cd.x;
+    if (abs(denom) < 1e-6) {
+        return false;
+    }
+    point_d ac = { c.x - a.x, c.y - a.y };
+    auto s = (ac.x * cd.y - ac.y * cd.x) / denom;
+    auto t = (ac.x * ab.y - ac.y * ab.x) / denom;
+    if (s < 0 || 1 < s || t < 0 || 1 < t) {
+        return false;
+    }
+    return true;
+}
+
+inline bool
 has_inner_point(point_d va, point_d vo, point_d vb, point_d p) {
     point_d oq, op;
     oq.x = va.x - vb.x;
