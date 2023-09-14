@@ -83,37 +83,6 @@ has_inner_polygon(SURF& outer_surf, SURF& inner_surf, VERT& vert) {
             auto inner_a = vert[inner.a];
             auto inner_o = vert[inner.o];
             auto inner_b = vert[inner.b];
-
-            if (has_intersect_line(outer_o, outer_a, inner_o, inner_a)) {
-                return true;
-            }
-            if (has_intersect_line(outer_o, outer_a, inner_o, inner_b)) {
-                return true;
-            }
-            if (has_intersect_line(outer_o, outer_a, inner_a, inner_b)) {
-                return true;
-            }
-
-            if (has_intersect_line(outer_o, outer_b, inner_o, inner_a)) {
-                return true;
-            }
-            if (has_intersect_line(outer_o, outer_b, inner_o, inner_b)) {
-                return true;
-            }
-            if (has_intersect_line(outer_o, outer_b, inner_a, inner_b)) {
-                return true;
-            }
-
-            if (has_intersect_line(outer_a, outer_b, inner_o, inner_a)) {
-                return true;
-            }
-            if (has_intersect_line(outer_a, outer_b, inner_o, inner_b)) {
-                return true;
-            }
-            if (has_intersect_line(outer_a, outer_b, inner_a, inner_b)) {
-                return true;
-            }
-
             if (has_inner_point(outer_a, outer_o, outer_b, inner_a)) {
                 return true;
             }
