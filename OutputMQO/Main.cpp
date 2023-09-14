@@ -16,6 +16,11 @@ using namespace std;
 
 string bmp_file_path;
 
+struct INDEX {
+    int value;
+    bool join;
+};
+
 inline bool
 has_intersect_line(point_d a, point_d b, point_d c, point_d d) {
     point_d ab = { b.x - a.x, b.y - a.y };
@@ -125,7 +130,7 @@ create_vertex(const point_d pos, MQO::type_object* p_obj, double y) {
 }
 
 double
-create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<surface>* pSurf_list, int32 order) {
+create_polygon(vector<point_d>& vert_list, vector<INDEX>& index_list, vector<surface>* pSurf_list, int32 order) {
     const auto INDEX_COUNT = static_cast<uint32>(index_list.size());
     const auto INDEX_NEXT = INDEX_COUNT + order;
     const auto INDEX_RIGHT = 1;
@@ -137,8 +142,8 @@ create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<su
     /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
     auto p_vert_info = (type_vert_info*)calloc(INDEX_COUNT, sizeof(type_vert_info));
     for (uint32 i = 0; i < INDEX_COUNT; i++) {
-        auto x = vert_list[index_list[i]].x - INT32_MIN;
-        auto y = vert_list[index_list[i]].y - INT32_MIN;
+        auto x = vert_list[index_list[i].value].x - INT32_MIN;
+        auto y = vert_list[index_list[i].value].y - INT32_MIN;
         p_vert_info[i].distance = sqrt(x * x + y * y);
         p_vert_info[i].deleted = false;
     }
@@ -162,7 +167,7 @@ create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<su
             vert_count++;
         }
         reverse_count = 0;
-        vo = vert_list[index_list[io]];
+        vo = vert_list[index_list[io].value];
         while (true) { // 頂点(vo)の移動ループ
             /*** 頂点(vo)の左隣にある頂点(va)を取得 ***/
             point_d va; uint32 ia;
@@ -174,7 +179,7 @@ create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<su
                     break;
                 }
             }
-            va = vert_list[index_list[ia]];
+            va = vert_list[index_list[ia].value];
             /*** 頂点(vo)の右隣にある頂点(vb)を取得 ***/
             point_d vb; uint32 ib;
             ib = (io + INDEX_RIGHT) % INDEX_COUNT;
@@ -185,7 +190,7 @@ create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<su
                     break;
                 }
             }
-            vb = vert_list[index_list[ib]];
+            vb = vert_list[index_list[ib].value];
             /*** 三角形(va vo vb)の表裏を確認 ***/
             double aob_normal;
             auto oa_x = va.x - vo.x;
@@ -212,7 +217,7 @@ create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<su
                         break;
                     }
                 }
-                vo = vert_list[index_list[io]];
+                vo = vert_list[index_list[io].value];
                 continue;
             }
             /*** 三角形(va vo vb)の内側にva vo vb以外の頂点がないか確認 ***/
@@ -221,7 +226,7 @@ create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<su
                 if (i == ia || i == io || i == ib || p_vert_info[i].deleted) {
                     continue;
                 }
-                auto p = vert_list[index_list[i]];
+                auto p = vert_list[index_list[i].value];
                 if (has_inner_point(va, vo, vb, p)) {
                     point_in_triangle = true;
                     break;
@@ -238,14 +243,14 @@ create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<su
                         break;
                     }
                 }
-                vo = vert_list[index_list[io]];
+                vo = vert_list[index_list[io].value];
             } else {
                 /*** 内側に他の頂点がない場合 ***/
                 /*** 三角形(va vo vb)を面リストに追加 ***/
                 surface surf;
-                surf.a = index_list[ia];
-                surf.o = index_list[io];
-                surf.b = index_list[ib];
+                surf.a = index_list[ia].value;
+                surf.o = index_list[io].value;
+                surf.b = index_list[ib].value;
                 pSurf_list->push_back(surf);
                 /*** 三角形の面積を加算 ***/
                 area += abs(aob_normal) / 2.0;
@@ -261,7 +266,7 @@ create_polygon(vector<point_d>& vert_list, vector<uint32>& index_list, vector<su
 }
 
 void
-marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 order) {
+marge_outlines(vector<vector<INDEX>>& indexes, vector<point_d>& verts, int32 order) {
     struct type_nest_info {
         uint32 parent;
         uint32 depth;
@@ -325,8 +330,8 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 or
         auto index_c = indexes[iIn];
         for (uint32 c = 0; c < index_c.size(); c++) {
             for (uint32 n = 0; n < index_p.size(); n++) {
-                auto ip = index_p[n];
-                auto ic = index_c[c];
+                auto ip = index_p[n].value;
+                auto ic = index_c[c].value;
                 auto sx = verts[ic].x - verts[ip].x;
                 auto sy = verts[ic].y - verts[ip].y;
                 auto dist = sx * sx + sy * sy;
@@ -338,7 +343,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point_d>& verts, int32 or
             }
         }
         /*** マージ ***/
-        vector<uint32> temp;
+        vector<INDEX> temp;
         for (uint32 i = 0; i <= insert_dst && i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
         }
@@ -441,7 +446,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
 #endif
 
     /*** アウトラインから頂点とインデックスを取得 ***/
-    vector<vector<uint32>> indexes_bottom, indexes_top;
+    vector<vector<INDEX>> indexes_bottom, indexes_top;
     vector<point_d> verts;
     uint32 index_ofs = 0;
     for (uint32 i = 0; i < outlines.size(); i++) {
@@ -451,21 +456,23 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
             continue;
         }
         /*** 底面 ***/
-        vector<uint32> index_bottom;
+        vector<INDEX> index_bottom;
         for (uint32 j = 0; j < point_count; j++) {
             point_d pos = { outline[j].x, pbmp->m_info.height - outline[j].y - 1 };
             verts.push_back(pos);
-            index_bottom.push_back(index_ofs + j);
+            INDEX idx = { index_ofs + j, false };
+            index_bottom.push_back(idx);
             create_vertex(pos, &obj, y_offset);
         }
         indexes_bottom.push_back(index_bottom);
         index_ofs += point_count;
         /*** 上面 ***/
-        vector<uint32> index_top;
+        vector<INDEX> index_top;
         for (uint32 j = 0; j < point_count; j++) {
             point_d pos = { outline[j].x, pbmp->m_info.height - outline[j].y - 1 };
             verts.push_back(pos);
-            index_top.push_back(index_ofs + point_count - j - 1);
+            INDEX idx = { index_ofs + point_count - j - 1, false };
+            index_top.push_back(idx);
             create_vertex(pos, &obj, y_offset + height);
         }
         indexes_top.push_back(index_top);
@@ -482,9 +489,6 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
-#ifdef DEBUG
-        obj.lines.push_back(index);
-#endif
         vector<surface> surf;
         create_polygon(verts, index, &surf, 1);
         for (uint32 j = 0; j < surf.size(); j++) {
@@ -526,11 +530,11 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         }
         auto point_count = static_cast<int32>(index_bottom.size());
         for (int32 ib = 0; ib < point_count; ib++) {
-            auto idx0 = index_bottom[(ib + 1) % point_count];
-            auto idx1 = index_bottom[ib];
+            auto idx0 = index_bottom[(ib + 1) % point_count].value;
+            auto idx1 = index_bottom[ib].value;
             uint32 idx2;
             for (int32 it = 0; it < point_count; it++) {
-                auto idx = index_top[it];
+                auto idx = index_top[it].value;
                 auto sx = verts[idx].x - verts[idx1].x;
                 auto sy = verts[idx].y - verts[idx1].y;
                 if (0 == sx * sx + sy * sy) {
@@ -540,7 +544,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
             }
             uint32 idx3;
             for (int32 it = 0; it < point_count; it++) {
-                auto idx = index_top[it];
+                auto idx = index_top[it].value;
                 auto sx = verts[idx].x - verts[idx0].x;
                 auto sy = verts[idx].y - verts[idx0].y;
                 if (0 == sx * sx + sy * sy) {
