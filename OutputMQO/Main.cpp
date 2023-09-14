@@ -16,6 +16,7 @@ using namespace std;
 
 typedef vector<uint32> INDEX;
 typedef vector<point_d> VERT;
+typedef vector<surface> SURF;
 
 string bmp_file_path;
 
@@ -64,7 +65,7 @@ has_inner_point(point_d va, point_d vo, point_d vb, point_d p) {
 }
 
 inline bool
-has_inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, VERT& vert) {
+has_inner_polygon(SURF& outer_surf, SURF& inner_surf, VERT& vert) {
     for (uint32 i = 0; i < outer_surf.size(); i++) {
         auto outer = outer_surf[i];
         auto outer_a = vert[outer.a];
@@ -128,7 +129,7 @@ create_vertex(const point_d pos, MQO::type_object* p_obj, double y) {
 }
 
 double
-create_polygon(VERT& vert, INDEX& index, vector<surface>* pSurf_list, int32 order) {
+create_polygon(VERT& vert, INDEX& index, SURF* pSurf_list, int32 order) {
     const auto INDEX_COUNT = static_cast<uint32>(index.size());
     const auto INDEX_NEXT = INDEX_COUNT + order;
     const auto INDEX_RIGHT = 1;
@@ -293,13 +294,13 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             if (nest_info[iOut].depth < inner->depth) {
                 continue;
             }
-            vector<surface> outer_surf;
+            SURF outer_surf;
             auto outer_area = create_polygon(vert, indexes[iOut], &outer_surf, order);
             if (iOut == iIn) {
                 inner->s = outer_area;
                 continue;
             }
-            vector<surface> inner_surf;
+            SURF inner_surf;
             auto inner_area = create_polygon(vert, indexes[iIn], &inner_surf, order);
             if (inner_area < outer_area && has_inner_polygon(outer_surf, inner_surf, vert)) {
                 inner->parent = iOut;
@@ -492,7 +493,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
-        vector<surface> surf;
+        SURF surf;
         create_polygon(verts, index, &surf, 1);
         for (uint32 j = 0; j < surf.size(); j++) {
             MQO::type_face face;
@@ -511,7 +512,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
-        vector<surface> surf;
+        SURF surf;
         create_polygon(verts, index, &surf, -1);
         for (uint32 j = 0; j < surf.size(); j++) {
             MQO::type_face face;
