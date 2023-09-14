@@ -12,39 +12,67 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
-//#define DEBUG
+typedef vector<uint32> INDEX;
+typedef vector<point_d> VERT;
+typedef vector<surface> SURF;
 
 string bmp_file_path;
 
 inline bool
-inner_triangle(point va, point vo, point vb, point p) {
-    point oq, op;
+has_intersect_line(point_d a, point_d b, point_d c, point_d d) {
+    point_d ab = { b.x - a.x, b.y - a.y };
+    point_d cd = { d.x - c.x, d.y - c.y };
+    auto denom = ab.x * cd.y - ab.y * cd.x;
+    if (abs(denom) < 1e-6) {
+        return false;
+    }
+    point_d ac = { c.x - a.x, c.y - a.y };
+    auto s = (ac.x * cd.y - ac.y * cd.x) / denom;
+    auto t = (ac.x * ab.y - ac.y * ab.x) / denom;
+    if (s < 0 || 1 < s || t < 0 || 1 < t) {
+        return false;
+    }
+    return true;
+}
+
+inline bool
+has_inner_point(point_d va, point_d vo, point_d vb, point_d p) {
+    point_d oq, op;
     oq.x = va.x - vb.x;
     oq.y = va.y - vb.y;
     op.x = p.x - vb.x;
     op.y = p.y - vb.y;
-    int32 normal_abp = oq.x * op.y - oq.y * op.x;
+    auto normal_abp = oq.x * op.y - oq.y * op.x;
     oq.x = vo.x - va.x;
     oq.y = vo.y - va.y;
     op.x = p.x - va.x;
     op.y = p.y - va.y;
-    int32 normal_oap = oq.x * op.y - oq.y * op.x;
+    auto normal_oap = oq.x * op.y - oq.y * op.x;
     oq.x = vb.x - vo.x;
     oq.y = vb.y - vo.y;
     op.x = p.x - vo.x;
     op.y = p.y - vo.y;
-    int32 normal_bop = oq.x * op.y - oq.y * op.x;
+    auto normal_bop = oq.x * op.y - oq.y * op.x;
+    if (normal_abp > 0 && normal_oap > 0 && normal_bop > 0) {
+        return true;
+    }
     if (normal_abp < 0 && normal_oap < 0 && normal_bop < 0) {
         return true;
     }
-    if (normal_abp > 0 && normal_oap > 0 && normal_bop > 0) {
+    if (normal_abp == 0 && (normal_oap > 0 && normal_bop > 0 || normal_oap < 0 && normal_bop < 0)) {
+        return true;
+    }
+    if (normal_oap == 0 && (normal_abp > 0 && normal_bop > 0 || normal_abp < 0 && normal_bop < 0)) {
+        return true;
+    }
+    if (normal_bop == 0 && (normal_abp > 0 && normal_oap > 0 || normal_abp < 0 && normal_oap < 0)) {
         return true;
     }
     return false;
 }
 
-bool
-inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<point>& vert) {
+inline bool
+has_inner_polygon(SURF& outer_surf, SURF& inner_surf, VERT& vert) {
     for (uint32 i = 0; i < outer_surf.size(); i++) {
         auto outer = outer_surf[i];
         auto outer_a = vert[outer.a];
@@ -55,13 +83,13 @@ inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<p
             auto inner_a = vert[inner.a];
             auto inner_o = vert[inner.o];
             auto inner_b = vert[inner.b];
-            if (inner_triangle(outer_a, outer_o, outer_b, inner_a)) {
+            if (has_inner_point(outer_a, outer_o, outer_b, inner_a)) {
                 return true;
             }
-            if (inner_triangle(outer_a, outer_o, outer_b, inner_o)) {
+            if (has_inner_point(outer_a, outer_o, outer_b, inner_o)) {
                 return true;
             }
-            if (inner_triangle(outer_a, outer_o, outer_b, inner_b)) {
+            if (has_inner_point(outer_a, outer_o, outer_b, inner_b)) {
                 return true;
             }
         }
@@ -70,20 +98,15 @@ inner_polygon(vector<surface>& outer_surf, vector<surface>& inner_surf, vector<p
 }
 
 void
-create_vertex(const point pos, MQO::type_object* p_obj, double y) {
+create_vertex(const point_d pos, MQO::type_object* p_obj, double y) {
     auto id = static_cast<uint32>(p_obj->vertex.size());
-    MQO::type_vertex vertex = {
-        static_cast<double>(pos.x),
-        y,
-        static_cast<double>(pos.y),
-        id
-    };
+    MQO::type_vertex vertex = { pos.x, y, pos.y, id };
     p_obj->vertex.push_back(vertex);
 }
 
 double
-create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surface>* pSurf_list, int32 order) {
-    const auto INDEX_COUNT = static_cast<uint32>(index_list.size());
+create_polygon(VERT& vert, INDEX& index, SURF* pSurf_list, int32 order) {
+    const auto INDEX_COUNT = static_cast<uint32>(index.size());
     const auto INDEX_NEXT = INDEX_COUNT + order;
     const auto INDEX_RIGHT = 1;
     const auto INDEX_LEFT = INDEX_COUNT - 1;
@@ -94,8 +117,8 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
     /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
     auto p_vert_info = (type_vert_info*)calloc(INDEX_COUNT, sizeof(type_vert_info));
     for (uint32 i = 0; i < INDEX_COUNT; i++) {
-        auto x = static_cast<int64>(vert_list[index_list[i]].x) - INT32_MIN;
-        auto y = static_cast<int64>(vert_list[index_list[i]].y) - INT32_MIN;
+        auto x = vert[index[i]].x - INT32_MIN;
+        auto y = vert[index[i]].y - INT32_MIN;
         p_vert_info[i].distance = sqrt(x * x + y * y);
         p_vert_info[i].deleted = false;
     }
@@ -104,7 +127,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
     uint32 vert_count = 0;
     do { // 最も遠くにある頂点(vo)の取得ループ
         /*** 最も遠くにある頂点(vo)を取得 ***/
-        point vo; uint32 io = 0;
+        point_d vo; uint32 io = 0;
         double dist_max = 0.0;
         vert_count = 0;
         for (uint32 i = 0; i < INDEX_COUNT; i++) {
@@ -119,10 +142,10 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
             vert_count++;
         }
         reverse_count = 0;
-        vo = vert_list[index_list[io]];
+        vo = vert[index[io]];
         while (true) { // 頂点(vo)の移動ループ
             /*** 頂点(vo)の左隣にある頂点(va)を取得 ***/
-            point va; uint32 ia;
+            point_d va; uint32 ia;
             ia = (io + INDEX_LEFT) % INDEX_COUNT;
             for (uint32 i = 0; i < INDEX_COUNT; i++) {
                 if (p_vert_info[ia].deleted) {
@@ -131,9 +154,9 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
                     break;
                 }
             }
-            va = vert_list[index_list[ia]];
+            va = vert[index[ia]];
             /*** 頂点(vo)の右隣にある頂点(vb)を取得 ***/
-            point vb; uint32 ib;
+            point_d vb; uint32 ib;
             ib = (io + INDEX_RIGHT) % INDEX_COUNT;
             for (uint32 i = 0; i < INDEX_COUNT; i++) {
                 if (p_vert_info[ib].deleted) {
@@ -142,9 +165,9 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
                     break;
                 }
             }
-            vb = vert_list[index_list[ib]];
+            vb = vert[index[ib]];
             /*** 三角形(va vo vb)の表裏を確認 ***/
-            int32 aob_normal;
+            double aob_normal;
             auto oa_x = va.x - vo.x;
             auto oa_y = va.y - vo.y;
             auto ob_x = vb.x - vo.x;
@@ -169,7 +192,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
                         break;
                     }
                 }
-                vo = vert_list[index_list[io]];
+                vo = vert[index[io]];
                 continue;
             }
             /*** 三角形(va vo vb)の内側にva vo vb以外の頂点がないか確認 ***/
@@ -178,8 +201,8 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
                 if (i == ia || i == io || i == ib || p_vert_info[i].deleted) {
                     continue;
                 }
-                auto p = vert_list[index_list[i]];
-                if (inner_triangle(va, vo, vb, p)) {
+                auto p = vert[index[i]];
+                if (has_inner_point(va, vo, vb, p)) {
                     point_in_triangle = true;
                     break;
                 }
@@ -195,14 +218,14 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
                         break;
                     }
                 }
-                vo = vert_list[index_list[io]];
+                vo = vert[index[io]];
             } else {
                 /*** 内側に他の頂点がない場合 ***/
                 /*** 三角形(va vo vb)を面リストに追加 ***/
                 surface surf;
-                surf.a = index_list[ia];
-                surf.o = index_list[io];
-                surf.b = index_list[ib];
+                surf.a = index[ia];
+                surf.o = index[io];
+                surf.b = index[ib];
                 pSurf_list->push_back(surf);
                 /*** 三角形の面積を加算 ***/
                 area += abs(aob_normal) / 2.0;
@@ -218,7 +241,7 @@ create_polygon(vector<point>& vert_list, vector<uint32>& index_list, vector<surf
 }
 
 void
-marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 order) {
+marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
     struct type_nest_info {
         uint32 parent;
         uint32 depth;
@@ -226,7 +249,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
     vector<type_nest_info> nest_info;
     for (uint32 i = 0; i < indexes.size(); i++) {
         type_nest_info nest;
-        nest.parent = 0;
+        nest.parent = -1;
         nest.depth = 0;
         nest_info.push_back(nest);
     }
@@ -236,48 +259,52 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
             indexes[iOut].clear();
             continue;
         }
-        for (uint32 iIn = iOut + 1; iIn < indexes.size(); iIn++) {
+        for (uint32 iIn = 0; iIn < indexes.size(); iIn++) {
+            auto inner = &nest_info[iIn];
             if (indexes[iIn].size() < 3) {
                 indexes[iIn].clear();
                 continue;
             }
-            if (nest_info[iOut].depth < nest_info[iIn].depth) {
+            if (nest_info[iOut].depth < inner->depth) {
                 continue;
             }
-            vector<surface> outer_surf;
-            vector<surface> inner_surf;
-            auto outer_area = create_polygon(verts, indexes[iOut], &outer_surf, order);
-            auto inner_area = create_polygon(verts, indexes[iIn], &inner_surf, order);
-            if (inner_polygon(outer_surf, inner_surf, verts)) {
-                nest_info[iIn].parent = iOut;
-                nest_info[iIn].depth++;
+            SURF outer_surf;
+            auto outer_area = create_polygon(vert, indexes[iOut], &outer_surf, order);
+            if (iOut == iIn) {
+                continue;
+            }
+            SURF inner_surf;
+            auto inner_area = create_polygon(vert, indexes[iIn], &inner_surf, order);
+            if (inner_area < outer_area && has_inner_polygon(outer_surf, inner_surf, vert)) {
+                inner->parent = iOut;
+                inner->depth++;
             }
         }
     }
     /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
-    for (uint32 iNest = 0; iNest < nest_info.size(); iNest++) {
-        auto nest = nest_info[iNest];
+    for (uint32 iIn = 0; iIn < nest_info.size(); iIn++) {
+        auto inner = &nest_info[iIn];
         /*** depth=0   : 一番外側 ***/
         /*** depth=偶数: 穴に該当しないアウトライン ***/
-        if (0 == nest.depth % 2) {
+        if (0 == inner->depth % 2) {
             continue;
         }
-        if (iNest == nest.parent) {
+        if (iIn == inner->parent) {
             continue;
         }
         /*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
         /*** 互いに最も近い点をマージ開始位置に設定する ***/
         uint32 insert_dst = 0, insert_src = 0;
-        uint32 most_near = UINT32_MAX;
-        auto index_p = indexes[nest.parent];
-        auto index_c = indexes[iNest];
+        double most_near = UINT32_MAX;
+        auto index_p = indexes[inner->parent];
+        auto index_c = indexes[iIn];
         for (uint32 c = 0; c < index_c.size(); c++) {
             for (uint32 n = 0; n < index_p.size(); n++) {
                 auto ip = index_p[n];
                 auto ic = index_c[c];
-                auto sx = verts[ic].x - verts[ip].x;
-                auto sy = verts[ic].y - verts[ip].y;
-                auto dist = static_cast<uint32>(sx * sx + sy * sy);
+                auto sx = vert[ic].x - vert[ip].x;
+                auto sy = vert[ic].y - vert[ip].y;
+                auto dist = sx * sx + sy * sy;
                 if (dist < most_near) {
                     insert_dst = n;
                     insert_src = c;
@@ -286,7 +313,7 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
             }
         }
         /*** マージ ***/
-        vector<uint32> temp;
+        INDEX temp;
         for (uint32 i = 0; i <= insert_dst && i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
         }
@@ -299,9 +326,10 @@ marge_outlines(vector<vector<uint32>>& indexes, vector<point>& verts, int32 orde
         for (uint32 i = insert_dst; i < index_p.size(); i++) {
             temp.push_back(index_p[i]);
         }
-        indexes[nest.parent] = temp;
-        indexes[iNest].clear();
+        indexes[inner->parent] = temp;
+        indexes[iIn].clear();
     }
+    printf_s("\n");
 }
 
 MQO::type_object
@@ -319,9 +347,9 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
 
 #ifdef DEBUG
     auto p = &pbmp->mp_palette[0];
-    p->r = 191;
-    p->g = 191;
-    p->b = 191;
+    p->r = 223;
+    p->g = 223;
+    p->b = 223;
     p = &pbmp->mp_palette[1];
     p->r = 255;
     p->g = 0;
@@ -342,7 +370,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
     for (uint32 i = 0; i < outlines.size(); i++) {
         auto outline = outlines[i];
         for (uint32 j = 0; j < outline.size(); j++) {
-            auto p = outline[j];
+            point p = { (int)outline[j].x, (int)outline[j].y };
             auto index = bitmap_get_index(*pbmp, p);
             if (UINT32_MAX != index) {
                 pbmp->mp_pix[index] = color + 1;
@@ -350,7 +378,9 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         }
         color = (color + 1) % 4;
     }
+#endif
 
+#ifdef DEBUG_TSV
     string ssdebug = bmp_file_path.substr(0, bmp_file_path.size() - 4) + "_debug.tsv";
     FILE *fp_tsv = nullptr;
     fopen_s(&fp_tsv, ssdebug.c_str(), "w");
@@ -361,7 +391,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
             int bx = 0;
             int by = 0;
             for (uint32 j = 0; j < outline.size(); j++) {
-                auto p = outline[j];
+                point p = { (int)outline[j].x, (int)outline[j].y };
                 auto index = bitmap_get_index(*pbmp, p);
                 if (UINT32_MAX != index) {
                     double dx = p.x - bx;
@@ -386,8 +416,8 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
 #endif
 
     /*** アウトラインから頂点とインデックスを取得 ***/
-    vector<vector<uint32>> indexes_bottom, indexes_top;
-    vector<point> verts;
+    vector<INDEX> indexes_bottom, indexes_top;
+    VERT verts;
     uint32 index_ofs = 0;
     for (uint32 i = 0; i < outlines.size(); i++) {
         auto outline = outlines[i];
@@ -396,10 +426,9 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
             continue;
         }
         /*** 底面 ***/
-        vector<uint32> index_bottom;
+        INDEX index_bottom;
         for (uint32 j = 0; j < point_count; j++) {
-            auto pos = outline[j];
-            pos.y = pbmp->m_info.height - pos.y - 1;
+            point_d pos = { outline[j].x, pbmp->m_info.height - outline[j].y - 1 };
             verts.push_back(pos);
             index_bottom.push_back(index_ofs + j);
             create_vertex(pos, &obj, y_offset);
@@ -407,10 +436,9 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         indexes_bottom.push_back(index_bottom);
         index_ofs += point_count;
         /*** 上面 ***/
-        vector<uint32> index_top;
+        INDEX index_top;
         for (uint32 j = 0; j < point_count; j++) {
-            auto pos = outline[j];
-            pos.y = pbmp->m_info.height - pos.y - 1;
+            point_d pos = { outline[j].x, pbmp->m_info.height - outline[j].y - 1 };
             verts.push_back(pos);
             index_top.push_back(index_ofs + point_count - j - 1);
             create_vertex(pos, &obj, y_offset + height);
@@ -429,7 +457,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
-        vector<surface> surf;
+        SURF surf;
         create_polygon(verts, index, &surf, 1);
         for (uint32 j = 0; j < surf.size(); j++) {
             MQO::type_face face;
@@ -448,7 +476,10 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
-        vector<surface> surf;
+#ifdef DEBUG
+        obj.lines.push_back(index);
+#endif
+        SURF surf;
         create_polygon(verts, index, &surf, -1);
         for (uint32 j = 0; j < surf.size(); j++) {
             MQO::type_face face;

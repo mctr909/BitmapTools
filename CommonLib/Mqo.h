@@ -98,8 +98,9 @@ public:
 		};
 		int                 color_type = DEFINE_MQO_DEF_OBJECT_COLORTYPE;
 		string              name = DEFINE_MQO_DEF_OBJECT_NAME;
-		vector<type_vertex> vertex;
-		vector<type_face>   face;
+		vector<type_vertex>    vertex;
+		vector<type_face>      face;
+		vector<vector<uint32>> lines;
 	};
 
 private:
@@ -176,6 +177,7 @@ private:
 	void writeHeader(ofstream* p_fout);
 	void writeScene(ofstream* p_fout);
 	void writeObject(ofstream* p_fout);
+	void writeLines(ofstream* p_fout);
 };
 
 #endif //__MQO_H__

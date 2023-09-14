@@ -51,10 +51,10 @@ public:
 public:
 	double Setup(Bitmap& bmp, double lum_limit);
 	void WriteOutline(Bitmap* pBmp, int32 line_weight);
-	vector<vector<point>> CreatePolyline();
+	vector<vector<point_d>> CreatePolyline();
 
 private:
-	void eliminatePointsOnStraightLine(vector<point>* pPolyline);
+	vector<point_d> eliminatePointsOnStraightLine(vector<point> polyline);
 
 private:
 	inline Cell get_cell(uint32 center_index, E_DIRECTION direction) {

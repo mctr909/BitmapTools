@@ -211,20 +211,92 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
         if (!mp_cells[i].filled) {
             continue;
         }
-        bool nofill_bottom = !get_cell(i, E_DIRECTION::BOTTOM).filled;
-        bool nofill_right = !get_cell(i, E_DIRECTION::RIGHT).filled;
-        bool nofill_left = !get_cell(i, E_DIRECTION::LEFT).filled;
-        bool nofill_top = !get_cell(i, E_DIRECTION::TOP).filled;
-        if (nofill_bottom || nofill_right || nofill_left || nofill_top) {
-            auto pos = mp_cells[i].pos;
-            for (int32 dy = -FILL_RADIUS; dy <= FILL_RADIUS; dy++) {
-                for (int32 dx = -FILL_RADIUS; dx <= FILL_RADIUS; dx++) {
-                    auto r = sqrt(dx * dx + dy * dy);
-                    if (r <= FILL_RADIUS) {
-                        auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
-                        if (INVALID_INDEX != arownd) {
-                            pBmp->mp_pix[arownd] = m_color_black;
-                        }
+        bool fill_b = get_cell(i, E_DIRECTION::BOTTOM).filled;
+        bool fill_r = get_cell(i, E_DIRECTION::RIGHT).filled;
+        bool fill_l = get_cell(i, E_DIRECTION::LEFT).filled;
+        bool fill_t = get_cell(i, E_DIRECTION::TOP).filled;
+        int fill_count = fill_b ? 1 : 0;
+        fill_count += fill_r ? 1 : 0;
+        fill_count += fill_l ? 1 : 0;
+        fill_count += fill_t ? 1 : 0;
+        if (0 == fill_count) {
+            continue;
+        }
+        if (1 == fill_count) {
+            E_DIRECTION dir_a;
+            E_DIRECTION dir_b;
+            if (fill_b) {
+                dir_a = E_DIRECTION::BOTTOM_L;
+                dir_b = E_DIRECTION::BOTTOM_R;
+            }
+            if (fill_r) {
+                dir_a = E_DIRECTION::TOP_R;
+                dir_b = E_DIRECTION::BOTTOM_R;
+            }
+            if (fill_l) {
+                dir_a = E_DIRECTION::TOP_L;
+                dir_b = E_DIRECTION::BOTTOM_L;
+            }
+            if (fill_t) {
+                dir_a = E_DIRECTION::TOP_L;
+                dir_b = E_DIRECTION::TOP_R;
+            }
+            bool fill_a = get_cell(i, dir_a).filled;
+            bool fill_b = get_cell(i, dir_b).filled;
+            if (fill_a ^ fill_b) {
+                continue;
+            }
+        }
+        if (4 == fill_count) {
+            bool fill_bl = get_cell(i, E_DIRECTION::BOTTOM_L).filled;
+            bool fill_br = get_cell(i, E_DIRECTION::BOTTOM_R).filled;
+            bool fill_tl = get_cell(i, E_DIRECTION::TOP_L).filled;
+            bool fill_tr = get_cell(i, E_DIRECTION::TOP_R).filled;
+            fill_count = fill_bl ? 1 : 0;
+            fill_count += fill_br ? 1 : 0;
+            fill_count += fill_tl ? 1 : 0;
+            fill_count += fill_tr ? 1 : 0;
+            if (3 == fill_count) {
+                int dx, dy;
+                if (!fill_bl) {
+                    dx = -2;
+                    dy = -2;
+                }
+                if (!fill_br) {
+                    dx = 2;
+                    dy = -2;
+                }
+                if (!fill_tl) {
+                    dx = -2;
+                    dy = 2;
+                }
+                if (!fill_tr) {
+                    dx = 2;
+                    dy = 2;
+                }
+                auto pos = mp_cells[i].pos;
+                auto idx_dx = bitmap_get_index_ofs(*pBmp, pos, dx, 0);
+                auto idx_dy = bitmap_get_index_ofs(*pBmp, pos, 0, dy);
+                if (INVALID_INDEX == idx_dx) {
+                    idx_dx = i;
+                }
+                if (INVALID_INDEX == idx_dy) {
+                    idx_dy = i;
+                }
+                if (mp_cells[idx_dx].filled && mp_cells[idx_dy].filled) {
+                    pBmp->mp_pix[i] = m_color_black;
+                }
+            }
+            continue;
+        }
+        auto pos = mp_cells[i].pos;
+        for (int32 dy = -FILL_RADIUS; dy <= FILL_RADIUS; dy++) {
+            for (int32 dx = -FILL_RADIUS; dx <= FILL_RADIUS; dx++) {
+                auto r = sqrt(dx * dx + dy * dy);
+                if (r <= FILL_RADIUS) {
+                    auto arownd = bitmap_get_index_ofs(*pBmp, pos, dx, dy);
+                    if (INVALID_INDEX != arownd) {
+                        pBmp->mp_pix[arownd] = m_color_black;
                     }
                 }
             }
@@ -232,9 +304,9 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
     }
 }
 
-vector<vector<point>>
+vector<vector<point_d>>
 WorkTable::CreatePolyline() {
-    vector<vector<point>> polyline_list;
+    vector<vector<point_d>> polyline_list;
     uint32 start_index = 0;
     while (true) { // ポリライン取得ループ
         vector<point> point_list; // 点リスト
@@ -295,9 +367,11 @@ WorkTable::CreatePolyline() {
             }
             if (!point_found) { // ポリラインの終端
                 // 直線上にある点を点リストから除外する
-                eliminatePointsOnStraightLine(&point_list);
-                // 点リストをポリラインリストに追加
-                polyline_list.push_back(point_list);
+                auto polyline = eliminatePointsOnStraightLine(point_list);
+                if (3 <= polyline.size()) {
+                    // 点リストをポリラインリストに追加
+                    polyline_list.push_back(polyline);
+                }
                 break;
             }
         }
@@ -305,10 +379,10 @@ WorkTable::CreatePolyline() {
     return polyline_list;
 }
 
-void
-WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
-    if (pPolyline->size() < 3) {
-        return;
+vector<point_d>
+WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
+    if (polyline.size() < 3) {
+        return vector<point_d>();
     }
 
     point pos_a;
@@ -317,36 +391,36 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
     point pos_o;
     point_d oa;
     point_d og;
-    double len;
 
     /*** 3点の直線チェック ***/
     vector<point> line_3p;
-    line_3p.push_back((*pPolyline)[0]);
-    pos_b = (*pPolyline)[0];
-    pos_a = (*pPolyline)[1];
-    for (int32 i = 2; i < pPolyline->size(); i++) {
+    line_3p.push_back(polyline[0]);
+    pos_b = polyline[0];
+    pos_a = polyline[1];
+    for (int32 i = 2; i < polyline.size(); i++) {
         pos_o = pos_b;
         pos_b = pos_a;
-        pos_a = (*pPolyline)[i];
+        pos_a = polyline[i];
         oa.x = pos_a.x - pos_o.x;
         oa.y = pos_a.y - pos_o.y;
         og.x = pos_b.x - pos_o.x;
         og.y = pos_b.y - pos_o.y;
-        len = sqrt(oa.x * oa.x + oa.y * oa.y);
-        oa.x /= len;
-        oa.y /= len;
-        len = sqrt(og.x * og.x + og.y * og.y);
-        og.x /= len;
-        og.y /= len;
+        auto oa_len = sqrt(oa.x * oa.x + oa.y * oa.y);
+        auto og_len = sqrt(og.x * og.x + og.y * og.y);
+        oa.x /= oa_len;
+        oa.y /= oa_len;
+        og.x /= og_len;
+        og.y /= og_len;
         if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
             line_3p.push_back(pos_b);
         }
     }
+    line_3p.push_back(line_3p[0]);
 
     /*** 4点の直線チェック ***/
-    pPolyline->clear();
-    pPolyline->push_back(line_3p[0]);
-    pPolyline->push_back(line_3p[1]);
+    vector<point> line_4p;
+    line_4p.push_back(line_3p[0]);
+    line_4p.push_back(line_3p[1]);
     pos_c = line_3p[0];
     pos_b = line_3p[1];
     pos_a = line_3p[2];
@@ -359,15 +433,42 @@ WorkTable::eliminatePointsOnStraightLine(vector<point>* pPolyline) {
         oa.y = pos_a.y - pos_o.y;
         og.x = (pos_b.x + pos_c.x) / 2.0 - pos_o.x;
         og.y = (pos_b.y + pos_c.y) / 2.0 - pos_o.y;
-        len = sqrt(oa.x * oa.x + oa.y * oa.y);
-        oa.x /= len;
-        oa.y /= len;
-        len = sqrt(og.x * og.x + og.y * og.y);
-        og.x /= len;
-        og.y /= len;
-        if (1e-6 < abs(og.x - oa.x) || 1e-6 < abs(og.y - oa.y)) {
-            pPolyline->push_back(pos_b);
+        auto oa_len = sqrt(oa.x * oa.x + oa.y * oa.y);
+        auto og_len = sqrt(og.x * og.x + og.y * og.y);
+        oa.x /= oa_len;
+        oa.y /= oa_len;
+        og.x /= og_len;
+        og.y /= og_len;
+        auto limit = 1 / (oa_len * 5);
+        if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
+            line_4p.push_back(pos_b);
         }
     }
-    pPolyline->push_back(pos_a);
+    line_4p.push_back(line_4p[0]);
+
+    /*** 隣り合う点の重心をリスト入れて返す ***/
+    vector<point_d> ret;
+    point_d pre = { line_4p[0].x, line_4p[0].y };
+    point_d avg = pre;
+    int avg_count = 1;
+    for (int32 i = 1; i < line_4p.size(); i++) {
+        auto cur = line_4p[i];
+        auto sx = cur.x - pre.x;
+        auto sy = cur.y - pre.y;
+        if ((sx * sx + sy * sy) < 4) {
+            avg.x += cur.x;
+            avg.y += cur.y;
+            avg_count++;
+            pre.x = avg.x / avg_count;
+            pre.y = avg.y / avg_count;
+        } else {
+            ret.push_back(pre);
+            avg.x = cur.x;
+            avg.y = cur.y;
+            avg_count = 1;
+            pre.x = cur.x;
+            pre.y = cur.y;
+        }
+    }
+    return ret;
 }

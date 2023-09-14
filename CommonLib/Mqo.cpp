@@ -84,6 +84,7 @@ MQO::Write(const string file_path, const string marge_from) {
         }
     }
     writeObject(&fout);
+    writeLines(&fout);
     fout.close();
 }
 
@@ -230,3 +231,27 @@ MQO::writeObject(ofstream* p_fout) {
     *p_fout << "}" << endl;
     *p_fout << endl;
 }
+
+void
+MQO::writeLines(ofstream* p_fout) {
+    for (uint32 j = 0; j < m_object.lines.size(); j++) {
+        auto line = m_object.lines[j];
+        auto sz = line.size();
+        auto va = m_object.vertex[line[0]];
+        for (uint32 i = sz - 1; 1 <= i; i--) {
+            auto vb = m_object.vertex[line[i]];
+            *p_fout << "Object \"" << m_object.name << "_line" << j << "_" << (sz - i) << "\" {" << endl;
+            *p_fout << "\tvertex " << 2 << " {" << endl;
+            *p_fout << "\t\t" << va.x << " " << va.y << " " << va.z << endl;
+            *p_fout << "\t\t" << vb.x << " " << vb.y << " " << vb.z << endl;
+            *p_fout << "\t}" << endl;
+            *p_fout << "\tface " << 2 << " {" << endl;
+            *p_fout << "\t\t" << "2 V( 0 1 )" << endl;
+            *p_fout << "\t}" << endl;
+            *p_fout << "}" << endl;
+            *p_fout << endl;
+            va = vb;
+        }
+    }
+}
+
