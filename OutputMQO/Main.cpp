@@ -12,8 +12,6 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
-#define DEBUG
-
 typedef vector<uint32> INDEX;
 typedef vector<point_d> VERT;
 typedef vector<surface> SURF;
