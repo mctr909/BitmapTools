@@ -13,7 +13,7 @@ private:
 		bool filled;
 		bool traced;
 		point pos;
-		uint32 index_around[9];
+		int32 index_around[9];
 	};
 #pragma pack(pop)
 
@@ -42,7 +42,7 @@ private:
 	int32 m_width;
 	int32 m_height;
 	int32 m_stride;
-	uint32 m_pixel_count;
+	int32 m_pixel_count;
 	Cell* mp_cells;
 
 public:
@@ -58,23 +58,23 @@ private:
 	vector<point_d> eliminatePointsOnStraightLine(vector<point> polyline);
 
 private:
-	inline Cell get_cell(uint32 center_index, E_DIRECTION direction) {
-		if (center_index >= m_pixel_count) {
+	inline Cell get_cell(int32 center_index, E_DIRECTION direction) {
+		if (center_index < 0 || m_pixel_count <= center_index) {
 			return DEFAULT_CELL;
 		}
-		auto index = mp_cells[center_index].index_around[static_cast<uint32>(direction)];
-		if (INVALID_INDEX == index) {
+		auto index = mp_cells[center_index].index_around[static_cast<int32>(direction)];
+		if (m_pixel_count <= index) {
 			return DEFAULT_CELL;
 		}
 		return mp_cells[index];
 	}
-	inline uint32 get_index(point pos) {
+	inline int32 get_index(point pos) {
 		if ((pos.x >= m_width) || (pos.y >= m_height)) {
 			return INVALID_INDEX;
 		}
 		return ((pos.x + (m_stride * pos.y)));
 	}
-	inline uint32 get_index_ofs(point pos, int32 dx, int32 dy) {
+	inline int32 get_index(point pos, int32 dx, int32 dy) {
 		auto x = pos.x + dx;
 		auto y = pos.y + dy;
 		if ((x < 0) || (x >= m_width) || (y < 0) || (y >= m_height)) {

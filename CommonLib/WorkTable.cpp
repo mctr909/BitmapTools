@@ -130,7 +130,7 @@ WorkTable::WorkTable(int32 width, int32 height) {
             /*** 周囲ピクセルのインデックスを取得してセット ***/
             for (uint32 i = 0; i < 9; i++) {
                 if (delta_pos[i].enable) {
-                    mp_cells[index].index_around[i] = get_index_ofs(
+                    mp_cells[index].index_around[i] = get_index(
                         pos, delta_pos[i].x, delta_pos[i].y
                     );
                 }
@@ -208,7 +208,7 @@ void
 WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
     const auto FILL_RADIUS = line_weight / 2;
     memset(pBmp->mp_pix, m_color_white, pBmp->m_info.imagesize);
-    for (uint32 i = 0; i < m_pixel_count; i++) {
+    for (int32 i = 0; i < m_pixel_count; i++) {
         if (!mp_cells[i].filled) {
             continue;
         }
@@ -308,14 +308,14 @@ WorkTable::WriteOutline(Bitmap* pBmp, int32 line_weight) {
 vector<vector<point_d>>
 WorkTable::CreatePolyline() {
     vector<vector<point_d>> polyline_list;
-    uint32 start_index = 0;
+    int32 start_index = 0;
     while (true) { // ポリライン取得ループ
         vector<point> point_list; // 点リスト
         point current_pos;        // 現在の位置
         int32 current_dir = 0;    // 現在の進行方向
         /*** ポリライン始点を検索 ***/
         bool polyline_found = false;
-        for (uint32 i = start_index; i < m_pixel_count; i++) {
+        for (int32 i = start_index; i < m_pixel_count; i++) {
             auto pCell = &mp_cells[i];
             if (pCell->filled && !pCell->traced) {
                 // ポリライン始点を発見
@@ -340,7 +340,7 @@ WorkTable::CreatePolyline() {
             for (int32 r = 0; r < TRACE_RADIUS; r++) {
                 for (int32 p = 0; p < PREFER_DIRS; p++) {
                     auto trace_dir = (current_dir + PREFER_DIR[p] + TRACE_DIRS) % TRACE_DIRS;
-                    auto index = get_index_ofs(
+                    auto index = get_index(
                         current_pos,
                         TRACE_DIR[r][trace_dir].x,
                         TRACE_DIR[r][trace_dir].y
