@@ -12,7 +12,7 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
-//#define DEBUG
+#define DEBUG
 
 typedef vector<uint32> INDEX;
 typedef vector<point_d> VERT;
@@ -285,7 +285,7 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
     }
     /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
     while (true) {
-        double most_near = 1e20;
+        double most_near = order < 0 ? 1e20 : 0;
         uint32 idx_inner;
         type_nest_info* inner = NULL;
         for (uint32 i = 0; i < nest_info.size(); i++) {
@@ -304,11 +304,20 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             auto ox = pos.x - UINT32_MAX;
             auto oy = pos.y - UINT32_MAX;
             auto dist = ox * ox + oy * oy;
-            if (dist < most_near) {
-                /* 原点に近いアウトラインを優先してマージする */
-                idx_inner = i;
-                inner = inner_temp;
-                most_near = dist;
+            if (order < 0) {
+                if (dist < most_near) {
+                    /* 原点に近いアウトラインを優先してマージする */
+                    idx_inner = i;
+                    inner = inner_temp;
+                    most_near = dist;
+                }
+            } else {
+                if (most_near < dist) {
+                    /* 原点に遠いアウトラインを優先してマージする */
+                    idx_inner = i;
+                    inner = inner_temp;
+                    most_near = dist;
+                }
             }
         }
         if (NULL == inner) {
@@ -497,7 +506,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
-#ifdef DEBUG
+#ifdef DEBUG_LINE
         obj.lines.push_back(index);
 #endif
         SURF surf;
