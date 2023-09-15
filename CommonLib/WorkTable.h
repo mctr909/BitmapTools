@@ -41,6 +41,7 @@ private:
 	byte m_color_black;
 	int32 m_width;
 	int32 m_height;
+	int32 m_stride;
 	uint32 m_pixel_count;
 	Cell* mp_cells;
 
@@ -71,7 +72,7 @@ private:
 		if ((pos.x >= m_width) || (pos.y >= m_height)) {
 			return INVALID_INDEX;
 		}
-		return ((pos.x + (m_width * pos.y)));
+		return ((pos.x + (m_stride * pos.y)));
 	}
 	inline uint32 get_index_ofs(point pos, int32 dx, int32 dy) {
 		auto x = pos.x + dx;
@@ -79,7 +80,7 @@ private:
 		if ((x < 0) || (x >= m_width) || (y < 0) || (y >= m_height)) {
 			return INVALID_INDEX;
 		}
-		return (x + (m_width * y));
+		return (x + (m_stride * y));
 	}
 };
 

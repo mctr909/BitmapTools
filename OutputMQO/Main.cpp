@@ -12,6 +12,8 @@ using namespace std;
 
 #pragma comment (lib, "CommonLib.lib")
 
+#define DEBUG
+
 typedef vector<uint32> INDEX;
 typedef vector<point_d> VERT;
 typedef vector<surface> SURF;
@@ -254,50 +256,76 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
         nest_info.push_back(nest);
     }
     /*** 入れ子になっているアウトラインを検索 ***/
-    for (uint32 iOut = 0; iOut < indexes.size(); iOut++) {
-        if (indexes[iOut].size() < 3) {
-            indexes[iOut].clear();
+    for (uint32 idx_outer = 0; idx_outer < indexes.size(); idx_outer++) {
+        if (indexes[idx_outer].size() < 3) {
+            indexes[idx_outer].clear();
             continue;
         }
-        for (uint32 iIn = 0; iIn < indexes.size(); iIn++) {
-            auto inner = &nest_info[iIn];
-            if (indexes[iIn].size() < 3) {
-                indexes[iIn].clear();
+        for (uint32 idx_inner = 0; idx_inner < indexes.size(); idx_inner++) {
+            auto inner = &nest_info[idx_inner];
+            if (indexes[idx_inner].size() < 3) {
+                indexes[idx_inner].clear();
                 continue;
             }
-            if (nest_info[iOut].depth < inner->depth) {
+            if (nest_info[idx_outer].depth < inner->depth) {
                 continue;
             }
             SURF outer_surf;
-            auto outer_area = create_polygon(vert, indexes[iOut], &outer_surf, order);
-            if (iOut == iIn) {
+            auto outer_area = create_polygon(vert, indexes[idx_outer], &outer_surf, order);
+            if (idx_outer == idx_inner) {
                 continue;
             }
             SURF inner_surf;
-            auto inner_area = create_polygon(vert, indexes[iIn], &inner_surf, order);
+            auto inner_area = create_polygon(vert, indexes[idx_inner], &inner_surf, order);
             if (inner_area < outer_area && has_inner_polygon(outer_surf, inner_surf, vert)) {
-                inner->parent = iOut;
+                inner->parent = idx_outer;
                 inner->depth++;
             }
         }
     }
     /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
-    for (uint32 iIn = 0; iIn < nest_info.size(); iIn++) {
-        auto inner = &nest_info[iIn];
-        /*** depth=0   : 一番外側 ***/
-        /*** depth=偶数: 穴に該当しないアウトライン ***/
-        if (0 == inner->depth % 2) {
-            continue;
+    while (true) {
+        double most_dist = 1e20;
+        uint32 idx_inner;
+        type_nest_info* inner = NULL;
+        for (uint32 i = 0; i < nest_info.size(); i++) {
+            auto inner_temp = &nest_info[i];
+            if (0 == inner_temp->depth % 2) {
+                /* depth=偶数: 穴に該当しないアウトライン */
+                continue;
+            }
+            if (i == inner_temp->parent) {
+                continue;
+            }
+            if (indexes[i].size() < 3) {
+                continue;
+            }
+            auto pos = vert[indexes[i][0]];
+            double ox, oy;
+            if (order < 0) {
+                ox = pos.x - INT32_MAX;
+                oy = pos.y - INT32_MAX;
+            } else {
+                ox = pos.x - INT32_MIN;
+                oy = pos.y - INT32_MIN;
+            }
+            auto dist = ox * ox + oy * oy;
+            if (dist < most_dist) {
+                /* 原点から近いアウトラインを優先してマージする */
+                idx_inner = i;
+                inner = inner_temp;
+                most_dist = dist;
+            }
         }
-        if (iIn == inner->parent) {
-            continue;
+        if (NULL == inner) {
+            break;
         }
         /*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
         /*** 互いに最も近い点をマージ開始位置に設定する ***/
         uint32 insert_dst = 0, insert_src = 0;
-        double most_near = UINT32_MAX;
+        most_dist = UINT32_MAX;
         auto index_p = indexes[inner->parent];
-        auto index_c = indexes[iIn];
+        auto index_c = indexes[idx_inner];
         for (uint32 c = 0; c < index_c.size(); c++) {
             for (uint32 n = 0; n < index_p.size(); n++) {
                 auto ip = index_p[n];
@@ -305,10 +333,10 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
                 auto sx = vert[ic].x - vert[ip].x;
                 auto sy = vert[ic].y - vert[ip].y;
                 auto dist = sx * sx + sy * sy;
-                if (dist < most_near) {
+                if (dist < most_dist) {
                     insert_dst = n;
                     insert_src = c;
-                    most_near = dist;
+                    most_dist = dist;
                 }
             }
         }
@@ -327,9 +355,8 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             temp.push_back(index_p[i]);
         }
         indexes[inner->parent] = temp;
-        indexes[iIn].clear();
+        indexes[idx_inner].clear();
     }
-    printf_s("\n");
 }
 
 MQO::type_object
@@ -476,7 +503,7 @@ create_object(Bitmap* pbmp, double height, double y_offset) {
         if (0 == index.size()) {
             continue;
         }
-#ifdef DEBUG
+#ifdef DEBUG_LINE
         obj.lines.push_back(index);
 #endif
         SURF surf;

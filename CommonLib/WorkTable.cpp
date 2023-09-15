@@ -60,7 +60,8 @@ WorkTable::WorkTable(int32 width, int32 height) {
     m_color_white = 0;
     m_width = width;
     m_height = height;
-    m_pixel_count = width * height;
+    m_stride = ((width + 3) >> 2) << 2;
+    m_pixel_count = m_stride * height;
 
     mp_cells = reinterpret_cast<Cell*>(malloc(sizeof(Cell) * m_pixel_count));
     if (NULL == mp_cells) {
@@ -439,7 +440,7 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
         oa.y /= oa_len;
         og.x /= og_len;
         og.y /= og_len;
-        auto limit = 1 / (oa_len * 5);
+        auto limit = 1.0 / (oa_len * 5.0);
         if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
             line_4p.push_back(pos_b);
         }
