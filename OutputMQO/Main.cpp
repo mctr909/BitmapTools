@@ -285,7 +285,7 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
     }
     /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
     while (true) {
-        double most_dist = order < 0 ? 1e20 : 0;
+        double most_dist = 1e20;
         uint32 idx_inner;
         type_nest_info* inner = NULL;
         for (uint32 i = 0; i < nest_info.size(); i++) {
@@ -301,23 +301,20 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
                 continue;
             }
             auto pos = vert[indexes[i][0]];
-            auto ox = pos.x - UINT32_MAX;
-            auto oy = pos.y - UINT32_MAX;
-            auto dist = ox * ox + oy * oy;
+            double ox, oy;
             if (order < 0) {
-                if (dist < most_dist) {
-                    /* 原点から近いアウトラインを優先してマージする */
-                    idx_inner = i;
-                    inner = inner_temp;
-                    most_dist = dist;
-                }
+                ox = pos.x - INT32_MAX;
+                oy = pos.y - INT32_MAX;
             } else {
-                if (most_dist < dist) {
-                    /* 原点から遠いアウトラインを優先してマージする */
-                    idx_inner = i;
-                    inner = inner_temp;
-                    most_dist = dist;
-                }
+                ox = pos.x - INT32_MIN;
+                oy = pos.y - INT32_MIN;
+            }
+            auto dist = ox * ox + oy * oy;
+            if (dist < most_dist) {
+                /* 原点から近いアウトラインを優先してマージする */
+                idx_inner = i;
+                inner = inner_temp;
+                most_dist = dist;
             }
         }
         if (NULL == inner) {

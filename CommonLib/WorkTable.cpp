@@ -440,7 +440,7 @@ WorkTable::eliminatePointsOnStraightLine(vector<point> polyline) {
         oa.y /= oa_len;
         og.x /= og_len;
         og.y /= og_len;
-        auto limit = 1.0 / (oa_len * 3.0);
+        auto limit = 1.0 / (oa_len * 5.0);
         if (limit < abs(og.x - oa.x) || limit < abs(og.y - oa.y)) {
             line_4p.push_back(pos_b);
         }
