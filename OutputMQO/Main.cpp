@@ -285,7 +285,7 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
     }
     /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
     while (true) {
-        double most_near = order < 0 ? 1e20 : 0;
+        double most_dist = order < 0 ? 1e20 : 0;
         uint32 idx_inner;
         type_nest_info* inner = NULL;
         for (uint32 i = 0; i < nest_info.size(); i++) {
@@ -305,18 +305,18 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
             auto oy = pos.y - UINT32_MAX;
             auto dist = ox * ox + oy * oy;
             if (order < 0) {
-                if (dist < most_near) {
-                    /* 原点に近いアウトラインを優先してマージする */
+                if (dist < most_dist) {
+                    /* 原点から近いアウトラインを優先してマージする */
                     idx_inner = i;
                     inner = inner_temp;
-                    most_near = dist;
+                    most_dist = dist;
                 }
             } else {
-                if (most_near < dist) {
-                    /* 原点に遠いアウトラインを優先してマージする */
+                if (most_dist < dist) {
+                    /* 原点から遠いアウトラインを優先してマージする */
                     idx_inner = i;
                     inner = inner_temp;
-                    most_near = dist;
+                    most_dist = dist;
                 }
             }
         }
@@ -326,7 +326,7 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
         /*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
         /*** 互いに最も近い点をマージ開始位置に設定する ***/
         uint32 insert_dst = 0, insert_src = 0;
-        most_near = UINT32_MAX;
+        most_dist = UINT32_MAX;
         auto index_p = indexes[inner->parent];
         auto index_c = indexes[idx_inner];
         for (uint32 c = 0; c < index_c.size(); c++) {
@@ -336,10 +336,10 @@ marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
                 auto sx = vert[ic].x - vert[ip].x;
                 auto sy = vert[ic].y - vert[ip].y;
                 auto dist = sx * sx + sy * sy;
-                if (dist < most_near) {
+                if (dist < most_dist) {
                     insert_dst = n;
                     insert_src = c;
-                    most_near = dist;
+                    most_dist = dist;
                 }
             }
         }
