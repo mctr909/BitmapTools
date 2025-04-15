@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -8,154 +8,220 @@ using namespace std;
 #include "Bitmap.h"
 
 Bitmap::Bitmap(const string path) {
-    streampos current_pos;
+	ifstream fin(path, ios::in | ios::binary);
+	if (!fin) {
+		return;
+	}
 
-    ifstream fin(path, ios::in | ios::binary);
-    if (!fin) {
-        error = -1;
-        return;
-    }
+	fin.read(reinterpret_cast<char *>(&header), sizeof(header));
+	fin.read(reinterpret_cast<char *>(&info), sizeof(info));
 
-    fin.read(reinterpret_cast<char*>(&m_header), sizeof(m_header));
-    fin.read(reinterpret_cast<char*>(&m_info), sizeof(m_info));
+	switch (info.bits) {
+	case Type::COLOR2:
+		info.paletteColors = 2;
+		shiftX = 3;
+		maskX = 7;
+		maskVal = 1;
+		break;
+	case Type::COLOR4:
+		info.paletteColors = 4;
+		shiftX = 2;
+		maskX = 3;
+		maskVal = 3;
+		break;
+	case Type::COLOR16:
+		info.paletteColors = 16;
+		shiftX = 1;
+		maskX = 1;
+		maskVal = 15;
+		break;
+	case Type::COLOR256:
+		info.paletteColors = 256;
+		shiftX = 0;
+		maskX = 0;
+		maskVal = 255;
+		break;
+	default:
+		info.paletteColors = 0;
+		shiftX = 0;
+		maskX = 0;
+		maskVal = 255;
+		break;
+	}
 
-    m_stride = ((m_info.width + 3) >> 2) << 2;
+	paletteSize = sizeof(pix32) * info.paletteColors;
 
-    switch (m_info.bits) {
-    case BITMAP_COLOR_8BIT:
-        mp_palette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
-        if (NULL == mp_palette) {
-            error = -2;
-            return;
-        }
-        m_palette_size = sizeof(pix32) * 256;
-        fin.read(reinterpret_cast<char*>(mp_palette), m_palette_size);
-        break;
-    default:
-        mp_palette = NULL;
-        m_palette_size = 0;
-        break;
-    }
+	if (paletteSize > 0) {
+		pPalette = reinterpret_cast<pix32 *>(calloc(1, paletteSize));
+		if (nullptr == pPalette) {
+			Dispose();
+			return;
+		}
+		fin.read(reinterpret_cast<char *>(pPalette), paletteSize);
+	} else {
+		pPalette = nullptr;
+	}
 
-    mp_pix = reinterpret_cast<byte*>(calloc(m_info.imagesize, 1));
-    if (NULL == mp_pix) {
-        free(mp_palette);
-        error = -2;
-        return;
-    }
+	stride = info.width * static_cast<int32_t>(info.bits) >> 3;
+	stride = ((stride + 3) >> 2) << 2;
+	info.imageSize = stride * info.height;
 
-    fin.seekg(m_header.offset, ios::beg);
-    fin.read(reinterpret_cast<char*>(mp_pix), m_info.imagesize);
-    fin.seekg(current_pos);
-    fin.close();
+	pPix = reinterpret_cast<uint8_t *>(malloc(info.imageSize));
+	if (nullptr == pPix) {
+		Dispose();
+		return;
+	}
+	pPixBackup = reinterpret_cast<uint8_t *>(malloc(info.imageSize));
+	if (nullptr == pPixBackup) {
+		Dispose();
+		return;
+	}
 
-    m_name = path;
-    error = 0;
+	fin.seekg(header.offset, ios::beg);
+	fin.read(reinterpret_cast<char *>(pPix), info.imageSize);
+	fin.close();
+
+	Backup();
+
+	filePath = path;
 }
 
-Bitmap::Bitmap(int32 width, int32 height, int32 bits) {
-    m_stride = ((width + 3) >> 2) << 2;
+Bitmap::Bitmap(const int32_t width, const int32_t height, const Type type) {
+	stride = width * static_cast<int32_t>(type) >> 3;
+	stride = ((stride + 3) >> 2) << 2;
 
-    m_info.headsize = sizeof(m_info);
-    m_info.width = width;
-    m_info.height = height;
-    m_info.plane = 1;
-    m_info.bits = bits;
-    m_info.compression = 0;
-    m_info.imagesize = m_stride * height * bits >> 3;
-    m_info.h_resolution = 0;
-    m_info.v_resolution = 0;
-    m_info.color_id = 0;
-    m_info.important_id = 0;
+	info.chunkSize = sizeof(info);
+	info.width = width;
+	info.height = height;
+	info.plane = 1;
+	info.bits = type;
+	info.compression = 0;
+	info.imageSize = stride * height;
+	info.hResolution = 0;
+	info.vResolution = 0;
+	info.paletteColors = 0;
+	info.importantIndex = 0;
 
-    m_header.type[0] = 'B';
-    m_header.type[1] = 'M';
-    m_header.reserve1 = 0;
-    m_header.reserve2 = 0;
-    m_header.offset = (sizeof(m_header) + sizeof(m_info)) + m_palette_size;
-    m_header.size = m_header.offset + m_info.imagesize;
+	header.signature[0] = 'B';
+	header.signature[1] = 'M';
+	header.reserve1 = 0;
+	header.reserve2 = 0;
+	header.offset = (sizeof(header) + sizeof(info)) + paletteSize;
+	header.size = header.offset + info.imageSize;
 
-    mp_pix = reinterpret_cast<byte*>(calloc(1, m_info.imagesize));
-    if (NULL == mp_pix) {
-        error = -2;
-        return;
-    }
+	pPix = reinterpret_cast<uint8_t *>(calloc(1, info.imageSize));
+	if (nullptr == pPix) {
+		Dispose();
+		return;
+	}
+	pPixBackup = reinterpret_cast<uint8_t *>(calloc(1, info.imageSize));
+	if (nullptr == pPixBackup) {
+		Dispose();
+		return;
+	}
 
-    switch (bits) {
-    case BITMAP_COLOR_8BIT:
-        mp_palette = reinterpret_cast<pix32*>(calloc(256, sizeof(pix32)));
-        if (NULL == mp_palette) {
-            free(mp_pix);
-            error = -2;
-            return;
-        }
-        m_palette_size = sizeof(pix32) * 256;
-        break;
-    default:
-        mp_palette = NULL;
-        m_palette_size = 0;
-    }
+	switch (info.bits) {
+	case Type::COLOR2:
+		info.paletteColors = 2;
+		shiftX = 3;
+		maskX = 7;
+		maskVal = 1;
+		break;
+	case Type::COLOR4:
+		info.paletteColors = 4;
+		shiftX = 2;
+		maskX = 3;
+		maskVal = 3;
+		break;
+	case Type::COLOR16:
+		info.paletteColors = 16;
+		shiftX = 1;
+		maskX = 1;
+		maskVal = 15;
+		break;
+	case Type::COLOR256:
+		info.paletteColors = 256;
+		shiftX = 0;
+		maskX = 0;
+		maskVal = 255;
+		break;
+	default:
+		info.paletteColors = 0;
+		shiftX = 0;
+		maskX = 0;
+		maskVal = 255;
+		break;
+	}
 
-    error = 0;
+	paletteSize = sizeof(pix32) * info.paletteColors;
+
+	if (paletteSize > 0) {
+		pPalette = reinterpret_cast<pix32 *>(calloc(1, paletteSize));
+		if (nullptr == pPalette) {
+			Dispose();
+		}
+	} else {
+		pPalette = nullptr;
+	}
 }
 
 Bitmap::~Bitmap() {
-    free(mp_palette);
-    free(mp_pix);
-    free(mp_pix_backup);
+	Dispose();
 }
 
 void
+Bitmap::Dispose() {
+	if (nullptr != pPalette) {
+		free(pPalette);
+	}
+	if (nullptr != pPalette) {
+		free(pPix);
+	}
+	if (nullptr != pPixBackup) {
+		free(pPixBackup);
+	}
+}
+
+bool
 Bitmap::Save(const string path) {
-    ofstream fout(path, ios::out | ios::binary);
-    if (!fout) {
-        error = -1;
-        return;
-    }
-    fout.write(reinterpret_cast<char*>(&m_header), sizeof(m_header));
-    fout.write(reinterpret_cast<char*>(&m_info), sizeof(m_info));
-    if (NULL != mp_palette) {
-        fout.write(reinterpret_cast<char*>(mp_palette), m_palette_size);
-    }
-    if (NULL != mp_pix) {
-        fout.write(reinterpret_cast<char*>(mp_pix), m_info.imagesize);
-    }
-    fout.close();
+	ofstream fout(path, ios::out | ios::binary);
+	if (!fout) {
+		return false;
+	}
+	fout.write(reinterpret_cast<char *>(&header), sizeof(header));
+	fout.write(reinterpret_cast<char *>(&info), sizeof(info));
+	if (nullptr != pPalette) {
+		fout.write(reinterpret_cast<char *>(pPalette), paletteSize);
+	}
+	if (nullptr != pPix) {
+		fout.write(reinterpret_cast<char *>(pPix), info.imageSize);
+	}
+	fout.close();
+	return true;
 }
 
 void
-Bitmap::PrintHeader() {
-    cout << "<File Header> " << endl;
-    cout << "File Type        : " << m_header.type[0] << m_header.type[1] << endl;
-    cout << "File Size        : " << m_header.size << " bytes" << endl;
-    cout << "Image Data Offset: " << m_header.offset << " bytes" << endl;
-    cout << endl;
-    cout << "<Information Header> " << endl;
-    cout << "Header Size      : " << m_info.headsize << " bytes" << endl;
-    cout << "Image Width      : " << m_info.width << " pixels" << endl;
-    cout << "Image Height     : " << m_info.height << " pixels" << endl;
-    cout << "Number of Planes : " << m_info.plane << endl;
-    cout << "Bits per Pixel   : " << m_info.bits << " bits/pixel" << endl;
-    cout << "Compression Type : " << m_info.compression << endl;
-    cout << "Image Size       : " << m_info.imagesize << " bytes" << endl;
-    cout << "H Resolution     : " << m_info.h_resolution << " ppm" << endl;
-    cout << "V Resolution     : " << m_info.v_resolution << " ppm" << endl;
-    cout << "Color Index      : " << m_info.color_id << endl;
-    cout << "Important Index  : " << m_info.important_id << endl;
-    cout << endl;
+Bitmap::PrintInfo() const {
+	cout << "<Information> " << endl;
+	cout << "    Image Width      : " << info.width << " pixels" << endl;
+	cout << "    Image Height     : " << info.height << " pixels" << endl;
+	cout << "    Number of Planes : " << info.plane << endl;
+	cout << "    Bits per Pixel   : " << static_cast<int32_t>(info.bits) << " bits/pixel" << endl;
+	cout << "    Compression Type : " << info.compression << endl;
+	cout << "    Image Size       : " << info.imageSize << " bytes" << endl;
+	cout << "    H Resolution     : " << info.hResolution << " ppm" << endl;
+	cout << "    V Resolution     : " << info.vResolution << " ppm" << endl;
+	cout << "    Palette Colors   : " << info.paletteColors << endl;
+	cout << "    Important Index  : " << info.importantIndex << endl;
+	cout << endl;
 }
 
 void
 Bitmap::Backup() {
-    if (NULL == mp_pix_backup) {
-        mp_pix_backup = reinterpret_cast<byte*>(malloc(m_info.imagesize));
-    }
-    memcpy_s(mp_pix_backup, m_info.imagesize, mp_pix, m_info.imagesize);
+	memcpy_s(pPixBackup, info.imageSize, pPix, info.imageSize);
 }
 
 void
 Bitmap::Rollback() {
-    if (NULL != mp_pix_backup) {
-        memcpy_s(mp_pix, m_info.imagesize, mp_pix_backup, m_info.imagesize);
-    }
+	memcpy_s(pPix, info.imageSize, pPixBackup, info.imageSize);
 }

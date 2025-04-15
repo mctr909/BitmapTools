@@ -117,7 +117,7 @@ MQO::WriteStl(const string file_path, const string marge_from) {
     }
 
     fout << "solid " << m_object.name << "\n";
-    for (uint32 i = 0; i < faces.size(); i++) {
+    for (int32_t i = 0; i < faces.size(); i++) {
         auto face = faces[i];
         auto ia = face.vertex[0];
         auto io = face.vertex[1];
@@ -168,7 +168,7 @@ MQO::writeScene(ofstream* p_fout) {
     size_t n = m_scene.dirlights.size();
     if (n > 0) {
         *p_fout << "\t" << DEFINE_MQO_TAG_SCENE_DIRLIGHTS << " " << m_scene.dirlights.size() << " {" << endl;
-        for (int32 i = 0; i < static_cast<int32>(n); i++) {
+        for (int32_t i = 0; i < static_cast<int32_t>(n); i++) {
             *p_fout << "\t\t" << m_scene.dirlights[i].name << " {" << endl;
             *p_fout << "\t\t\t" << DEFINE_MQO_TAG_SCENE_DIRLIGHTS_DIR << " ";
             *p_fout << m_scene.dirlights[i].direction.x << " " << m_scene.dirlights[i].direction.y << " " << m_scene.dirlights[i].direction.z << endl;
@@ -199,23 +199,23 @@ MQO::writeObject(ofstream* p_fout) {
     *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_COLOR << " " << m_object.color << " " << m_object.color[1] << " " << m_object.color[2] << endl;
     *p_fout << "\t" << DEFINE_MQO_TAG_OBJECT_COLORTYPE << " " << m_object.color_type << endl;
 
-    auto size_max = static_cast<uint32>(m_object.vertex.size());
+    auto size_max = static_cast<int32_t>(m_object.vertex.size());
     *p_fout << "\tvertex " << size_max << " {" << endl;
-    for (uint32 i = 0; i < size_max; i++) {
-        double x = m_object.vertex[i].x;
-        double y = m_object.vertex[i].y;
-        double z = m_object.vertex[i].z;
+    for (int32_t i = 0; i < size_max; i++) {
+        auto x = m_object.vertex[i].x;
+        auto y = m_object.vertex[i].y;
+        auto z = m_object.vertex[i].z;
         *p_fout << "\t\t" << x << " " << y << " " << z << endl;
     }
     *p_fout << "\t}" << endl;
 
-    size_max = static_cast<uint32>(m_object.face.size());
+    size_max = static_cast<uint32_t>(m_object.face.size());
     *p_fout << "\tface " << size_max << " {" << endl;
-    for (uint32 i = 0; i < size_max; i++) {
+    for (int32_t i = 0; i < size_max; i++) {
         auto face = m_object.face[i];
-        const auto n = static_cast<uint32>(face.vertex.size());
+        const auto n = static_cast<uint32_t>(face.vertex.size());
         *p_fout << "\t\t" << n << " V( ";
-        for (uint32 j = 0; j < face.vertex.size(); j++) {
+        for (int32_t j = 0; j < face.vertex.size(); j++) {
             const auto index = face.vertex[j];
             *p_fout << index << " ";
         }
@@ -234,7 +234,7 @@ MQO::writeObject(ofstream* p_fout) {
 
 void
 MQO::writeLines(ofstream* p_fout) {
-    for (uint32 j = 0; j < m_object.lines.size(); j++) {
+    for (int32_t j = 0; j < m_object.lines.size(); j++) {
         auto line = m_object.lines[j];
         auto sz = line.size();
         auto va = m_object.vertex[line[0]];

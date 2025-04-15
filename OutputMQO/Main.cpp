@@ -7,624 +7,619 @@
 using namespace std;
 
 #include "../CommonLib/Bitmap.h"
-#include "../CommonLib/WorkTable.h"
-#include "../CommonLib/Mqo.h"
+#include "../CommonLib/Outline.h"
+#include "Mqo.h"
 
 #pragma comment (lib, "CommonLib.lib")
 
-#define DEBUG
+#define DEBUG_OUTLINE
+#define DEBUG_SURFACE
 
-typedef vector<uint32> INDEX;
-typedef vector<point_d> VERT;
+typedef vector<uint32_t> INDEX;
+typedef vector<vec3> VERT;
 typedef vector<surface> SURF;
 
 string bmp_file_path;
 
 inline bool
-has_intersect_line(point_d a, point_d b, point_d c, point_d d) {
-    point_d ab = { b.x - a.x, b.y - a.y };
-    point_d cd = { d.x - c.x, d.y - c.y };
-    auto denom = ab.x * cd.y - ab.y * cd.x;
-    if (abs(denom) < 1e-6) {
-        return false;
-    }
-    point_d ac = { c.x - a.x, c.y - a.y };
-    auto s = (ac.x * cd.y - ac.y * cd.x) / denom;
-    auto t = (ac.x * ab.y - ac.y * ab.x) / denom;
-    if (s < 0 || 1 < s || t < 0 || 1 < t) {
-        return false;
-    }
-    return true;
+has_intersect_line(vec3 &a, vec3 &b, vec3 &c, vec3 &d) {
+	auto ab = b - a;
+	auto cd = d - c;
+	auto denom = (ab * cd).z;
+	if (fabs(denom) < 1e-6) {
+		return false;
+	}
+	auto ac = c - a;
+	auto s = (ac * cd / denom).z;
+	auto t = (ac * ab / denom).z;
+	if (s < 0 || 1 < s || t < 0 || 1 < t) {
+		return false;
+	}
+	return true;
 }
 
 inline bool
-has_inner_point(point_d va, point_d vo, point_d vb, point_d p) {
-    point_d oq, op;
-    oq.x = va.x - vb.x;
-    oq.y = va.y - vb.y;
-    op.x = p.x - vb.x;
-    op.y = p.y - vb.y;
-    auto normal_abp = oq.x * op.y - oq.y * op.x;
-    oq.x = vo.x - va.x;
-    oq.y = vo.y - va.y;
-    op.x = p.x - va.x;
-    op.y = p.y - va.y;
-    auto normal_oap = oq.x * op.y - oq.y * op.x;
-    oq.x = vb.x - vo.x;
-    oq.y = vb.y - vo.y;
-    op.x = p.x - vo.x;
-    op.y = p.y - vo.y;
-    auto normal_bop = oq.x * op.y - oq.y * op.x;
-    if (normal_abp > 0 && normal_oap > 0 && normal_bop > 0) {
-        return true;
-    }
-    if (normal_abp < 0 && normal_oap < 0 && normal_bop < 0) {
-        return true;
-    }
-    if (normal_abp == 0 && (normal_oap > 0 && normal_bop > 0 || normal_oap < 0 && normal_bop < 0)) {
-        return true;
-    }
-    if (normal_oap == 0 && (normal_abp > 0 && normal_bop > 0 || normal_abp < 0 && normal_bop < 0)) {
-        return true;
-    }
-    if (normal_bop == 0 && (normal_abp > 0 && normal_oap > 0 || normal_abp < 0 && normal_oap < 0)) {
-        return true;
-    }
-    return false;
+has_inner_point(vec3 &a, vec3 &o, vec3 &b, vec3 &p) {
+	auto op = p - a;
+	auto oq = o - a;
+	auto oapNormal = (oq * op).z;
+	op = p - o;
+	oq = b - o;
+	auto bopNormal = (oq * op).z;
+	op = p - b;
+	oq = a - b;
+	auto abpNormal = (oq * op).z;
+	if (oapNormal > 0 && bopNormal > 0 && abpNormal > 0) {
+		return true;
+	}
+	if (oapNormal < 0 && bopNormal < 0 && abpNormal < 0) {
+		return true;
+	}
+	if (oapNormal == 0 && (bopNormal > 0 && abpNormal > 0 || abpNormal < 0 && bopNormal < 0)) {
+		return true;
+	}
+	if (bopNormal == 0 && (abpNormal > 0 && oapNormal > 0 || oapNormal < 0 && abpNormal < 0)) {
+		return true;
+	}
+	if (abpNormal == 0 && (oapNormal > 0 && bopNormal > 0 || bopNormal < 0 && oapNormal < 0)) {
+		return true;
+	}
+	return false;
 }
 
 inline bool
-has_inner_polygon(SURF& outer_surf, SURF& inner_surf, VERT& vert) {
-    for (uint32 i = 0; i < outer_surf.size(); i++) {
-        auto outer = outer_surf[i];
-        auto outer_a = vert[outer.a];
-        auto outer_o = vert[outer.o];
-        auto outer_b = vert[outer.b];
-        for (uint32 j = 0; j < inner_surf.size(); j++) {
-            auto inner = inner_surf[j];
-            auto inner_a = vert[inner.a];
-            auto inner_o = vert[inner.o];
-            auto inner_b = vert[inner.b];
-            if (has_inner_point(outer_a, outer_o, outer_b, inner_a)) {
-                return true;
-            }
-            if (has_inner_point(outer_a, outer_o, outer_b, inner_o)) {
-                return true;
-            }
-            if (has_inner_point(outer_a, outer_o, outer_b, inner_b)) {
-                return true;
-            }
-        }
-    }
-    return false;
+has_inner_polygon(SURF &outerSurf, SURF &innerSurf, VERT &vert) {
+	for (int32_t i = 0; i < outerSurf.size(); i++) {
+		auto outer = outerSurf[i];
+		auto outerA = vert[outer.a];
+		auto outerO = vert[outer.o];
+		auto outerB = vert[outer.b];
+		auto innerCount = innerSurf.size();
+		for (int32_t j = 0; j < innerCount; j++) {
+			auto inner = innerSurf[j];
+			auto innerA = vert[inner.a];
+			auto innerO = vert[inner.o];
+			auto innerB = vert[inner.b];
+			if (has_inner_point(outerA, outerO, outerB, innerA)) {
+				return true;
+			}
+			if (has_inner_point(outerA, outerO, outerB, innerO)) {
+				return true;
+			}
+			if (has_inner_point(outerA, outerO, outerB, innerB)) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 void
-create_vertex(const point_d pos, MQO::type_object* p_obj, double y) {
-    auto id = static_cast<uint32>(p_obj->vertex.size());
-    MQO::type_vertex vertex = { pos.x, y, pos.y, id };
-    p_obj->vertex.push_back(vertex);
+create_vertex(const vec3 pos, MQO::type_object *pObj, double y) {
+	auto id = static_cast<uint32_t>(pObj->vertex.size());
+	MQO::type_vertex vertex = {pos.x, y, pos.y, id};
+	pObj->vertex.push_back(vertex);
 }
 
 double
-create_polygon(VERT& vert, INDEX& index, SURF* pSurf_list, int32 order) {
-    const auto INDEX_COUNT = static_cast<uint32>(index.size());
-    const auto INDEX_NEXT = INDEX_COUNT + order;
-    const auto INDEX_RIGHT = 1;
-    const auto INDEX_LEFT = INDEX_COUNT - 1;
-    struct type_vert_info {
-        double distance;
-        bool deleted;
-    };
-    /*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
-    auto p_vert_info = (type_vert_info*)calloc(INDEX_COUNT, sizeof(type_vert_info));
-    for (uint32 i = 0; i < INDEX_COUNT; i++) {
-        auto x = vert[index[i]].x - INT32_MIN;
-        auto y = vert[index[i]].y - INT32_MIN;
-        p_vert_info[i].distance = sqrt(x * x + y * y);
-        p_vert_info[i].deleted = false;
-    }
-    double area = 0.0;
-    uint32 reverse_count = 0;
-    uint32 vert_count = 0;
-    do { // 最も遠くにある頂点(vo)の取得ループ
-        /*** 最も遠くにある頂点(vo)を取得 ***/
-        point_d vo; uint32 io = 0;
-        double dist_max = 0.0;
-        vert_count = 0;
-        for (uint32 i = 0; i < INDEX_COUNT; i++) {
-            auto info = p_vert_info[i];
-            if (info.deleted) {
-                continue;
-            }
-            if (dist_max < info.distance) {
-                dist_max = info.distance;
-                io = i;
-            }
-            vert_count++;
-        }
-        reverse_count = 0;
-        vo = vert[index[io]];
-        while (true) { // 頂点(vo)の移動ループ
-            /*** 頂点(vo)の左隣にある頂点(va)を取得 ***/
-            point_d va; uint32 ia;
-            ia = (io + INDEX_LEFT) % INDEX_COUNT;
-            for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                if (p_vert_info[ia].deleted) {
-                    ia = (ia + INDEX_LEFT) % INDEX_COUNT;
-                } else {
-                    break;
-                }
-            }
-            va = vert[index[ia]];
-            /*** 頂点(vo)の右隣にある頂点(vb)を取得 ***/
-            point_d vb; uint32 ib;
-            ib = (io + INDEX_RIGHT) % INDEX_COUNT;
-            for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                if (p_vert_info[ib].deleted) {
-                    ib = (ib + INDEX_RIGHT) % INDEX_COUNT;
-                } else {
-                    break;
-                }
-            }
-            vb = vert[index[ib]];
-            /*** 三角形(va vo vb)の表裏を確認 ***/
-            double aob_normal;
-            auto oa_x = va.x - vo.x;
-            auto oa_y = va.y - vo.y;
-            auto ob_x = vb.x - vo.x;
-            auto ob_y = vb.y - vo.y;
-            aob_normal = (oa_x * ob_y - oa_y * ob_x) * order;
-            if (aob_normal < 0) {
-                /*** 裏の場合 ***/
-                reverse_count++;
-                if (INDEX_COUNT < reverse_count) {
-                    /*** 表になる三角形(va vo vb)がない場合 ***/
-                    /*** 頂点(vo)を検索対象から削除 ***/
-                    p_vert_info[io].deleted = true;
-                    /*** 次の最も遠くにある頂点(vo)を取得 ***/
-                    break;
-                }
-                /*** 頂点(vo)を隣に移動 ***/
-                io = (io + INDEX_NEXT) % INDEX_COUNT;
-                for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                    if (p_vert_info[io].deleted) {
-                        io = (io + INDEX_NEXT) % INDEX_COUNT;
-                    } else {
-                        break;
-                    }
-                }
-                vo = vert[index[io]];
-                continue;
-            }
-            /*** 三角形(va vo vb)の内側にva vo vb以外の頂点がないか確認 ***/
-            bool point_in_triangle = false;
-            for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                if (i == ia || i == io || i == ib || p_vert_info[i].deleted) {
-                    continue;
-                }
-                auto p = vert[index[i]];
-                if (has_inner_point(va, vo, vb, p)) {
-                    point_in_triangle = true;
-                    break;
-                }
-            }
-            if (point_in_triangle) {
-                /*** 内側に他の頂点がある場合 ***/
-                /*** 頂点(vo)を隣に移動 ***/
-                io = (io + INDEX_NEXT) % INDEX_COUNT;
-                for (uint32 i = 0; i < INDEX_COUNT; i++) {
-                    if (p_vert_info[io].deleted) {
-                        io = (io + INDEX_NEXT) % INDEX_COUNT;
-                    } else {
-                        break;
-                    }
-                }
-                vo = vert[index[io]];
-            } else {
-                /*** 内側に他の頂点がない場合 ***/
-                /*** 三角形(va vo vb)を面リストに追加 ***/
-                surface surf;
-                surf.a = index[ia];
-                surf.o = index[io];
-                surf.b = index[ib];
-                pSurf_list->push_back(surf);
-                /*** 三角形の面積を加算 ***/
-                area += abs(aob_normal) / 2.0;
-                /*** 頂点(vo)を検索対象から削除 ***/
-                p_vert_info[io].deleted = true;
-                /*** 次の最も遠くにある頂点(vo)を取得 ***/
-                break;
-            }
-        } // 頂点(vo)の移動ループ
-    } while (3 < vert_count); // 最も遠くにある頂点(vo)の取得ループ
-    free(p_vert_info);
-    return area;
+create_polygon(VERT &vert, INDEX &index, SURF *pSurfList, int32_t order) {
+	const auto INDEX_COUNT = static_cast<int32_t>(index.size());
+	const auto INDEX_NEXT = INDEX_COUNT + order;
+	const auto INDEX_RIGHT = 1;
+	const auto INDEX_LEFT = INDEX_COUNT - 1;
+	struct VERT_INFO {
+		double distance;
+		bool deleted;
+	};
+	/*** 頂点情報を作成、原点からの距離と削除フラグを設定 ***/
+	auto pVertInfo = (VERT_INFO *)calloc(INDEX_COUNT, sizeof(VERT_INFO));
+	auto origin = vec3{INT32_MIN, INT32_MIN, 0};
+	for (int32_t i = 0; i < INDEX_COUNT; i++) {
+		auto ov = vert[index[i]] - origin;
+		pVertInfo[i].distance = sqrt(ov & ov);
+		pVertInfo[i].deleted = false;
+	}
+	double area = 0.0;
+	int32_t reverseCount = 0;
+	int32_t vertCount = 0;
+	do { // 最も遠くにある頂点(vo)の取得ループ
+		/*** 最も遠くにある頂点(vo)を取得 ***/
+		vec3 vo; int32_t io = 0;
+		double distMax = 0.0;
+		vertCount = 0;
+		for (int32_t i = 0; i < INDEX_COUNT; i++) {
+			auto info = pVertInfo[i];
+			if (info.deleted) {
+				continue;
+			}
+			if (distMax < info.distance) {
+				distMax = info.distance;
+				io = i;
+			}
+			vertCount++;
+		}
+		reverseCount = 0;
+		vo = vert[index[io]];
+		while (true) { // 頂点(vo)の移動ループ
+			/*** 頂点(vo)の左隣にある頂点(va)を取得 ***/
+			vec3 va; int32_t ia;
+			ia = (io + INDEX_LEFT) % INDEX_COUNT;
+			for (int32_t i = 0; i < INDEX_COUNT; i++) {
+				if (pVertInfo[ia].deleted) {
+					ia = (ia + INDEX_LEFT) % INDEX_COUNT;
+				} else {
+					break;
+				}
+			}
+			va = vert[index[ia]];
+			/*** 頂点(vo)の右隣にある頂点(vb)を取得 ***/
+			vec3 vb; int32_t ib;
+			ib = (io + INDEX_RIGHT) % INDEX_COUNT;
+			for (int32_t i = 0; i < INDEX_COUNT; i++) {
+				if (pVertInfo[ib].deleted) {
+					ib = (ib + INDEX_RIGHT) % INDEX_COUNT;
+				} else {
+					break;
+				}
+			}
+			vb = vert[index[ib]];
+			/*** 三角形(va vo vb)の表裏を確認 ***/
+			double aobNormal; {
+				auto oa = va - vo;
+				auto ob = vb - vo;
+				aobNormal = (oa * ob).z * order;
+			}
+			if (aobNormal < 0) {
+				/*** 裏の場合 ***/
+				reverseCount++;
+				if (INDEX_COUNT < reverseCount) {
+					/*** 表になる三角形(va vo vb)がない場合 ***/
+					/*** 頂点(vo)を検索対象から削除 ***/
+					pVertInfo[io].deleted = true;
+					/*** 次の最も遠くにある頂点(vo)を取得 ***/
+					break;
+				}
+				/*** 頂点(vo)を隣に移動 ***/
+				io = (io + INDEX_NEXT) % INDEX_COUNT;
+				for (int32_t i = 0; i < INDEX_COUNT; i++) {
+					if (pVertInfo[io].deleted) {
+						io = (io + INDEX_NEXT) % INDEX_COUNT;
+					} else {
+						break;
+					}
+				}
+				vo = vert[index[io]];
+				continue;
+			}
+			/*** 三角形(va vo vb)の内側にva vo vb以外の頂点がないか確認 ***/
+			auto pointInTriangle = false;
+			for (int32_t i = 0; i < INDEX_COUNT; i++) {
+				if (i == ia || i == io || i == ib || pVertInfo[i].deleted) {
+					continue;
+				}
+				auto p = vert[index[i]];
+				if (has_inner_point(va, vo, vb, p)) {
+					pointInTriangle = true;
+					break;
+				}
+			}
+			if (pointInTriangle) {
+				/*** 内側に他の頂点がある場合 ***/
+				/*** 頂点(vo)を隣に移動 ***/
+				io = (io + INDEX_NEXT) % INDEX_COUNT;
+				for (int32_t i = 0; i < INDEX_COUNT; i++) {
+					if (pVertInfo[io].deleted) {
+						io = (io + INDEX_NEXT) % INDEX_COUNT;
+					} else {
+						break;
+					}
+				}
+				vo = vert[index[io]];
+			} else {
+				/*** 内側に他の頂点がない場合 ***/
+				/*** 三角形(va vo vb)を面リストに追加 ***/
+				surface surf;
+				surf.a = index[ia];
+				surf.o = index[io];
+				surf.b = index[ib];
+				pSurfList->push_back(surf);
+				/*** 三角形の面積を加算 ***/
+				area += fabs(aobNormal) / 2.0;
+				/*** 頂点(vo)を検索対象から削除 ***/
+				pVertInfo[io].deleted = true;
+				/*** 次の最も遠くにある頂点(vo)を取得 ***/
+				break;
+			}
+		} // 頂点(vo)の移動ループ
+	} while (3 < vertCount); // 最も遠くにある頂点(vo)の取得ループ
+	free(pVertInfo);
+	return area;
 }
 
 void
-marge_outlines(vector<INDEX>& indexes, VERT& vert, int32 order) {
-    struct type_nest_info {
-        uint32 parent;
-        uint32 depth;
-    };
-    vector<type_nest_info> nest_info;
-    for (uint32 i = 0; i < indexes.size(); i++) {
-        type_nest_info nest;
-        nest.parent = -1;
-        nest.depth = 0;
-        nest_info.push_back(nest);
-    }
-    /*** 入れ子になっているアウトラインを検索 ***/
-    for (uint32 idx_outer = 0; idx_outer < indexes.size(); idx_outer++) {
-        if (indexes[idx_outer].size() < 3) {
-            indexes[idx_outer].clear();
-            continue;
-        }
-        for (uint32 idx_inner = 0; idx_inner < indexes.size(); idx_inner++) {
-            auto inner = &nest_info[idx_inner];
-            if (indexes[idx_inner].size() < 3) {
-                indexes[idx_inner].clear();
-                continue;
-            }
-            if (nest_info[idx_outer].depth < inner->depth) {
-                continue;
-            }
-            SURF outer_surf;
-            auto outer_area = create_polygon(vert, indexes[idx_outer], &outer_surf, order);
-            if (idx_outer == idx_inner) {
-                continue;
-            }
-            SURF inner_surf;
-            auto inner_area = create_polygon(vert, indexes[idx_inner], &inner_surf, order);
-            if (inner_area < outer_area && has_inner_polygon(outer_surf, inner_surf, vert)) {
-                inner->parent = idx_outer;
-                inner->depth++;
-            }
-        }
-    }
-    /*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
-    while (true) {
-        double most_dist = 1e20;
-        uint32 idx_inner;
-        type_nest_info* inner = NULL;
-        for (uint32 i = 0; i < nest_info.size(); i++) {
-            auto inner_temp = &nest_info[i];
-            if (0 == inner_temp->depth % 2) {
-                /* depth=偶数: 穴に該当しないアウトライン */
-                continue;
-            }
-            if (i == inner_temp->parent) {
-                continue;
-            }
-            if (indexes[i].size() < 3) {
-                continue;
-            }
-            auto pos = vert[indexes[i][0]];
-            double ox, oy;
-            if (order < 0) {
-                ox = pos.x - INT32_MAX;
-                oy = pos.y - INT32_MAX;
-            } else {
-                ox = pos.x - INT32_MIN;
-                oy = pos.y - INT32_MIN;
-            }
-            auto dist = ox * ox + oy * oy;
-            if (dist < most_dist) {
-                /* 原点から近いアウトラインを優先してマージする */
-                idx_inner = i;
-                inner = inner_temp;
-                most_dist = dist;
-            }
-        }
-        if (NULL == inner) {
-            break;
-        }
-        /*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
-        /*** 互いに最も近い点をマージ開始位置に設定する ***/
-        uint32 insert_dst = 0, insert_src = 0;
-        most_dist = UINT32_MAX;
-        auto index_p = indexes[inner->parent];
-        auto index_c = indexes[idx_inner];
-        for (uint32 c = 0; c < index_c.size(); c++) {
-            for (uint32 n = 0; n < index_p.size(); n++) {
-                auto ip = index_p[n];
-                auto ic = index_c[c];
-                auto sx = vert[ic].x - vert[ip].x;
-                auto sy = vert[ic].y - vert[ip].y;
-                auto dist = sx * sx + sy * sy;
-                if (dist < most_dist) {
-                    insert_dst = n;
-                    insert_src = c;
-                    most_dist = dist;
-                }
-            }
-        }
-        /*** マージ ***/
-        INDEX temp;
-        for (uint32 i = 0; i <= insert_dst && i < index_p.size(); i++) {
-            temp.push_back(index_p[i]);
-        }
-        auto inner_size = index_c.size();
-        for (int32 i = 0; i < inner_size; i++) {
-            auto im = (inner_size + insert_src - i) % inner_size;
-            temp.push_back(index_c[im]);
-        }
-        temp.push_back(index_c[insert_src]);
-        for (uint32 i = insert_dst; i < index_p.size(); i++) {
-            temp.push_back(index_p[i]);
-        }
-        indexes[inner->parent] = temp;
-        indexes[idx_inner].clear();
-    }
+marge_outlines(vector<INDEX> &indexes, VERT &vert, int32_t order) {
+	struct NEST_INFO {
+		uint32_t parent;
+		uint32_t depth;
+	};
+	vector<NEST_INFO> nestInfo;
+	for (int32_t i = 0; i < indexes.size(); i++) {
+		NEST_INFO nest;
+		nest.parent = -1;
+		nest.depth = 0;
+		nestInfo.push_back(nest);
+	}
+	/*** 入れ子になっているアウトラインを検索 ***/
+	for (int32_t idxOuter = 0; idxOuter < indexes.size(); idxOuter++) {
+		if (indexes[idxOuter].size() < 3) {
+			indexes[idxOuter].clear();
+			continue;
+		}
+		auto innerCount = indexes.size();
+		for (int32_t idxInner = 0; idxInner < innerCount; idxInner++) {
+			if (indexes[idxInner].size() < 3) {
+				indexes[idxInner].clear();
+				continue;
+			}
+			if (idxInner == idxOuter) {
+				continue;
+			}
+			auto inner = &nestInfo[idxInner];
+			if (nestInfo[idxOuter].depth < inner->depth) {
+				continue;
+			}
+			SURF outerSurf;
+			auto outerArea = create_polygon(vert, indexes[idxOuter], &outerSurf, order);
+			SURF innerSurf;
+			auto innerArea = create_polygon(vert, indexes[idxInner], &innerSurf, order);
+			if (innerArea < outerArea && has_inner_polygon(outerSurf, innerSurf, vert)) {
+				inner->parent = idxOuter;
+				inner->depth++;
+			}
+		}
+	}
+	/*** 穴に該当するアウトラインを親のアウトラインにマージ ***/
+	while (true) {
+		double mostNear = 1e20;
+		int32_t idxInner;
+		NEST_INFO *inner = NULL;
+		auto nestCount = nestInfo.size();
+		for (int32_t i = 0; i < nestCount; i++) {
+			auto innerTemp = &nestInfo[i];
+			if (0 == innerTemp->depth % 2) {
+				/* depth=偶数: 穴に該当しないアウトライン */
+				continue;
+			}
+			if (i == innerTemp->parent) {
+				continue;
+			}
+			if (indexes[i].size() < 3) {
+				continue;
+			}
+			auto pos = vert[indexes[i][0]];
+			double ox, oy;
+			if (order < 0) {
+				ox = pos.x - INT32_MAX;
+				oy = pos.y - INT32_MAX;
+			} else {
+				ox = pos.x - INT32_MIN;
+				oy = pos.y - INT32_MIN;
+			}
+			auto dist = ox * ox + oy * oy;
+			if (dist < mostNear) {
+				/* 原点から近いアウトラインを優先してマージする */
+				idxInner = i;
+				inner = innerTemp;
+				mostNear = dist;
+			}
+		}
+		if (NULL == inner) {
+			break;
+		}
+		/*** 穴に該当するアウトラインと親のアウトラインで互いに最も近い点を検索 ***/
+		/*** 互いに最も近い点をマージ開始位置に設定する ***/
+		int32_t insertDst = 0, insertSrc = 0;
+		mostNear = UINT32_MAX;
+		auto indexP = indexes[inner->parent];
+		auto indexC = indexes[idxInner];
+		auto parentCount = indexP.size();
+		for (int32_t c = 0; c < indexC.size(); c++) {
+			for (int32_t p = 0; p < parentCount; p++) {
+				auto ip = indexP[p];
+				auto ic = indexC[c];
+				auto pc = vert[ic] - vert[ip];
+				auto dist = pc & pc;
+				if (dist < mostNear) {
+					insertDst = p;
+					insertSrc = c;
+					mostNear = dist;
+				}
+			}
+		}
+		/*** マージ ***/
+		INDEX temp;
+		for (int32_t i = 0; i <= insertDst && i < indexP.size(); i++) {
+			temp.push_back(indexP[i]);
+		}
+		auto innerSize = indexC.size();
+		for (int32_t i = 0; i < innerSize; i++) {
+			auto im = (innerSize + insertSrc - i) % innerSize;
+			temp.push_back(indexC[im]);
+		}
+		temp.push_back(indexC[insertSrc]);
+		for (int32_t i = insertDst; i < indexP.size(); i++) {
+			temp.push_back(indexP[i]);
+		}
+		indexes[inner->parent] = temp;
+		indexes[idxInner].clear();
+	}
 }
 
 MQO::type_object
-create_object(Bitmap* pbmp, double height, double y_offset) {
-    MQO::type_object obj;
+create_object(Bitmap *pbmp, double height, double y_offset, double scale) {
+	MQO::type_object obj;
 
-    /*** ワークテーブル作成 ***/
-    auto pTable = new WorkTable(pbmp->m_info.width, pbmp->m_info.height);
-    pTable->Setup(*pbmp, 1.0);
+	/*** アウトラインを取得 ***/
+	auto pOutline = new Outline(pbmp);
+	pOutline->Read(1.0);
+	auto outlines = pOutline->CreatePolyline();
+	delete pOutline;
 
-    /*** アウトラインを取得 ***/
-    auto outlines = pTable->CreatePolyline();
+	/*** スケール反映 ***/
+	for (int32_t i = 0; i < outlines.size(); i++) {
+		for (int32_t j = 0; j < outlines[i].size(); j++) {
+			outlines[i][j] *= scale;
+		}
+	}
 
-    delete pTable;
+	auto swidth = static_cast<int32_t>(pbmp->info.width * scale);
+	auto sheight = static_cast<int32_t>(pbmp->info.height * scale);
 
-#ifdef DEBUG
-    auto p = &pbmp->mp_palette[0];
-    p->r = 223;
-    p->g = 223;
-    p->b = 223;
-    p = &pbmp->mp_palette[1];
-    p->r = 255;
-    p->g = 0;
-    p->b = 0;
-    p = &pbmp->mp_palette[2];
-    p->r = 0;
-    p->g = 191;
-    p->b = 0;
-    p = &pbmp->mp_palette[3];
-    p->r = 0;
-    p->g = 191;
-    p->b = 255;
-    p = &pbmp->mp_palette[4];
-    p->r = 0;
-    p->g = 0;
-    p->b = 255;
-    byte color = 0;
-    for (uint32 i = 0; i < outlines.size(); i++) {
-        auto outline = outlines[i];
-        for (uint32 j = 0; j < outline.size(); j++) {
-            point p = { (int)outline[j].x, (int)outline[j].y };
-            auto index = bitmap_get_index(*pbmp, p);
-            if (UINT32_MAX != index) {
-                pbmp->mp_pix[index] = color + 1;
-            }
-        }
-        color = (color + 1) % 4;
-    }
+#ifdef DEBUG_OUTLINE
+	string svgLinePath = pbmp->filePath + "_Line.svg";
+	ofstream svgLine(svgLinePath, ios::out);
+	svgLine << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" << endl;
+	svgLine << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" << endl;
+	svgLine << "<svg width=\"" << swidth << "\" height=\"" << sheight << "\""
+		<< " viewBox=\"0 0 " << swidth << " " << sheight << "\""
+		<< " version=\"1.1\""
+		<< " xmlns=\"http://www.w3.org/2000/svg\""
+		<< " xmlns:xlink=\"http://www.w3.org/1999/xlink\""
+		<< " xmlns:serif=\"http://www.serif.com/\""
+		<< " xml:space=\"preserve\""
+		<< ">" << endl;
+	for (int32_t i = 0; i < outlines.size(); i++) {
+		auto outline = outlines[i];
+		svgLine << "\t<polygon points=\"";
+		for (int32_t j = 0; j < outline.size(); j++) {
+			svgLine << outline[j].x << "," << (sheight - outline[j].y) << " ";
+		}
+		svgLine << "\" fill=\"none\" stroke=\"black\" id=\"line" << (i + 1) << "\"/>" << endl;
+	}
+	for (int32_t i = 0; i < outlines.size(); i++) {
+		auto outline = outlines[i];
+		svgLine << "\t<g id=\"dots" << (i + 1) << "\">" << endl;
+		for (int32_t j = 0; j < outline.size(); j++) {
+			svgLine << "\t\t<circle cx=\"" << outline[j].x
+				<< "\" cy=\"" << (sheight - outline[j].y) << "\" r=\"1\""
+				<< " stroke=\"black\" stroke-width=\"0.25\" fill=\"cyan\"/>" << endl;
+		}
+		svgLine << "\t</g>" << endl;
+	}
+	svgLine << "</svg>" << endl;
+	svgLine.close();
 #endif
 
-#ifdef DEBUG_TSV
-    string ssdebug = bmp_file_path.substr(0, bmp_file_path.size() - 4) + "_debug.tsv";
-    FILE *fp_tsv = nullptr;
-    fopen_s(&fp_tsv, ssdebug.c_str(), "w");
-    if (nullptr != fp_tsv) {
-        fprintf_s(fp_tsv, "outline\tx\ty\tr\tθ\n");
-        for (uint32 i = 0; i < outlines.size(); i++) {
-            auto outline = outlines[i];
-            int bx = 0;
-            int by = 0;
-            for (uint32 j = 0; j < outline.size(); j++) {
-                point p = { (int)outline[j].x, (int)outline[j].y };
-                auto index = bitmap_get_index(*pbmp, p);
-                if (UINT32_MAX != index) {
-                    double dx = p.x - bx;
-                    double dy = p.y - by;
-                    bx = p.x;
-                    by = p.y;
-                    auto dr = sqrt(dx * dx + dy * dy);
-                    if (0.0 < dr) {
-                        dx /= dr;
-                        dy /= dr;
-                    }
-                    auto dtheta = atan2(dy, dx) * 180 / 3.141592;
-                    if (dtheta < 0.0) {
-                        dtheta += 360;
-                    }
-                    fprintf_s(fp_tsv, "%d\t%4d\t%4d\t%4.1f\t%3.0f\n", i, p.x, p.y, dr, dtheta);
-                }
-            }
-        }
-        fclose(fp_tsv);
-    }
+	/*** アウトラインから頂点とインデックスを取得 ***/
+	vector<INDEX> indexes_bottom, indexes_top;
+	VERT verts;
+	uint32_t index_ofs = 0;
+	for (int32_t i = 0; i < outlines.size(); i++) {
+		auto outline = outlines[i];
+		auto point_count = static_cast<int32_t>(outline.size());
+		if (0 == point_count) {
+			continue;
+		}
+		/*** 底面 ***/
+		INDEX index_bottom;
+		for (int32_t j = 0; j < point_count; j++) {
+			vec3 pos = {outline[j].x, sheight - outline[j].y - 1, 0.0};
+			verts.push_back(pos);
+			index_bottom.push_back(index_ofs + j);
+			create_vertex(pos, &obj, y_offset);
+		}
+		indexes_bottom.push_back(index_bottom);
+		index_ofs += point_count;
+		/*** 上面 ***/
+		INDEX index_top;
+		for (int32_t j = 0; j < point_count; j++) {
+			vec3 pos = {outline[j].x, sheight - outline[j].y - 1, 0.0};
+			verts.push_back(pos);
+			index_top.push_back(index_ofs + point_count - j - 1);
+			create_vertex(pos, &obj, y_offset + height);
+		}
+		indexes_top.push_back(index_top);
+		index_ofs += point_count;
+	}
+
+	/*** 穴部分に該当するアウトラインをマージ ***/
+	marge_outlines(indexes_bottom, verts, 1);
+	marge_outlines(indexes_top, verts, -1);
+
+#ifdef DEBUG_SURFACE
+	string svgSurfPath = pbmp->filePath + "_Surf.svg";
+	ofstream svgSurf(svgSurfPath, ios::out);
+	svgSurf << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" << endl;
+	svgSurf << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" << endl;
+	svgSurf << "<svg width=\"" << swidth << "\" height=\"" << sheight << "\""
+		<< " viewBox=\"0 0 " << swidth << " " << sheight << "\""
+		<< " version=\"1.1\""
+		<< " xmlns=\"http://www.w3.org/2000/svg\""
+		<< " xmlns:xlink=\"http://www.w3.org/1999/xlink\""
+		<< " xmlns:serif=\"http://www.serif.com/\""
+		<< " xml:space=\"preserve\""
+		<< ">" << endl;
+	for (int32_t i = 0; i < indexes_top.size(); i++) {
+		auto index = indexes_top[i];
+		if (0 == index.size()) {
+			continue;
+		}
+		svgSurf << "\t<polygon points=\"";
+		for (int32_t j = 0; j < index.size(); j++) {
+			auto v = verts[index[j]];
+			svgSurf << v.x << "," << v.y << " ";
+		}
+		svgSurf << "\" style=\"fill:#000000; fill-rule:nonzero; stroke-width:1.0\"/>" << endl;
+	}
+	svgSurf << "</svg>" << endl;
+	svgSurf.close();
 #endif
 
-    /*** アウトラインから頂点とインデックスを取得 ***/
-    vector<INDEX> indexes_bottom, indexes_top;
-    VERT verts;
-    uint32 index_ofs = 0;
-    for (uint32 i = 0; i < outlines.size(); i++) {
-        auto outline = outlines[i];
-        auto point_count = static_cast<uint32>(outline.size());
-        if (0 == point_count) {
-            continue;
-        }
-        /*** 底面 ***/
-        INDEX index_bottom;
-        for (uint32 j = 0; j < point_count; j++) {
-            point_d pos = { outline[j].x, pbmp->m_info.height - outline[j].y - 1 };
-            verts.push_back(pos);
-            index_bottom.push_back(index_ofs + j);
-            create_vertex(pos, &obj, y_offset);
-        }
-        indexes_bottom.push_back(index_bottom);
-        index_ofs += point_count;
-        /*** 上面 ***/
-        INDEX index_top;
-        for (uint32 j = 0; j < point_count; j++) {
-            point_d pos = { outline[j].x, pbmp->m_info.height - outline[j].y - 1 };
-            verts.push_back(pos);
-            index_top.push_back(index_ofs + point_count - j - 1);
-            create_vertex(pos, &obj, y_offset + height);
-        }
-        indexes_top.push_back(index_top);
-        index_ofs += point_count;
-    }
-
-    /*** 穴部分に該当するアウトラインをマージ ***/
-    marge_outlines(indexes_bottom, verts, 1);
-    marge_outlines(indexes_top, verts, -1);
-
-    /*** 面を出力(底面) ***/
-    for (uint32 i = 0; i < indexes_bottom.size(); i++) {
-        auto index = indexes_bottom[i];
-        if (0 == index.size()) {
-            continue;
-        }
-        SURF surf;
-        create_polygon(verts, index, &surf, 1);
-        for (uint32 j = 0; j < surf.size(); j++) {
-            MQO::type_face face;
-            face.material = INT16_MAX;
-            face.id = static_cast<uint32>(obj.face.size());
-            auto idx = surf[j];
-            face.vertex.push_back(idx.a);
-            face.vertex.push_back(idx.o);
-            face.vertex.push_back(idx.b);
-            obj.face.push_back(face);
-        }
-    }
-    /*** 面を出力(上面) ***/
-    for (uint32 i = 0; i < indexes_top.size(); i++) {
-        auto index = indexes_top[i];
-        if (0 == index.size()) {
-            continue;
-        }
-#ifdef DEBUG_LINE
-        obj.lines.push_back(index);
-#endif
-        SURF surf;
-        create_polygon(verts, index, &surf, -1);
-        for (uint32 j = 0; j < surf.size(); j++) {
-            MQO::type_face face;
-            face.material = INT16_MAX;
-            face.id = static_cast<uint32>(obj.face.size());
-            auto idx = surf[j];
-            face.vertex.push_back(idx.a);
-            face.vertex.push_back(idx.o);
-            face.vertex.push_back(idx.b);
-            obj.face.push_back(face);
-        }
-    }
-    /*** 面を出力(側面) ***/
-    for (uint32 i = 0; i < indexes_bottom.size(); i++) {
-        auto index_bottom = indexes_bottom[i];
-        auto index_top = indexes_top[i];
-        if (0 == index_bottom.size() || 0 == index_top.size()) {
-            continue;
-        }
-        auto point_count = static_cast<int32>(index_bottom.size());
-        for (int32 ib = 0; ib < point_count; ib++) {
-            auto idx0 = index_bottom[(ib + 1) % point_count];
-            auto idx1 = index_bottom[ib];
-            uint32 idx2;
-            for (int32 it = 0; it < point_count; it++) {
-                auto idx = index_top[it];
-                auto sx = verts[idx].x - verts[idx1].x;
-                auto sy = verts[idx].y - verts[idx1].y;
-                if (0 == sx * sx + sy * sy) {
-                    idx2 = idx;
-                    break;
-                }
-            }
-            uint32 idx3;
-            for (int32 it = 0; it < point_count; it++) {
-                auto idx = index_top[it];
-                auto sx = verts[idx].x - verts[idx0].x;
-                auto sy = verts[idx].y - verts[idx0].y;
-                if (0 == sx * sx + sy * sy) {
-                    idx3 = idx;
-                    break;
-                }
-            }
-            MQO::type_face faceA;
-            faceA.material = INT16_MAX;
-            faceA.id = static_cast<uint32>(obj.face.size());
-            faceA.vertex.push_back(idx0);
-            faceA.vertex.push_back(idx1);
-            faceA.vertex.push_back(idx2);
-            obj.face.push_back(faceA);
-            MQO::type_face faceB;
-            faceB.material = INT16_MAX;
-            faceB.id = static_cast<uint32>(obj.face.size());
-            faceB.vertex.push_back(idx0);
-            faceB.vertex.push_back(idx2);
-            faceB.vertex.push_back(idx3);
-            obj.face.push_back(faceB);
-        }
-    }
-    return (obj);
+	/*** 面を出力(底面) ***/
+	for (int32_t i = 0; i < indexes_bottom.size(); i++) {
+		auto index = indexes_bottom[i];
+		if (0 == index.size()) {
+			continue;
+		}
+		SURF surf;
+		create_polygon(verts, index, &surf, 1);
+		for (int32_t j = 0; j < surf.size(); j++) {
+			MQO::type_face face;
+			face.material = INT16_MAX;
+			face.id = static_cast<uint32_t>(obj.face.size());
+			auto idx = surf[j];
+			face.vertex.push_back(idx.a);
+			face.vertex.push_back(idx.o);
+			face.vertex.push_back(idx.b);
+			obj.face.push_back(face);
+		}
+	}
+	/*** 面を出力(上面) ***/
+	for (int32_t i = 0; i < indexes_top.size(); i++) {
+		auto index = indexes_top[i];
+		if (0 == index.size()) {
+			continue;
+		}
+		SURF surf;
+		create_polygon(verts, index, &surf, -1);
+		for (int32_t j = 0; j < surf.size(); j++) {
+			MQO::type_face face;
+			face.material = INT16_MAX;
+			face.id = static_cast<uint32_t>(obj.face.size());
+			auto idx = surf[j];
+			face.vertex.push_back(idx.a);
+			face.vertex.push_back(idx.o);
+			face.vertex.push_back(idx.b);
+			obj.face.push_back(face);
+		}
+	}
+	/*** 面を出力(側面) ***/
+	for (int32_t i = 0; i < indexes_bottom.size(); i++) {
+		auto index_bottom = indexes_bottom[i];
+		auto index_top = indexes_top[i];
+		if (0 == index_bottom.size() || 0 == index_top.size()) {
+			continue;
+		}
+		auto point_count = static_cast<int32_t>(index_bottom.size());
+		for (int32_t ib = 0; ib < point_count; ib++) {
+			auto idx0 = index_bottom[(ib + 1) % point_count];
+			auto idx1 = index_bottom[ib];
+			uint32_t idx2;
+			for (int32_t it = 0; it < point_count; it++) {
+				auto idx = index_top[it];
+				auto sx = verts[idx].x - verts[idx1].x;
+				auto sy = verts[idx].y - verts[idx1].y;
+				if (0 == sx * sx + sy * sy) {
+					idx2 = idx;
+					break;
+				}
+			}
+			uint32_t idx3;
+			for (int32_t it = 0; it < point_count; it++) {
+				auto idx = index_top[it];
+				auto sx = verts[idx].x - verts[idx0].x;
+				auto sy = verts[idx].y - verts[idx0].y;
+				if (0 == sx * sx + sy * sy) {
+					idx3 = idx;
+					break;
+				}
+			}
+			MQO::type_face faceA;
+			faceA.material = INT16_MAX;
+			faceA.id = static_cast<uint32_t>(obj.face.size());
+			faceA.vertex.push_back(idx0);
+			faceA.vertex.push_back(idx1);
+			faceA.vertex.push_back(idx2);
+			obj.face.push_back(faceA);
+			MQO::type_face faceB;
+			faceB.material = INT16_MAX;
+			faceB.id = static_cast<uint32_t>(obj.face.size());
+			faceB.vertex.push_back(idx0);
+			faceB.vertex.push_back(idx2);
+			faceB.vertex.push_back(idx3);
+			obj.face.push_back(faceB);
+		}
+	}
+	return (obj);
 }
 
-int main(int argc, char* argv[]) {
-    // check parameter
-    if (argc < 5) {
-        cout << "format error..." << endl;
-        cout << "[format] OutputMQO.exe <height> <y offset> <obj name> <bitmap file path>" << endl;
-        return (EXIT_FAILURE);
-    }
+int main(int argc, char *argv[]) {
+	// check parameter
+	if (argc < 5) {
+		cout << "format error..." << endl;
+		cout << "[format] OutputMQO.exe <height> <y offset> <obj name> <bitmap file path>" << endl;
+		return (EXIT_FAILURE);
+	}
 
-    const auto height = atof(argv[1]);
-    const auto y_offset = atof(argv[2]);
-    const auto obj_name = string(argv[3]);
+	const auto height = atof(argv[1]);
+	const auto y_offset = atof(argv[2]);
+	const auto obj_name = string(argv[3]);
 
-    bmp_file_path = argv[4];
-    cout << "BMP FILE : " << bmp_file_path << endl;
+	bmp_file_path = argv[4];
+	cout << "BMP FILE : " << bmp_file_path << endl;
 
-    string marge_from;
-    if (argc < 6) {
-        marge_from = "";
-    } else {
-        marge_from = string(argv[5]);
-    }
+	double scale;
+	if (argc < 6) {
+		scale = 1;
+	} else {
+		scale = atof(argv[5]);
+	}
 
-    // get bitmap data
-    auto pBmp = new Bitmap(bmp_file_path);
-    if (pBmp->error != 0) {
-        cout << "bitmap reading error... (" << pBmp->error << ")" << endl;
-        delete pBmp;
-        return (EXIT_FAILURE);
-    } else {
-        pBmp->PrintHeader();
-    }
+	string marge_from;
+	if (argc < 7) {
+		marge_from = "";
+	} else {
+		marge_from = string(argv[6]);
+	}
 
-    // check format(8bit palette only)
-    if (BITMAP_COLOR_8BIT != pBmp->m_info.bits) {
-        cout << "bitmap not support... (8bit palette only)" << endl;
-        delete pBmp;
-        return (EXIT_FAILURE);
-    }
+	// get bitmap data
+	auto pBmp = new Bitmap(bmp_file_path);
+	pBmp->PrintInfo();
 
-    auto pMqo = new MQO();
-    pMqo->m_object = create_object(pBmp, height, y_offset);
-    pMqo->m_object.name = obj_name;
+	// check format(index color only)
+	switch (pBmp->info.bits) {
+	case Bitmap::Type::COLOR2:
+	case Bitmap::Type::COLOR4:
+	case Bitmap::Type::COLOR16:
+	case Bitmap::Type::COLOR256:
+		break;
+	default:
+		cout << "bitmap not support... (1bit/2bit/4bit/8bit index color)" << endl;
+		delete pBmp;
+		return (EXIT_FAILURE);
+	}
 
-    // save file
-    stringstream ss;
-    ss << bmp_file_path.substr(0, bmp_file_path.size() - 4) << ".mqo";
-    pMqo->Write(ss.str(), marge_from);
-    //pMqo->WriteStl(ss.str(), marge_from);
+	auto pMqo = new MQO();
+	pMqo->m_object = create_object(pBmp, height, y_offset, scale);
+	pMqo->m_object.name = obj_name;
 
-#ifdef DEBUG
-    stringstream ssdebug;
-    ssdebug << bmp_file_path.substr(0, bmp_file_path.size() - 4) << "_debug.bmp";
-    pBmp->Save(ssdebug.str());
-#endif
+	// save file
+	stringstream ss;
+	ss << bmp_file_path.substr(0, bmp_file_path.size() - 4) << ".mqo";
+	pMqo->Write(ss.str(), marge_from);
+	//pMqo->WriteStl(ss.str(), marge_from);
 
-    delete pBmp;
-    delete pMqo;
-    return (EXIT_SUCCESS);
+	delete pBmp;
+	delete pMqo;
+	return (EXIT_SUCCESS);
 }
