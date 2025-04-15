@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     const auto thickness = atoi(argv[1]);
 
     string bmp_file;
-    for (int32 fcount = 0; fcount < argc - 1; fcount++) {
+    for (int32_t fcount = 0; fcount < argc - 1; fcount++) {
         bmp_file = argv[fcount + 1];
         cout << "BMP FILE : " << bmp_file << endl;
 
@@ -32,18 +32,18 @@ int main(int argc, char* argv[]) {
             delete bmp24;
             continue;
         } else {
-            bmp24->PrintHeader();
+            bmp24->PrintInfo();
         }
 
         // bit chck
-        if (bmp24->m_info.bits != BITMAP_COLOR_24BIT) {
-            cout << "bmp not support... (only " << BITMAP_COLOR_24BIT << "bit colors)" << endl;
+        if (bmp24->info.bits != Bitmap::Type::COLOR24) {
+            cout << "bmp not support... (only 24bit colors)" << endl;
             delete bmp24;
             continue;
         }
 
-        auto bmp8 = new Bitmap(bmp24->m_info.width, bmp24->m_info.height, 8);
-        declease_exec(bmp24, bmp8);
+        auto bmp8 = new Bitmap(bmp24->info.width, bmp24->info.height, Bitmap::Type::COLOR8);
+        Declease::Exec(*bmp24, bmp8);
         if (bmp24->error != 0) {
             cout << "bmp convert error... (" << bmp24->error << ")" << endl;
             delete bmp24;

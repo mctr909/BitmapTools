@@ -6,20 +6,19 @@
 using namespace std;
 
 #include "../CommonLib/Bitmap.h"
-#include "../CommonLib/WorkTable.h"
+#include "../CommonLib/Outline.h"
 
 #pragma comment (lib, "CommonLib.lib")
 
 int main(int argc, char* argv[]) {
     // check parameter
-    if (argc < 3) {
-        cout << "parameter format error..." << endl;
-        cout << "[example] Outline.exe <line weight> <bitmap file path>" << endl;
+    if (argc < 2) {
+        cout << "parameter format error..." << endl
+            << "[example] Outline.exe <bitmap file path>" << endl;
         return (EXIT_FAILURE);
     }
 
-    const auto line_weight = atoi(argv[1]);
-    string bmp_file = argv[2];
+    string bmp_file = argv[1];
     cout << "BMP FILE : " << bmp_file << endl;
 
     // get bitmap data
@@ -29,36 +28,32 @@ int main(int argc, char* argv[]) {
         delete pBmp;
         return (EXIT_FAILURE);
     } else {
-        pBmp->PrintHeader();
+        pBmp->PrintInfo();
     }
 
     // check format(8bit palette only)
-    if (BITMAP_COLOR_8BIT != pBmp->m_info.bits) {
+    if (Bitmap::Type::COLOR8 != pBmp->info.bits) {
         cout << "bitmap not support... (8bit palette only)" << endl;
         delete pBmp;
         return (EXIT_FAILURE);
     }
 
     // allocate worktable
-    auto pTable = new WorkTable(pBmp->m_info.width, pBmp->m_info.height);
+    auto pTable = new Outline(pBmp->info.width, pBmp->info.height);
 
     // backup input data
     pBmp->Backup();
 
     double layer_lum = 1.0;
-    for (int layer = 1; ; layer++) {
+    for (int32_t layer = 1; ; layer++) {
         // write outline
-        layer_lum = pTable->Setup(*pBmp, layer_lum);
-        pTable->WriteOutline(pBmp, line_weight);
+        layer_lum = pTable->Read(*pBmp, layer_lum);
+        pTable->Write(pBmp);
 
         // save file
         stringstream ss;
         ss << bmp_file.substr(0, bmp_file.size() - 4);
-        ss << "_layer" << layer;
-        if (1 < line_weight) {
-            ss << "_thickness" << line_weight;
-        }
-        ss << ".bmp";
+        ss << "_layer" << layer << ".bmp";
         pBmp->Save(ss.str());
         if (pBmp->error != 0) {
             cout << "bmp writing error..." << endl;
