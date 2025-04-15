@@ -18,10 +18,7 @@
     <ClCompile Include="Bitmap.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="WorkTable.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Mqo.cpp">
+    <ClCompile Include="Outline.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Declease.cpp">
@@ -35,10 +32,7 @@
     <ClInclude Include="types.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="WorkTable.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Mqo.h">
+    <ClInclude Include="Outline.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Declease.h">

@@ -12,13 +12,13 @@ set layer2_file=%folder_path%\*_layer2.bmp
 set layer3_file=%folder_path%\*_layer3.bmp
 
 for %%a in (%layer1_file%) do (
-  OutputMQO.exe %height_1% %offset_1% "layer1" %%a
+  OutputMQO.exe %height_1% %offset_1% "layer1" %%a 1
 )
 for %%a in (%layer2_file%) do (
-  OutputMQO.exe %height_2% %offset_2% "layer2" %%a *_layer1.mqo
+  OutputMQO.exe %height_2% %offset_2% "layer2" %%a 1 *_layer1.mqo
 )
 for %%a in (%layer3_file%) do (
-  OutputMQO.exe %height_3% %offset_3% "layer3" %%a *_layer1.mqo
+  OutputMQO.exe %height_3% %offset_3% "layer3" %%a 1 *_layer1.mqo
 )
 
 del %layer1_file%

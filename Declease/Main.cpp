@@ -21,47 +21,30 @@ int main(int argc, char* argv[]) {
     const auto thickness = atoi(argv[1]);
 
     string bmp_file;
-    for (int32 fcount = 0; fcount < argc - 1; fcount++) {
+    for (int32_t fcount = 0; fcount < argc - 1; fcount++) {
         bmp_file = argv[fcount + 1];
         cout << "BMP FILE : " << bmp_file << endl;
 
         // get bitmap data
         auto bmp24 = new Bitmap(bmp_file);
-        if (bmp24->error != 0) {
-            cout << "bmp reading error... (" << bmp24->error << ")" << endl;
-            delete bmp24;
-            continue;
-        } else {
-            bmp24->PrintHeader();
-        }
+        bmp24->PrintInfo();
 
         // bit chck
-        if (bmp24->m_info.bits != BITMAP_COLOR_24BIT) {
-            cout << "bmp not support... (only " << BITMAP_COLOR_24BIT << "bit colors)" << endl;
+        if (bmp24->info.bits != Bitmap::Type::COLOR24BIT) {
+            cout << "bmp not support... (only 24bit colors)" << endl;
             delete bmp24;
             continue;
         }
 
-        auto bmp8 = new Bitmap(bmp24->m_info.width, bmp24->m_info.height, 8);
-        declease_exec(bmp24, bmp8);
-        if (bmp24->error != 0) {
-            cout << "bmp convert error... (" << bmp24->error << ")" << endl;
-            delete bmp24;
-            delete bmp8;
-            continue;
-        }
+        auto bmp8 = new Bitmap(bmp24->info.width, bmp24->info.height, Bitmap::Type::COLOR256);
+        Declease::Exec(*bmp24, bmp8);
 
         // save
         stringstream ss;
         ss << bmp_file.substr(0, bmp_file.size() - 4) << "_declease.bmp";
-        bmp8->Save(ss.str());
-        if (bmp8->error != 0) {
+        if (!bmp8->Save(ss.str())) {
             cout << "bmp writing error..." << endl;
-            delete bmp24;
-            delete bmp8;
-            continue;
         }
-
         delete bmp24;
         delete bmp8;
     }

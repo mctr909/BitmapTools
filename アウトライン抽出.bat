@@ -1,5 +1,5 @@
 set folder_path=sample_folder
-set thickness=2
+set thickness=1
 
 set source_file=%folder_path%\*.bmp
 set thickened_file=%folder_path%\*_thickness%thickness%.bmp
@@ -7,10 +7,10 @@ set rename_src_name=_thickness%thickness%_layer1
 set rename_dst_name=
 
 for %%a in (%source_file%) do (
-  outline.exe %thickness% %%a
+  outline.exe %%a
 )
 for %%a in (%thickened_file%) do (
-  outline.exe 1 %%a
+  outline.exe %%a
 )
 del %thickened_file%
 

@@ -50,6 +50,14 @@
 #define DEFINE_MQO_DEF_OBJECT_COLORTYPE     (0)
 #define DEFINE_MQO_DEF_OBJECT_NAME          ("no name")
 
+#pragma pack(push, 4)
+struct surface {
+	uint32_t a;
+	uint32_t o;
+	uint32_t b;
+};
+#pragma pack(pop)
+
 class MQO {
 public:
 	/* 頂点構造体 */
@@ -57,14 +65,14 @@ public:
 		double x;
 		double y;
 		double z;
-		uint32 id;
+		uint32_t id;
 	};
 
 	/* 平面構造体 */
 	struct type_face {
-		vector<uint32> vertex;
-		int32          material;
-		uint32         id;
+		vector<uint32_t> vertex;
+		int32_t          material;
+		uint32_t         id;
 	};
 
 	/* MQOオブジェクト構造体 */
@@ -100,7 +108,7 @@ public:
 		string              name = DEFINE_MQO_DEF_OBJECT_NAME;
 		vector<type_vertex>    vertex;
 		vector<type_face>      face;
-		vector<vector<uint32>> lines;
+		vector<vector<uint32_t>> lines;
 	};
 
 private:
@@ -139,7 +147,7 @@ private:
 			DEFINE_MQO_DEF_SCENE_POS_Y,
 			DEFINE_MQO_DEF_SCENE_POS_Z
 		};
-		int32 lookat[3] = {
+		int32_t lookat[3] = {
 			DEFINE_MQO_DEF_SCENE_LOOKAT_X,
 			DEFINE_MQO_DEF_SCENE_LOOKAT_Y,
 			DEFINE_MQO_DEF_SCENE_LOOKAT_Z
@@ -147,7 +155,7 @@ private:
 		float head = DEFINE_MQO_DEF_SCENE_HEAD;
 		float pich = DEFINE_MQO_DEF_SCENE_PICH;
 		float bank = DEFINE_MQO_DEF_SCENE_BANK;
-		int32 ortho = DEFINE_MQO_DEF_SCENE_ORTHO;
+		int32_t ortho = DEFINE_MQO_DEF_SCENE_ORTHO;
 		float zoom2 = DEFINE_MQO_DEF_SCENE_ZOOM2;
 		float amb[3] = {
 			DEFINE_MQO_DEF_SCENE_AMB_X,
